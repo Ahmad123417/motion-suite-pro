@@ -4,8 +4,7 @@
   "version": "1.0.0",
   "description": "Motion Suite Pro - AI Motion Graphics Generator & Remotion Desktop",
   "main": "./out/main/index.js",
-  "author": "Motion Studio",
-  "homepage": "https://motionstudio.app",
+  "author": "Motion Suite Pro",
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint --cache .",

@@ -273,7 +273,7 @@ app.whenReady().then(() => {
   }
 
   // Set app user model id for windows
-  electronApp.setAppUserModelId('com.electron')
+  electronApp.setAppUserModelId('com.motionsuitepro.app')
 
   // Focus existing window when second instance attempts to start
   app.on('second-instance', () => {

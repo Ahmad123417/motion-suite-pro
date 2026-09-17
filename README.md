@@ -1,34 +1,25 @@
-# remotion-motion-desktop
+# Motion Suite Pro
 
-An Electron application with React and TypeScript
+> AI-Powered Creative Motion Graphics Workstation (v1.0.0)
 
-## Recommended IDE Setup
+Motion Suite Pro is a professional desktop motion graphics suite combining Remotion (React + TypeScript) and Google Gemini AI to programmatically generate pixel-precise, studio-grade video assets, countdowns, lower thirds, HUD overlays, and broadcast graphics.
 
-- [VSCode](https://code.visualstudio.com/) + [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) + [Prettier](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode)
+## Key Features in v1.0.0
 
-## Project Setup
+- **Collapsible Visual Tweaker Drawer**: Full viewport right-side drawer for real-time parametric adjustments (Texts, Colors, Positions, Scale 50%-200%, Neon Glow, Speed Multiplier) with live hot-sync.
+- **Undo & Revert Engine**: Instant "Revert to Initial State" and a 20-step sequential "Undo" stack to seamlessly test parameter variations.
+- **Apple ProRes 4444 Alpha & MP4 Export**: Full support for physical Remotion CLI rendering with true transparent Alpha Channel or lightweight H.264 MP4.
+- **AI Coding Assistant & Self-Healing**: Powered by Google Gemini Flash to generate and auto-fix programmatic TypeScript animation code.
 
-### Install
-
-```bash
-$ npm install
-```
-
-### Development
+## Build & Release
 
 ```bash
-$ npm run dev
-```
+# Type check
+npm run typecheck
 
-### Build
+# Build app bundle
+npm run build
 
-```bash
-# For windows
-$ npm run build:win
-
-# For macOS
-$ npm run build:mac
-
-# For Linux
-$ npm run build:linux
+# Build Windows NSIS Installer (.exe)
+npm run build:win
 ```

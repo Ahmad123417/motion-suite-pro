@@ -1,4 +1,4 @@
-appId: com.motionstudio.desktop
+appId: com.motionsuitepro.app
 productName: Motion Suite Pro
 
 directories:
@@ -47,7 +47,7 @@ win:
     - target: nsis
       arch:
         - x64
-  artifactName: Motion-Suite-Pro-Setup-${version}.${ext}
+  artifactName: Motion Suite Pro Setup ${version}.${ext}
 
 nsis:
   oneClick: false
@@ -63,9 +63,9 @@ nsis:
   installerHeaderIcon: resources/icon.ico
 
 publish:
-  provider: github
-  owner: Ahmad123417
-  repo: motion-suite-pro-release
+  provider: "github"
+  owner: "Ahmad123417"
+  repo: "motion-studio-release"
   releaseType: release
 
 npmRebuild: false

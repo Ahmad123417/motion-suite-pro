@@ -23,12 +23,12 @@ export const RemotionRoot: React.FC = () => {
           }
         }}
         defaultProps={{
-          titleText: 'DYNAMIC MOTION',
-          subtitleText: 'CHAMPIONSHIP SERIES',
-          badgeText: 'TOURNAMENT COUNTDOWN',
+          titleText: 'CREATIVE ENGINE',
+          subtitleText: 'Generate your custom motion graphics with AI',
+          badgeText: 'MOTION SUITE PRO',
           accentColor: '#00f2fe',
-          secondaryColor: '#ff0055',
-          backgroundColor: '#080c18',
+          secondaryColor: '#7928ca',
+          backgroundColor: '#0a0d14',
           isTransparent: false,
           scale: 1,
           textOffsetX: 0,

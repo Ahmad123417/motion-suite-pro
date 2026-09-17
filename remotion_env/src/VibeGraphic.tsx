@@ -26,13 +26,13 @@ export interface VibeGraphicProps {
 }
 
 export const VibeGraphic: React.FC<VibeGraphicProps> = ({
-  titleText = 'VERSUS ESPORTS',
-  subtitleText = 'CHAMPIONSHIP SERIES',
-  badgeText = 'TOURNAMENT COUNTDOWN',
+  titleText = 'CREATIVE ENGINE',
+  subtitleText = 'Generate your custom motion graphics with AI',
+  badgeText = 'MOTION SUITE PRO',
   accentColor = '#00f2fe',
-  secondaryColor = '#ff0055',
+  secondaryColor = '#7928ca',
   backgroundColor = '#0a0d14',
-  isTransparent = true,
+  isTransparent = false,
   scale = 1,
   textOffsetX = 0,
   textOffsetY = 0,
@@ -41,71 +41,85 @@ export const VibeGraphic: React.FC<VibeGraphicProps> = ({
   customAssetUrl
 }) => {
   const rawFrame = useCurrentFrame()
-  const frame = rawFrame * speedMultiplier
+  const frame = rawFrame * (speedMultiplier || 1)
   const { width, height, fps = 30 } = useVideoConfig()
 
   const minDim = Math.min(width, height)
   const baseScale = minDim / 1080
 
   // -------------------------------------------------------------
-  // TIMING & STATE CALCULATIONS
-  // Total 15 seconds (450 frames @ 30fps)
-  // Frames 0-300: Countdown 10 down to 1 (30 frames per second)
-  // Frames 300-330: Final "0" / Lock-in state
-  // Frames 330-450: Explosive "MATCH START" climax
+  // ANIMATION TIMING & SPRINGS
   // -------------------------------------------------------------
-  const isMatchStart = frame >= 330
 
-  // Current digit (10 down to 0)
-  const currentNum = Math.max(0, 10 - Math.floor(frame / 30))
-  const localFrame = frame % 30
+  // Subtle global fade-in
+  const globalOpacity = interpolate(frame, [0, 15], [0, 1], { extrapolateRight: 'clamp' })
 
-  // Smooth pop spring for each number tick
-  const numSpring = spring({
-    frame: isMatchStart ? frame - 330 : localFrame,
-    fps,
-    config: { damping: 11, stiffness: 220, mass: 0.6 }
-  })
-
-  // Intro entrance animation
-  const introProgress = spring({
+  // Staggered Springs for Minimalist Elements
+  const badgeSpring = spring({
     frame,
     fps,
-    config: { damping: 15, stiffness: 100 }
+    config: { damping: 14, stiffness: 120, mass: 0.8 }
   })
 
-  const globalOpacity = interpolate(frame, [0, 10], [0, 1], { extrapolateRight: 'clamp' })
-  const globalScale = interpolate(introProgress, [0, 1], [0.85, 1.0])
-
-  // Radial HUD ring progress (100% full at frame 0 -> 0% at frame 330)
-  const ringProgress = interpolate(frame, [0, 330], [1, 0], { extrapolateRight: 'clamp' })
-  const ringRadius = 180 * baseScale
-  const ringCircumference = 2 * Math.PI * ringRadius
-  const ringStrokeDashoffset = ringCircumference * (1 - ringProgress)
-
-  // Shockwave ring pulse on every beat
-  const pulseScale = interpolate(localFrame, [0, 12, 29], [1.0, 1.35, 1.0], { extrapolateRight: 'clamp' })
-  const pulseOpacity = interpolate(localFrame, [0, 8, 25], [0.7, 0.2, 0], { extrapolateRight: 'clamp' })
-
-  // Colors
-  const primaryNeon = accentColor
-  const secondaryNeon = secondaryColor
-  const goldNeon = '#ffea00'
-
-  // MATCH START visual transition variables
-  const matchStartSpring = spring({
-    frame: Math.max(0, frame - 330),
+  const titleSpring = spring({
+    frame: Math.max(0, frame - 6),
     fps,
-    config: { damping: 10, stiffness: 180 }
+    config: { damping: 13, stiffness: 110, mass: 0.9 }
   })
 
-  const matchStartOpacity = interpolate(frame, [330, 340], [0, 1], { extrapolateRight: 'clamp' })
-  const matchStartScale = interpolate(matchStartSpring, [0, 1], [0.4, 1.0])
-  const flashOpacity = interpolate(frame, [330, 336, 355], [0, 0.85, 0], { extrapolateRight: 'clamp' })
+  const lineSpring = spring({
+    frame: Math.max(0, frame - 12),
+    fps,
+    config: { damping: 15, stiffness: 90, mass: 0.8 }
+  })
 
-  // Continuous background geometric rotation
-  const bgRotation = (frame * 0.4) % 360
-  const counterRotation = (-frame * 0.6) % 360
+  const subtitleSpring = spring({
+    frame: Math.max(0, frame - 18),
+    fps,
+    config: { damping: 14, stiffness: 100, mass: 0.8 }
+  })
+
+  const circleSpring = spring({
+    frame: Math.max(0, frame - 4),
+    fps,
+    config: { damping: 16, stiffness: 80, mass: 1 }
+  })
+
+  // Continuous loop animations (smooth sine wave pulses)
+  const time = frame / fps
+  const subtlePulse = Math.sin(time * 2.5) // ~2.5 rad/s smooth breath
+  const pulseScale = interpolate(subtlePulse, [-1, 1], [0.98, 1.02])
+  const linePulseOpacity = interpolate(subtlePulse, [-1, 1], [0.75, 1])
+
+  // Orbital rotation for minimalist accent circles
+  const rotation1 = (frame * 0.4) % 360
+  const rotation2 = (-frame * 0.25) % 360
+
+  // Dynamic glow calculation based on glowIntensity prop
+  const glow = glowIntensity * baseScale
+  const primaryGlow = `0 0 ${glow}px ${accentColor}cc, 0 0 ${glow * 2.2}px ${accentColor}44`
+  const secondaryGlow = `0 0 ${glow * 0.8}px ${secondaryColor}aa`
+
+  // Badge animation
+  const badgeOpacity = interpolate(badgeSpring, [0, 1], [0, 1])
+  const badgeY = interpolate(badgeSpring, [0, 1], [-20 * baseScale, 0])
+
+  // Title animation
+  const titleOpacity = interpolate(titleSpring, [0, 1], [0, 1])
+  const titleY = interpolate(titleSpring, [0, 1], [25 * baseScale, 0])
+  const titleScaleSpring = interpolate(titleSpring, [0, 1], [0.92, 1])
+
+  // Neon line width expansion
+  const lineWidth = interpolate(lineSpring, [0, 1], [0, 480 * baseScale])
+
+  // Subtitle animation
+  const subtitleOpacity = interpolate(subtitleSpring, [0, 1], [0, 0.85])
+  const subtitleY = interpolate(subtitleSpring, [0, 1], [15 * baseScale, 0])
+
+  // Accent circles size & entrance
+  const outerCircleSize = 540 * baseScale
+  const innerCircleSize = 420 * baseScale
+  const circleScale = interpolate(circleSpring, [0, 1], [0.8, 1])
 
   return (
     <div
@@ -116,382 +130,187 @@ export const VibeGraphic: React.FC<VibeGraphicProps> = ({
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+        fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
         overflow: 'hidden',
         position: 'relative',
         opacity: globalOpacity
       }}
     >
-      {/* FLASH SHOCKWAVE OVERLAY ON MATCH START */}
-      {flashOpacity > 0 && (
+      {/* MINIMALIST ACCENT CIRCLES (BACKGROUND / AMBIENT) */}
+      <div
+        style={{
+          position: 'absolute',
+          width: `${outerCircleSize}px`,
+          height: `${outerCircleSize}px`,
+          borderRadius: '50%',
+          border: `1px solid ${accentColor}25`,
+          transform: `scale(${circleScale * pulseScale}) rotate(${rotation1}deg)`,
+          pointerEvents: 'none',
+          boxShadow: `inset 0 0 ${glow * 1.5}px ${accentColor}10, 0 0 ${glow * 1.5}px ${accentColor}10`
+        }}
+      >
+        {/* Tiny orbiting accent dot */}
         <div
           style={{
             position: 'absolute',
-            inset: 0,
-            backgroundColor: primaryNeon,
-            opacity: flashOpacity,
-            zIndex: 30,
-            pointerEvents: 'none',
-            filter: 'blur(20px)'
+            top: '-4px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: `${8 * baseScale}px`,
+            height: `${8 * baseScale}px`,
+            borderRadius: '50%',
+            backgroundColor: accentColor,
+            boxShadow: primaryGlow
           }}
         />
-      )}
+      </div>
 
-      {/* MAIN CONTAINER */}
       <div
         style={{
-          transform: `scale(${globalScale * scale})`,
+          position: 'absolute',
+          width: `${innerCircleSize}px`,
+          height: `${innerCircleSize}px`,
+          borderRadius: '50%',
+          border: `1px dashed ${secondaryColor}30`,
+          transform: `scale(${circleScale}) rotate(${rotation2}deg)`,
+          pointerEvents: 'none'
+        }}
+      >
+        {/* Counter orbiting secondary accent dot */}
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '-4px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: `${6 * baseScale}px`,
+            height: `${6 * baseScale}px`,
+            borderRadius: '50%',
+            backgroundColor: secondaryColor,
+            boxShadow: secondaryGlow
+          }}
+        />
+      </div>
+
+      {/* CENTRAL GRAPHIC & TYPOGRAPHY CONTAINER (DRIVEN BY VISUAL TWEAKER) */}
+      <div
+        style={{
+          transform: `translate(${textOffsetX}px, ${textOffsetY}px) scale(${scale})`,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          position: 'relative',
-          width: '100%',
-          height: '100%'
+          textAlign: 'center',
+          zIndex: 10,
+          padding: `0 ${32 * baseScale}px`,
+          maxWidth: '90%'
         }}
       >
-        {/* TOP HEADER BADGE */}
-        <div
-          style={{
-            position: 'absolute',
-            top: `${height * 0.16}px`,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            zIndex: 20,
-            transform: `translate(${textOffsetX}px, ${textOffsetY}px)`
-          }}
-        >
+        {/* ELEGANT MINIMALIST BADGE */}
+        {badgeText && (
           <div
             style={{
-              display: 'flex',
+              opacity: badgeOpacity,
+              transform: `translateY(${badgeY}px)`,
+              display: 'inline-flex',
               alignItems: 'center',
-              gap: `${14 * baseScale}px`,
-              padding: `${8 * baseScale}px ${24 * baseScale}px`,
-              background: 'rgba(10, 15, 25, 0.75)',
-              border: `1px solid ${primaryNeon}66`,
-              borderRadius: `${30 * baseScale}px`,
-              boxShadow: `0 0 ${glowIntensity * baseScale}px ${primaryNeon}66`,
-              backdropFilter: 'blur(8px)'
+              gap: `${8 * baseScale}px`,
+              padding: `${6 * baseScale}px ${18 * baseScale}px`,
+              borderRadius: `${100 * baseScale}px`,
+              border: `1px solid ${accentColor}44`,
+              background: `linear-gradient(135deg, ${accentColor}15, ${secondaryColor}15)`,
+              backdropFilter: 'blur(8px)',
+              boxShadow: `0 ${4 * baseScale}px ${16 * baseScale}px rgba(0, 0, 0, 0.4)`,
+              marginBottom: `${20 * baseScale}px`
             }}
           >
+            {/* Glowing Accent Indicator */}
             <span
               style={{
-                width: `${10 * baseScale}px`,
-                height: `${10 * baseScale}px`,
+                width: `${6 * baseScale}px`,
+                height: `${6 * baseScale}px`,
                 borderRadius: '50%',
-                backgroundColor: isMatchStart ? secondaryNeon : primaryNeon,
-                boxShadow: `0 0 10px ${isMatchStart ? secondaryNeon : primaryNeon}`
+                backgroundColor: accentColor,
+                boxShadow: primaryGlow
               }}
             />
             <span
               style={{
-                color: '#ffffff',
-                fontSize: `${20 * baseScale}px`,
-                fontWeight: 900,
-                letterSpacing: `${4 * baseScale}px`,
-                textTransform: 'uppercase',
-                fontFamily: 'Impact, "Arial Black", sans-serif'
-              }}
-            >
-              {titleText}
-            </span>
-          </div>
-
-          {/* SUBTITLE & BADGE BAR */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: `${8 * baseScale}px`,
-              marginTop: `${8 * baseScale}px`
-            }}
-          >
-            <span
-              style={{
-                color: primaryNeon,
-                fontSize: `${11 * baseScale}px`,
-                fontWeight: 800,
+                color: '#e2e8f0',
+                fontSize: `${13 * baseScale}px`,
+                fontWeight: 700,
                 letterSpacing: `${3 * baseScale}px`,
-                textTransform: 'uppercase',
-                background: `${primaryNeon}22`,
-                padding: `${2 * baseScale}px ${8 * baseScale}px`,
-                borderRadius: `${4 * baseScale}px`,
-                border: `1px solid ${primaryNeon}44`
+                textTransform: 'uppercase'
               }}
             >
               {badgeText}
             </span>
-            <span
-              style={{
-                color: 'rgba(255, 255, 255, 0.7)',
-                fontSize: `${13 * baseScale}px`,
-                fontWeight: 700,
-                letterSpacing: `${4 * baseScale}px`,
-                textTransform: 'uppercase'
-              }}
-            >
-              {isMatchStart ? 'BATTLE IS LIVE' : subtitleText}
-            </span>
           </div>
-        </div>
+        )}
 
-        {/* CENTRAL HUD DISPLAY */}
-        <div
+        {/* HERO TITLE */}
+        <h1
           style={{
-            position: 'relative',
-            width: `${480 * baseScale}px`,
-            height: `${480 * baseScale}px`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 10
+            margin: 0,
+            opacity: titleOpacity,
+            transform: `translateY(${titleY}px) scale(${titleScaleSpring})`,
+            fontSize: `${64 * baseScale}px`,
+            fontWeight: 900,
+            letterSpacing: `${4 * baseScale}px`,
+            lineHeight: 1.1,
+            color: '#ffffff',
+            textTransform: 'uppercase',
+            textShadow: `0 ${4 * baseScale}px ${24 * baseScale}px rgba(0, 0, 0, 0.8), ${primaryGlow}`
           }}
         >
-          {/* ROTATING OUTER CYBER GEAR */}
-          <svg
-            width={480 * baseScale}
-            height={480 * baseScale}
-            viewBox="0 0 480 480"
-            style={{
-              position: 'absolute',
-              transform: `rotate(${bgRotation}deg)`,
-              filter: `drop-shadow(0 0 12px ${primaryNeon}44)`
-            }}
-          >
-            <circle
-              cx="240"
-              cy="240"
-              r="220"
-              stroke={`${primaryNeon}22`}
-              strokeWidth="2"
-              fill="none"
-            />
-            <circle
-              cx="240"
-              cy="240"
-              r="220"
-              stroke={primaryNeon}
-              strokeWidth="3"
-              strokeDasharray="20 40 80 40"
-              fill="none"
-              opacity="0.6"
-            />
-          </svg>
+          {titleText}
+        </h1>
 
-          {/* COUNTER-ROTATING INNER RING */}
-          <svg
-            width={400 * baseScale}
-            height={400 * baseScale}
-            viewBox="0 0 400 400"
-            style={{
-              position: 'absolute',
-              transform: `rotate(${counterRotation}deg)`
-            }}
-          >
-            <circle
-              cx="200"
-              cy="200"
-              r="180"
-              stroke={`${secondaryNeon}33`}
-              strokeWidth="1.5"
-              strokeDasharray="8 12"
-              fill="none"
-            />
-          </svg>
-
-          {/* PROGRESS TIMER RING */}
-          {!isMatchStart && (
-            <svg
-              width={440 * baseScale}
-              height={440 * baseScale}
-              viewBox="0 0 440 440"
-              style={{
-                position: 'absolute',
-                transform: 'rotate(-90deg)',
-                filter: `drop-shadow(0 0 16px ${primaryNeon})`
-              }}
-            >
-              <circle
-                cx="220"
-                cy="220"
-                r={ringRadius}
-                stroke={primaryNeon}
-                strokeWidth="6"
-                fill="none"
-                strokeLinecap="round"
-                strokeDasharray={ringCircumference}
-                strokeDashoffset={ringStrokeDashoffset}
-              />
-            </svg>
-          )}
-
-          {/* SHOCKWAVE PULSE RING ON SECOND TICK */}
-          {!isMatchStart && pulseOpacity > 0 && (
-            <div
-              style={{
-                position: 'absolute',
-                width: `${360 * baseScale}px`,
-                height: `${360 * baseScale}px`,
-                borderRadius: '50%',
-                border: `2px solid ${primaryNeon}`,
-                transform: `scale(${pulseScale})`,
-                opacity: pulseOpacity,
-                boxShadow: `0 0 25px ${primaryNeon}`,
-                pointerEvents: 'none'
-              }}
-            />
-          )}
-
-          {/* GLASS CENTER HUD PANEL */}
-          <div
-            style={{
-              position: 'absolute',
-              width: `${320 * baseScale}px`,
-              height: `${320 * baseScale}px`,
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(15,23,42,0.85) 0%, rgba(5,8,16,0.95) 100%)',
-              border: `1px solid ${isMatchStart ? secondaryNeon : primaryNeon}88`,
-              boxShadow: `inset 0 0 30px ${isMatchStart ? secondaryNeon : primaryNeon}33, 0 0 40px rgba(0,0,0,0.8)`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backdropFilter: 'blur(10px)'
-            }}
-          >
-            {/* COUNTDOWN DIGIT */}
-            {!isMatchStart && (
-              <div
-                key={currentNum}
-                style={{
-                  transform: `scale(${0.85 + numSpring * 0.25})`,
-                  fontSize: `${180 * baseScale}px`,
-                  fontWeight: 900,
-                  fontStyle: 'italic',
-                  color: '#ffffff',
-                  lineHeight: 1,
-                  textAlign: 'center',
-                  fontFamily: 'Impact, "Arial Black", sans-serif',
-                  textShadow: `0 0 ${35 * baseScale}px ${primaryNeon}, 0 0 ${70 * baseScale}px ${primaryNeon}66`,
-                  userSelect: 'none'
-                }}
-              >
-                {currentNum}
-              </div>
-            )}
-
-            {/* MATCH START FINAL TEXT */}
-            {isMatchStart && (
-              <div
-                style={{
-                  opacity: matchStartOpacity,
-                  transform: `scale(${matchStartScale})`,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: `${54 * baseScale}px`,
-                    fontWeight: 900,
-                    fontStyle: 'italic',
-                    fontFamily: 'Impact, "Arial Black", sans-serif',
-                    letterSpacing: `${4 * baseScale}px`,
-                    textTransform: 'uppercase',
-                    textAlign: 'center',
-                    lineHeight: 1.05,
-                    background: `linear-gradient(180deg, #ffffff 0%, ${goldNeon} 50%, ${secondaryNeon} 100%)`,
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    filter: `drop-shadow(0 0 25px ${secondaryNeon})`
-                  }}
-                >
-                  MATCH
-                  <br />
-                  START
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* LEFT & RIGHT FUTURISTIC HUD WINGS */}
+        {/* PULSING THIN NEON DIVIDER LINE */}
         <div
           style={{
-            position: 'absolute',
-            width: `${height * 0.9}px`,
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            pointerEvents: 'none',
-            zIndex: 5
+            margin: `${22 * baseScale}px 0`,
+            width: `${lineWidth}px`,
+            height: `${2 * baseScale}px`,
+            background: `linear-gradient(90deg, transparent, ${accentColor}, ${secondaryColor}, transparent)`,
+            borderRadius: `${2 * baseScale}px`,
+            boxShadow: primaryGlow,
+            opacity: linePulseOpacity
           }}
-        >
-          {/* LEFT HUD BRACKET & EQUALIZER */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: `${10 * baseScale}px`, alignItems: 'flex-start' }}>
-            <div
-              style={{
-                width: `${140 * baseScale}px`,
-                height: `${4 * baseScale}px`,
-                background: `linear-gradient(90deg, ${primaryNeon}, transparent)`
-              }}
-            />
-            <div style={{ display: 'flex', gap: `${4 * baseScale}px`, alignItems: 'flex-end', height: `${28 * baseScale}px` }}>
-              {[0.4, 0.9, 0.5, 1.0, 0.7, 0.3, 0.85].map((heightFactor, idx) => {
-                const barHeight = Math.sin((frame * 0.2) + idx) * 0.4 + 0.6
-                return (
-                  <div
-                    key={idx}
-                    style={{
-                      width: `${5 * baseScale}px`,
-                      height: `${heightFactor * barHeight * 28 * baseScale}px`,
-                      backgroundColor: primaryNeon,
-                      borderRadius: '1px',
-                      boxShadow: `0 0 8px ${primaryNeon}`
-                    }}
-                  />
-                )
-              })}
-            </div>
-            <span style={{ color: `${primaryNeon}aa`, fontSize: `${11 * baseScale}px`, fontWeight: 800, letterSpacing: '2px' }}>
-              SYS.READY // 60FPS
-            </span>
-          </div>
+        />
 
-          {/* RIGHT HUD BRACKET & STATUS */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: `${10 * baseScale}px`, alignItems: 'flex-end' }}>
-            <div
-              style={{
-                width: `${140 * baseScale}px`,
-                height: `${4 * baseScale}px`,
-                background: `linear-gradient(-90deg, ${secondaryNeon}, transparent)`
-              }}
-            />
-            <span style={{ color: '#ffffff', fontSize: `${12 * baseScale}px`, fontWeight: 800, letterSpacing: '2px' }}>
-              PHASE: {isMatchStart ? 'ENGAGED' : 'COUNTDOWN'}
-            </span>
-            <span style={{ color: `${secondaryNeon}aa`, fontSize: `${11 * baseScale}px`, fontWeight: 800, letterSpacing: '2px' }}>
-              SYNC // 100%
-            </span>
-          </div>
-        </div>
+        {/* SUBTITLE */}
+        {subtitleText && (
+          <p
+            style={{
+              margin: 0,
+              opacity: subtitleOpacity,
+              transform: `translateY(${subtitleY}px)`,
+              fontSize: `${20 * baseScale}px`,
+              fontWeight: 400,
+              letterSpacing: `${1.5 * baseScale}px`,
+              color: '#cbd5e1',
+              maxWidth: `${720 * baseScale}px`,
+              lineHeight: 1.5,
+              textShadow: '0 2px 8px rgba(0, 0, 0, 0.7)'
+            }}
+          >
+            {subtitleText}
+          </p>
+        )}
 
-        {/* CUSTOM BRANDING LOGO INTEGRATION */}
+        {/* OPTIONAL CUSTOM ASSET / LOGO */}
         {customAssetUrl && (
           <div
             style={{
-              position: 'absolute',
-              bottom: `${height * 0.12}px`,
-              zIndex: 20,
-              filter: `drop-shadow(0 0 12px ${primaryNeon}66)`
+              marginTop: `${28 * baseScale}px`,
+              filter: `drop-shadow(0 0 ${12 * baseScale}px ${accentColor}66)`
             }}
           >
             <Img
               src={customAssetUrl}
               style={{
-                height: `${50 * baseScale}px`,
+                height: `${48 * baseScale}px`,
                 objectFit: 'contain'
               }}
             />

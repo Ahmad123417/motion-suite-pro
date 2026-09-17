@@ -435,15 +435,15 @@ export function App(): React.JSX.Element {
   // Parametric Control Panel States (Quick Parameter Tweaker & Visual Inspector)
   const [paramTitleText, setParamTitleText] = useState<string>(() => {
     const saved = loadSavedVideoSettings()
-    return saved.titleText || 'VERSUS ESPORTS'
+    return saved.titleText || 'CREATIVE ENGINE'
   })
   const [paramSubtitleText, setParamSubtitleText] = useState<string>(() => {
     const saved = loadSavedVideoSettings()
-    return saved.subtitleText || 'CHAMPIONSHIP SERIES'
+    return saved.subtitleText || 'Generate your custom motion graphics with AI'
   })
   const [paramBadgeText, setParamBadgeText] = useState<string>(() => {
     const saved = loadSavedVideoSettings()
-    return saved.badgeText || 'TOURNAMENT COUNTDOWN'
+    return saved.badgeText || 'MOTION SUITE PRO'
   })
   const [paramAccentColor, setParamAccentColor] = useState<string>(() => {
     const saved = loadSavedVideoSettings()
@@ -451,7 +451,7 @@ export function App(): React.JSX.Element {
   })
   const [paramSecondaryColor, setParamSecondaryColor] = useState<string>(() => {
     const saved = loadSavedVideoSettings()
-    return saved.secondaryColor || '#ff0055'
+    return saved.secondaryColor || '#7928ca'
   })
   const [paramBackgroundColor, setParamBackgroundColor] = useState<string>(() => {
     const saved = loadSavedVideoSettings()
@@ -483,11 +483,11 @@ export function App(): React.JSX.Element {
   const [initialParamSnapshot, setInitialParamSnapshot] = useState<ParametricValues>(() => {
     const saved = loadSavedVideoSettings()
     return {
-      titleText: saved.titleText || 'VERSUS ESPORTS',
-      subtitleText: saved.subtitleText || 'CHAMPIONSHIP SERIES',
-      badgeText: saved.badgeText || 'TOURNAMENT COUNTDOWN',
+      titleText: saved.titleText || 'CREATIVE ENGINE',
+      subtitleText: saved.subtitleText || 'Generate your custom motion graphics with AI',
+      badgeText: saved.badgeText || 'MOTION SUITE PRO',
       accentColor: saved.accentColor || '#00f2fe',
-      secondaryColor: saved.secondaryColor || '#ff0055',
+      secondaryColor: saved.secondaryColor || '#7928ca',
       backgroundColor: saved.backgroundColor || '#0a0d14',
       isTransparent: Boolean(saved.exportFormat === 'prores4444' && saved.isTransparent),
       scale: typeof saved.scale === 'number' ? saved.scale : 1,
@@ -1792,11 +1792,11 @@ export function App(): React.JSX.Element {
   // Reset Live Editor to clean boilerplate template
   const handleResetBoilerplate = async (): Promise<void> => {
     const defaultSnap: ParametricValues = {
-      titleText: 'VERSUS ESPORTS',
-      subtitleText: 'CHAMPIONSHIP SERIES',
-      badgeText: 'TOURNAMENT COUNTDOWN',
+      titleText: 'CREATIVE ENGINE',
+      subtitleText: 'Generate your custom motion graphics with AI',
+      badgeText: 'MOTION SUITE PRO',
       accentColor: '#00f2fe',
-      secondaryColor: '#ff0055',
+      secondaryColor: '#7928ca',
       backgroundColor: '#0a0d14',
       isTransparent: false,
       scale: 1,
