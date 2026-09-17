@@ -1,0 +1,15 @@
+{
+  "name": "remotion-env",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@remotion/cli": "^4.0.520",
+    "@remotion/google-fonts": "^4.0.520",
+    "@remotion/noise": "^4.0.520",
+    "@remotion/paths": "^4.0.520",
+    "@remotion/shapes": "^4.0.520",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1",
+    "remotion": "^4.0.520"
+  }
+}

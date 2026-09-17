@@ -1,0 +1,17 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Motion Suite Pro</title>
+    <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:10871; frame-src 'self' http://localhost:10871; child-src 'self' http://localhost:10871; script-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:10871; style-src 'self' 'unsafe-inline' http://localhost:10871; img-src 'self' data: blob: http://localhost:10871; connect-src 'self' ws: http: http://localhost:10871;"
+    />
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

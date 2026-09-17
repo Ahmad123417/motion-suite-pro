@@ -1,0 +1,71 @@
+appId: com.motionstudio.desktop
+productName: Motion Suite Pro
+
+directories:
+  output: dist
+  buildResources: build
+
+files:
+  - out/**/*
+  - resources/icon.png
+
+extraResources:
+  - from: remotion_env
+    to: remotion_env
+    filter:
+      - '**/*'
+      - '!node_modules/**/*'
+      - '!renders/*'
+      - '!out/*'
+      - '!public/assets/overlay-logo.*'
+  - from: remotion_env/node_modules
+    to: remotion_env/node_modules
+    filter:
+      - '**/*'
+      - '!.cache/**/*'
+      - '!.remotion/**/*'
+  - from: resources/bin
+    to: bin
+    filter:
+      - 'node.exe'
+  - from: resources
+    to: .
+    filter:
+      - 'icon.png'
+      - 'icon.ico'
+  - from: README_DAN_SPESIFIKASI.txt
+    to: README_DAN_SPESIFIKASI.txt
+
+extraFiles:
+  - from: README_DAN_SPESIFIKASI.txt
+    to: README_DAN_SPESIFIKASI.txt
+
+win:
+  executableName: Motion Suite Pro
+  icon: resources/icon.ico
+  target:
+    - target: nsis
+      arch:
+        - x64
+  artifactName: Motion-Suite-Pro-Setup-${version}.${ext}
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowElevation: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Motion Suite Pro
+  uninstallDisplayName: Motion Suite Pro
+  installerIcon: resources/icon.ico
+  uninstallerIcon: resources/icon.ico
+  installerHeaderIcon: resources/icon.ico
+
+publish:
+  provider: github
+  owner: Ahmad123417
+  repo: motion-suite-pro-release
+  releaseType: release
+
+npmRebuild: false

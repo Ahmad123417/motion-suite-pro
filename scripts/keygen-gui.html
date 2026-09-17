@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Motion Studio - License Generator</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      user-select: none;
+    }
+
+    body {
+      background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #0b0f19 75%);
+      color: #f1f5f9;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      font-size: 13px;
+    }
+
+    /* Custom Titlebar Drag Area */
+    .titlebar {
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      background: rgba(15, 23, 42, 0.6);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      -webkit-app-region: drag;
+    }
+
+    .titlebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #94a3b8;
+      letter-spacing: 0.5px;
+    }
+
+    .titlebar-icon {
+      width: 16px;
+      height: 16px;
+      fill: #818cf8;
+    }
+
+    .titlebar-close {
+      -webkit-app-region: no-drag;
+      background: transparent;
+      border: none;
+      color: #64748b;
+      cursor: pointer;
+      font-size: 14px;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      transition: all 0.2s;
+    }
+
+    .titlebar-close:hover {
+      background: #ef4444;
+      color: #fff;
+    }
+
+    /* Main Container */
+    .container {
+      flex: 1;
+      padding: 16px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      overflow-y: auto;
+    }
+
+    /* Header Card */
+    .header-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .header-logo {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #6366f1, #a855f7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+      flex-shrink: 0;
+    }
+
+    .header-logo svg {
+      width: 22px;
+      height: 22px;
+      fill: #ffffff;
+    }
+
+    .header-info h1 {
+      font-size: 15px;
+      font-weight: 800;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge-dev {
+      background: rgba(99, 102, 241, 0.2);
+      color: #818cf8;
+      border: 1px solid rgba(99, 102, 241, 0.4);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .header-info p {
+      color: #94a3b8;
+      font-size: 11px;
+      margin-top: 2px;
+    }
+
+    /* Form Fields */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #cbd5e1;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .form-input {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: #ffffff;
+      font-size: 13px;
+      font-family: 'Consolas', 'Courier New', monospace;
+      letter-spacing: 1px;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .form-input:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+    }
+
+    .btn-paste {
+      position: absolute;
+      right: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #cbd5e1;
+      padding: 4px 8px;
+      border-radius: 5px;
+      font-size: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-paste:hover {
+      background: rgba(255, 255, 255, 0.16);
+      color: #fff;
+    }
+
+    /* Plan Radio Cards */
+    .plan-selector {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .plan-card {
+      background: #0f172a;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 10px 12px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      transition: all 0.2s;
+    }
+
+    .plan-card:hover {
+      border-color: rgba(99, 102, 241, 0.5);
+      background: #131d36;
+    }
+
+    .plan-card.active {
+      border-color: #6366f1;
+      background: rgba(99, 102, 241, 0.12);
+      box-shadow: 0 0 0 1px #6366f1;
+    }
+
+    .plan-title {
+      font-weight: 700;
+      font-size: 12px;
+      color: #f8fafc;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .plan-desc {
+      font-size: 10px;
+      color: #94a3b8;
+    }
+
+    /* Duration Row */
+    .duration-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(15, 23, 42, 0.5);
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px dashed rgba(255, 255, 255, 0.1);
+    }
+
+    .duration-input {
+      width: 70px;
+      background: #0f172a;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 6px;
+      padding: 6px 8px;
+      color: #fff;
+      font-size: 13px;
+      text-align: center;
+      outline: none;
+    }
+
+    .duration-input:focus {
+      border-color: #6366f1;
+    }
+
+    /* Action Button */
+    .btn-generate {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);
+      transition: all 0.2s;
+    }
+
+    .btn-generate:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+      filter: brightness(1.08);
+    }
+
+    .btn-generate:active {
+      transform: translateY(0);
+    }
+
+    /* Output Box */
+    .output-card {
+      background: #090d16;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .output-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .output-badge {
+      font-size: 10px;
+      font-weight: 700;
+      color: #10b981;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .output-textarea {
+      width: 100%;
+      height: 90px;
+      background: transparent;
+      border: none;
+      color: #cbd5e1;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 11px;
+      line-height: 1.4;
+      resize: none;
+      outline: none;
+      word-break: break-all;
+      user-select: text;
+    }
+
+    .output-textarea::placeholder {
+      color: #475569;
+    }
+
+    /* Copy Button */
+    .btn-copy {
+      background: #1e293b;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #f8fafc;
+      border-radius: 6px;
+      padding: 9px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-copy:hover:not(:disabled) {
+      background: #334155;
+      border-color: #6366f1;
+    }
+
+    .btn-copy:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%) translateY(60px);
+      background: #10b981;
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 8px 16px;
+      border-radius: 20px;
+      box-shadow: 0 6px 18px rgba(16, 185, 129, 0.4);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    .toast-error {
+      background: #ef4444;
+      box-shadow: 0 6px 18px rgba(239, 68, 68, 0.4);
+    }
+  </style>
+</head>
+<body>
+  <!-- Custom Header Bar -->
+  <div class="titlebar">
+    <div class="titlebar-brand">
+      <svg class="titlebar-icon" viewBox="0 0 24 24">
+        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+      </svg>
+      <span>MOTION STUDIO • KEYGEN PRO</span>
+    </div>
+    <button type="button" class="titlebar-close" id="btnCloseWindow" title="Tutup">✕</button>
+  </div>
+
+  <div class="container">
+    <!-- Header Banner -->
+    <div class="header-card">
+      <div class="header-logo">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+        </svg>
+      </div>
+      <div class="header-info">
+        <h1>
+          Motion Studio Keygen
+          <span class="badge-dev">RSA-2048</span>
+        </h1>
+        <p>Generator lisensi offline kriptografi asimetris untuk pembeli.</p>
+      </div>
+    </div>
+
+    <!-- Form: Machine ID -->
+    <div class="form-group">
+      <label class="form-label" for="machineIdInput">
+        <span>Machine ID Pembeli</span>
+        <span style="color: #64748b; font-weight: normal;">(16 Karakter Hex)</span>
+      </label>
+      <div class="input-wrapper">
+        <input
+          type="text"
+          id="machineIdInput"
+          class="form-input"
+          placeholder="Contoh: E4EA24567D9CA65D"
+          maxlength="24"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <button type="button" class="btn-paste" id="btnPasteMachineId">Tempel</button>
+      </div>
+    </div>
+
+    <!-- Form: Plan Selector -->
+    <div class="form-group">
+      <label class="form-label">Pilihan Paket Lisensi</label>
+      <div class="plan-selector">
+        <div class="plan-card active" id="planLifetime" data-plan="lifetime">
+          <div class="plan-title">
+            <span>👑</span>
+            <span>Lifetime Access</span>
+          </div>
+          <span class="plan-desc">Aktif selamanya tanpa batas waktu</span>
+        </div>
+        <div class="plan-card" id="planMonthly" data-plan="monthly">
+          <div class="plan-title">
+            <span>📅</span>
+            <span>Bulanan</span>
+          </div>
+          <span class="plan-desc">Akses berjangka (misal 30 hari)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Monthly Duration (Shown when Monthly selected) -->
+    <div class="duration-row" id="durationRow" style="display: none;">
+      <span style="font-size: 11px; color: #94a3b8; font-weight: 600;">Masa Berlaku Hari:</span>
+      <input type="number" id="durationDays" class="duration-input" value="30" min="1" max="730" />
+      <span style="font-size: 11px; color: #64748b;">hari dari tanggal dibuat</span>
+    </div>
+
+    <!-- Generate Button -->
+    <button type="button" class="btn-generate" id="btnGenerate">
+      <span>⚡</span>
+      <span>GENERATE LICENSE KEY</span>
+    </button>
+
+    <!-- Output Box -->
+    <div class="output-card">
+      <div class="output-header">
+        <span class="form-label" style="margin: 0;">Hasil Kunci Lisensi Digital:</span>
+        <span class="output-badge" id="outputBadge" style="display: none;">
+          <span>✓</span>
+          <span id="outputBadgeText">RSA-SHA256 Signed</span>
+        </span>
+      </div>
+      <textarea
+        id="licenseOutput"
+        class="output-textarea"
+        readonly
+        placeholder="Kunci lisensi yang siap diberikan ke pembeli akan muncul di sini..."
+      ></textarea>
+      <button type="button" class="btn-copy" id="btnCopy" disabled>
+        <span>📋</span>
+        <span>Salin Lisensi ke Clipboard</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toast">
+    <span id="toastIcon">✓</span>
+    <span id="toastMsg">Lisensi berhasil dibuat & disalin!</span>
+  </div>
+
+  <script>
+    const machineIdInput = document.getElementById('machineIdInput');
+    const btnPasteMachineId = document.getElementById('btnPasteMachineId');
+    const planLifetime = document.getElementById('planLifetime');
+    const planMonthly = document.getElementById('planMonthly');
+    const durationRow = document.getElementById('durationRow');
+    const durationDays = document.getElementById('durationDays');
+    const btnGenerate = document.getElementById('btnGenerate');
+    const licenseOutput = document.getElementById('licenseOutput');
+    const btnCopy = document.getElementById('btnCopy');
+    const outputBadge = document.getElementById('outputBadge');
+    const outputBadgeText = document.getElementById('outputBadgeText');
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toastMsg');
+    const btnCloseWindow = document.getElementById('btnCloseWindow');
+
+    let selectedPlan = 'lifetime';
+
+    // Auto-uppercase for Machine ID input
+    machineIdInput.addEventListener('input', (e) => {
+      machineIdInput.value = e.target.value.toUpperCase().replace(/[^A-F0-9_-]/g, '');
+    });
+
+    // Close button
+    btnCloseWindow.addEventListener('click', () => {
+      if (window.keygenAPI?.closeWindow) {
+        window.keygenAPI.closeWindow();
+      } else {
+        window.close();
+      }
+    });
+
+    // Paste button
+    btnPasteMachineId.addEventListener('click', async () => {
+      try {
+        const text = await navigator.clipboard.readText();
+        if (text) {
+          machineIdInput.value = text.trim().toUpperCase().replace(/[^A-F0-9_-]/g, '');
+          showToast('Machine ID ditempel dari clipboard!', false);
+        }
+      } catch (err) {
+        showToast('Gagal membaca clipboard', true);
+      }
+    });
+
+    // Plan Toggle
+    planLifetime.addEventListener('click', () => {
+      selectedPlan = 'lifetime';
+      planLifetime.classList.add('active');
+      planMonthly.classList.remove('active');
+      durationRow.style.display = 'none';
+    });
+
+    planMonthly.addEventListener('click', () => {
+      selectedPlan = 'monthly';
+      planMonthly.classList.add('active');
+      planLifetime.classList.remove('active');
+      durationRow.style.display = 'flex';
+    });
+
+    // Toast Helper
+    let toastTimer;
+    function showToast(message, isError = false) {
+      clearTimeout(toastTimer);
+      toastMsg.textContent = message;
+      if (isError) {
+        toast.classList.add('toast-error');
+      } else {
+        toast.classList.remove('toast-error');
+      }
+      toast.classList.add('show');
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+
+    // Generate Action
+    btnGenerate.addEventListener('click', async () => {
+      const machineId = machineIdInput.value.trim().toUpperCase();
+      if (!machineId) {
+        showToast('Masukkan Machine ID pembeli terlebih dahulu!', true);
+        machineIdInput.focus();
+        return;
+      }
+
+      const days = selectedPlan === 'monthly' ? parseInt(durationDays.value, 10) || 30 : null;
+
+      try {
+        btnGenerate.disabled = true;
+        btnGenerate.textContent = 'Membuat Kunci...';
+
+        const result = await window.keygenAPI.generateKey({
+          machineId,
+          plan: selectedPlan,
+          days
+        });
+
+        if (result && result.success && result.licenseKey) {
+          licenseOutput.value = result.licenseKey;
+          btnCopy.disabled = false;
+          outputBadge.style.display = 'flex';
+          outputBadgeText.textContent = selectedPlan === 'lifetime' ? 'Lifetime RSA Signed' : `${days} Hari RSA Signed`;
+
+          // Auto-copy to clipboard
+          window.keygenAPI.copyToClipboard(result.licenseKey);
+          showToast('Lisensi berhasil dibuat & disalin ke clipboard!');
+        } else {
+          showToast(result?.error || 'Gagal membuat lisensi', true);
+        }
+      } catch (err) {
+        console.error(err);
+        showToast('Terjadi kesalahan saat membuat lisensi', true);
+      } finally {
+        btnGenerate.disabled = false;
+        btnGenerate.innerHTML = '<span>⚡</span><span>GENERATE LICENSE KEY</span>';
+      }
+    });
+
+    // Copy Action
+    btnCopy.addEventListener('click', () => {
+      const key = licenseOutput.value.trim();
+      if (!key) return;
+      window.keygenAPI.copyToClipboard(key);
+      showToast('Lisensi disalin ke clipboard!');
+    });
+  </script>
+</body>
+</html>

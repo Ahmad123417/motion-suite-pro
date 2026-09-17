@@ -1,0 +1,12 @@
+{
+  "width": 3840,
+  "height": 2160,
+  "fps": 30,
+  "durationInFrames": 450,
+  "titleText": "VERSUS ESPORTS",
+  "accentColor": "#ffbb00",
+  "backgroundColor": "#0a0d14",
+  "isTransparent": false,
+  "textOffsetX": 0,
+  "textOffsetY": 0
+}
