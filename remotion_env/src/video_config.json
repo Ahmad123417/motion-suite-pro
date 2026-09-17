@@ -4,9 +4,15 @@
   "fps": 30,
   "durationInFrames": 450,
   "titleText": "VERSUS ESPORTS",
+  "subtitleText": "CHAMPIONSHIP SERIES",
+  "badgeText": "TOURNAMENT COUNTDOWN",
   "accentColor": "#ffbb00",
-  "backgroundColor": "#0a0d14",
+  "secondaryColor": "#11ee36",
+  "backgroundColor": "#000000",
   "isTransparent": false,
+  "scale": 1,
   "textOffsetX": 0,
-  "textOffsetY": 0
+  "textOffsetY": 0,
+  "glowIntensity": 15,
+  "speedMultiplier": 1
 }

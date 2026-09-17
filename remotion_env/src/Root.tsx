@@ -20,11 +20,17 @@ export const RemotionRoot: React.FC = () => {
       height={videoConfig.height || 1080}
       defaultProps={{
         titleText: cfg.titleText,
+        subtitleText: cfg.subtitleText,
+        badgeText: cfg.badgeText,
         accentColor: cfg.accentColor,
+        secondaryColor: cfg.secondaryColor,
         backgroundColor: cfg.backgroundColor,
         isTransparent: cfg.isTransparent ?? false,
+        scale: cfg.scale ?? 1,
         textOffsetX: cfg.textOffsetX ?? 0,
         textOffsetY: cfg.textOffsetY ?? 0,
+        glowIntensity: cfg.glowIntensity ?? 15,
+        speedMultiplier: cfg.speedMultiplier ?? 1,
         customAssetUrl
       }}
     />

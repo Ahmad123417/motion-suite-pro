@@ -24,15 +24,21 @@ export const RemotionRoot: React.FC = () => {
         }}
         defaultProps={{
           titleText: 'DYNAMIC MOTION',
+          subtitleText: 'CHAMPIONSHIP SERIES',
+          badgeText: 'TOURNAMENT COUNTDOWN',
           accentColor: '#00f2fe',
+          secondaryColor: '#ff0055',
           backgroundColor: '#080c18',
           isTransparent: false,
+          scale: 1,
+          textOffsetX: 0,
+          textOffsetY: 0,
+          glowIntensity: 15,
+          speedMultiplier: 1,
           width: 1920,
           height: 1080,
           durationInFrames: 150,
           fps: 30,
-          textOffsetX: 0,
-          textOffsetY: 0,
           customAssetUrl: undefined
         }}
       />

@@ -93,10 +93,16 @@ const customElectronAPI = {
     renderMode?: 'auto' | 'gpu' | 'cpu'
     customOutputFolder?: string
     titleText?: string
+    subtitleText?: string
+    badgeText?: string
     accentColor?: string
+    secondaryColor?: string
     backgroundColor?: string
+    scale?: number
     textOffsetX?: number
     textOffsetY?: number
+    glowIntensity?: number
+    speedMultiplier?: number
   }): Promise<{ success: boolean; outputPath?: string; canceled?: boolean; error?: string }> => {
     return ipcRenderer.invoke('render:start', payload)
   },
@@ -174,11 +180,17 @@ const customElectronAPI = {
     durationInFrames?: number
     assetPath?: string | null
     titleText?: string
+    subtitleText?: string
+    badgeText?: string
     accentColor?: string
+    secondaryColor?: string
     backgroundColor?: string
     isTransparent?: boolean
+    scale?: number
     textOffsetX?: number
     textOffsetY?: number
+    glowIntensity?: number
+    speedMultiplier?: number
   }): Promise<{ success: boolean; filePath?: string; error?: string }> => {
     return ipcRenderer.invoke('video:update-config', config)
   },

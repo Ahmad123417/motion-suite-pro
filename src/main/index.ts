@@ -666,11 +666,17 @@ app.whenReady().then(() => {
         durationInFrames?: number
         assetPath?: string | null
         titleText?: string
+        subtitleText?: string
+        badgeText?: string
         accentColor?: string
+        secondaryColor?: string
         backgroundColor?: string
         isTransparent?: boolean
+        scale?: number
         textOffsetX?: number
         textOffsetY?: number
+        glowIntensity?: number
+        speedMultiplier?: number
       }
     ) => {
       try {

@@ -71,10 +71,16 @@ export interface CustomElectronAPI {
     renderMode?: 'auto' | 'gpu' | 'cpu'
     customOutputFolder?: string
     titleText?: string
+    subtitleText?: string
+    badgeText?: string
     accentColor?: string
+    secondaryColor?: string
     backgroundColor?: string
+    scale?: number
     textOffsetX?: number
     textOffsetY?: number
+    glowIntensity?: number
+    speedMultiplier?: number
   }) => Promise<{ success: boolean; outputPath?: string; canceled?: boolean; error?: string }>
   cancelRender: () => Promise<boolean>
   onRenderProgress: (callback: (data: { percent: number; statusText: string }) => void) => () => void
@@ -112,11 +118,17 @@ export interface CustomElectronAPI {
     durationInFrames?: number
     assetPath?: string | null
     titleText?: string
+    subtitleText?: string
+    badgeText?: string
     accentColor?: string
+    secondaryColor?: string
     backgroundColor?: string
     isTransparent?: boolean
+    scale?: number
     textOffsetX?: number
     textOffsetY?: number
+    glowIntensity?: number
+    speedMultiplier?: number
   }) => Promise<{ success: boolean; filePath?: string; error?: string }>
   selectOutputFolder: () => Promise<{ canceled: boolean; folderPath?: string }>
   getLicenseStatus: () => Promise<{

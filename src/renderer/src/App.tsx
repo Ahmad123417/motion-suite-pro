@@ -37,8 +37,9 @@ Sapa user secara singkat dan ajukan 5 pertanyaan terarah berikut:
 2. Gaya Visual (Vibe):
    Nuansa visual seperti apa? (Contoh: Esports tajam & agresif, minimalis elegan, cyber tech futuristik, sports broadcast, dll.)
 3. Hierarki Teks & Konten:
-   - Teks atas / badge / kategori: ...
-   - Teks utama / angka / konten tengah: ...
+   - Teks atas / badge / kategori (badgeText): ...
+   - Judul utama / konten utama (titleText): ...
+   - Sub-judul / teks sekunder (subtitleText): ...
    - Teks akhir / penutup (jika ada): ...
 4. Signature Ornamen & Aksen:
    Elemen visual apa yang membingkai atau bergerak? (Contoh: Panah chevron SVG, framing brackets, speed lines, corner cuts, glow, dll.)
@@ -70,6 +71,7 @@ Setelah user setuju, buatlah SATU PROMPT EKSEKUSI KODE LENGKAP di dalam blok mar
    - Scaling Dinamis: Wajib \`baseScale = Math.min(width, height) / 1080\` pada semua font, margin, padding, SVG dimensions, dan coordinate offsets.
    - Readability: Teks wajib memiliki text-shadow / outline kontras tinggi agar terbaca di footage terang maupun gelap.
    - Anti-overlap: Elemen samping/ornamen membuka ruang jika teks membesar atau berganti.
+   - Standar Parameter Visual: Komponen wajib menerapkan props scale, textOffsetX, textOffsetY, dan glowIntensity ke style wrapper utama atau elemen terkait secara proporsional.
 
 3. BLUEPRINT KODE ACUAN (WAJIB DISEDIAKAN DI DALAM PROMPT):
    AI pembuat kode WAJIB mengikuti struktur file, arsitektur props, helper math, dan pola export persis seperti referensi berikut:
@@ -79,14 +81,22 @@ import React from 'react'
 import { useCurrentFrame, interpolate, useVideoConfig, Img } from 'remotion'
 
 export interface VibeGraphicProps {
-  titleText?: string
+  // Teks
+  titleText?: string    // Judul Utama
+  subtitleText?: string // Sub-judul / Informasi Sekunder
+  badgeText?: string    // Label Atas / Kategori
+  // Warna & Latar
   accentColor?: string
+  secondaryColor?: string
   backgroundColor?: string
   isTransparent?: boolean
-  width?: number
-  height?: number
-  durationInFrames?: number
-  fps?: number
+  // Transformasi Dinamis
+  scale?: number           // Rentang: 0.5 - 2.0 (Default: 1)
+  textOffsetX?: number     // Rentang: -500 - 500 px (Default: 0)
+  textOffsetY?: number     // Rentang: -500 - 500 px (Default: 0)
+  // FX & Aksen
+  glowIntensity?: number   // Rentang: 0 - 40 px (Default: 15)
+  speedMultiplier?: number // Rentang: 0.5 - 2.0 (Default: 1)
   customAssetUrl?: string
 }
 
@@ -104,12 +114,21 @@ const getSnapForT = (frame: number, t: number, maxSnap: number) => {
 
 export const VibeGraphic: React.FC<VibeGraphicProps> = ({
   titleText = 'LABEL TEXT',
+  subtitleText = 'SUBTITLE / SECONDARY INFO',
+  badgeText = 'BADGE',
   accentColor = '#00f2fe',
+  secondaryColor = '#ff0055',
   backgroundColor = '#060913',
   isTransparent = true,
+  scale = 1,
+  textOffsetX = 0,
+  textOffsetY = 0,
+  glowIntensity = 15,
+  speedMultiplier = 1,
   customAssetUrl
 }) => {
-  const frame = useCurrentFrame()
+  const rawFrame = useCurrentFrame()
+  const frame = rawFrame * speedMultiplier
   const { width, height } = useVideoConfig()
   const minDim = Math.min(width, height)
   const baseScale = minDim / 1080
@@ -142,7 +161,8 @@ export const VibeGraphic: React.FC<VibeGraphicProps> = ({
           alignItems: 'center',
           justifyContent: 'center',
           opacity: introOpacity,
-          transform: \`scale(\${introScale})\`
+          transform: \`scale(\${introScale * scale}) translate(\${textOffsetX}px, \${textOffsetY}px)\`,
+          filter: \`drop-shadow(0 0 \${glowIntensity * baseScale}px \${accentColor}44)\`
         }}
       >
         {/* Konten teks, SVG ornamen, dan grafis dinamis diletakkan di sini */}
@@ -294,10 +314,31 @@ interface SavedVideoSettings {
   isTransparent?: boolean
   customOutputFolder?: string
   titleText?: string
+  subtitleText?: string
+  badgeText?: string
   accentColor?: string
+  secondaryColor?: string
   backgroundColor?: string
+  scale?: number
   textOffsetX?: number
   textOffsetY?: number
+  glowIntensity?: number
+  speedMultiplier?: number
+}
+
+export interface ParametricValues {
+  titleText: string
+  subtitleText: string
+  badgeText: string
+  accentColor: string
+  secondaryColor: string
+  backgroundColor: string
+  isTransparent: boolean
+  scale: number
+  textOffsetX: number
+  textOffsetY: number
+  glowIntensity: number
+  speedMultiplier: number
 }
 
 const STORAGE_KEY_VIDEO_SETTINGS = 'ms_video_settings'
@@ -391,18 +432,34 @@ export function App(): React.JSX.Element {
   const { width, height } = getDimensions(aspectRatio, resolutionQuality)
   const durationInFrames = durationSeconds * fps
 
-  // Parametric Control Panel States (Quick Parameter Tweaker)
+  // Parametric Control Panel States (Quick Parameter Tweaker & Visual Inspector)
   const [paramTitleText, setParamTitleText] = useState<string>(() => {
     const saved = loadSavedVideoSettings()
     return saved.titleText || 'VERSUS ESPORTS'
+  })
+  const [paramSubtitleText, setParamSubtitleText] = useState<string>(() => {
+    const saved = loadSavedVideoSettings()
+    return saved.subtitleText || 'CHAMPIONSHIP SERIES'
+  })
+  const [paramBadgeText, setParamBadgeText] = useState<string>(() => {
+    const saved = loadSavedVideoSettings()
+    return saved.badgeText || 'TOURNAMENT COUNTDOWN'
   })
   const [paramAccentColor, setParamAccentColor] = useState<string>(() => {
     const saved = loadSavedVideoSettings()
     return saved.accentColor || '#00f2fe'
   })
+  const [paramSecondaryColor, setParamSecondaryColor] = useState<string>(() => {
+    const saved = loadSavedVideoSettings()
+    return saved.secondaryColor || '#ff0055'
+  })
   const [paramBackgroundColor, setParamBackgroundColor] = useState<string>(() => {
     const saved = loadSavedVideoSettings()
     return saved.backgroundColor || '#0a0d14'
+  })
+  const [paramScale, setParamScale] = useState<number>(() => {
+    const saved = loadSavedVideoSettings()
+    return typeof saved.scale === 'number' ? saved.scale : 1
   })
   const [textOffsetX, setTextOffsetX] = useState<number>(() => {
     const saved = loadSavedVideoSettings()
@@ -412,7 +469,132 @@ export function App(): React.JSX.Element {
     const saved = loadSavedVideoSettings()
     return typeof saved.textOffsetY === 'number' ? saved.textOffsetY : 0
   })
+  const [paramGlowIntensity, setParamGlowIntensity] = useState<number>(() => {
+    const saved = loadSavedVideoSettings()
+    return typeof saved.glowIntensity === 'number' ? saved.glowIntensity : 15
+  })
+  const [paramSpeedMultiplier, setParamSpeedMultiplier] = useState<number>(() => {
+    const saved = loadSavedVideoSettings()
+    return typeof saved.speedMultiplier === 'number' ? saved.speedMultiplier : 1
+  })
   const [isParamTweakerOpen, setIsParamTweakerOpen] = useState<boolean>(false)
+
+  // Snapshot Nilai Asli (Initial State) for Revert functionality
+  const [initialParamSnapshot, setInitialParamSnapshot] = useState<ParametricValues>(() => {
+    const saved = loadSavedVideoSettings()
+    return {
+      titleText: saved.titleText || 'VERSUS ESPORTS',
+      subtitleText: saved.subtitleText || 'CHAMPIONSHIP SERIES',
+      badgeText: saved.badgeText || 'TOURNAMENT COUNTDOWN',
+      accentColor: saved.accentColor || '#00f2fe',
+      secondaryColor: saved.secondaryColor || '#ff0055',
+      backgroundColor: saved.backgroundColor || '#0a0d14',
+      isTransparent: Boolean(saved.exportFormat === 'prores4444' && saved.isTransparent),
+      scale: typeof saved.scale === 'number' ? saved.scale : 1,
+      textOffsetX: typeof saved.textOffsetX === 'number' ? saved.textOffsetX : 0,
+      textOffsetY: typeof saved.textOffsetY === 'number' ? saved.textOffsetY : 0,
+      glowIntensity: typeof saved.glowIntensity === 'number' ? saved.glowIntensity : 15,
+      speedMultiplier: typeof saved.speedMultiplier === 'number' ? saved.speedMultiplier : 1
+    }
+  })
+
+  // Undo History Stack (Max 20 steps)
+  const [undoStack, setUndoStack] = useState<ParametricValues[]>([])
+
+  const getCurrentParametricValues = (): ParametricValues => ({
+    titleText: paramTitleText,
+    subtitleText: paramSubtitleText,
+    badgeText: paramBadgeText,
+    accentColor: paramAccentColor,
+    secondaryColor: paramSecondaryColor,
+    backgroundColor: paramBackgroundColor,
+    isTransparent,
+    scale: paramScale,
+    textOffsetX,
+    textOffsetY,
+    glowIntensity: paramGlowIntensity,
+    speedMultiplier: paramSpeedMultiplier
+  })
+
+  const handleSnapshotBeforeChange = (): void => {
+    const current = getCurrentParametricValues()
+    setUndoStack((prev) => {
+      const last = prev[prev.length - 1]
+      if (last && JSON.stringify(last) === JSON.stringify(current)) return prev
+      const next = [...prev, current]
+      return next.length > 20 ? next.slice(next.length - 20) : next
+    })
+  }
+
+  // Immediate IPC flush & batch setter for Revert and Undo
+  const applyParametricValues = (values: ParametricValues, immediateFlush = true): void => {
+    setParamTitleText(values.titleText)
+    setParamSubtitleText(values.subtitleText)
+    setParamBadgeText(values.badgeText)
+    setParamAccentColor(values.accentColor)
+    setParamSecondaryColor(values.secondaryColor)
+    setParamBackgroundColor(values.backgroundColor)
+    setIsTransparent(values.isTransparent)
+    if (values.isTransparent && exportFormat === 'mp4') {
+      setExportFormat('prores4444')
+    }
+    setParamScale(values.scale)
+    setTextOffsetX(values.textOffsetX)
+    setTextOffsetY(values.textOffsetY)
+    setParamGlowIntensity(values.glowIntensity)
+    setParamSpeedMultiplier(values.speedMultiplier)
+
+    if (immediateFlush) {
+      const api = getElectronAPI()
+      if (api?.updateVideoConfig) {
+        api
+          .updateVideoConfig({
+            width,
+            height,
+            fps,
+            durationInFrames,
+            titleText: values.titleText,
+            subtitleText: values.subtitleText,
+            badgeText: values.badgeText,
+            accentColor: values.accentColor,
+            secondaryColor: values.secondaryColor,
+            backgroundColor: values.backgroundColor,
+            isTransparent: values.isTransparent,
+            scale: values.scale,
+            textOffsetX: values.textOffsetX,
+            textOffsetY: values.textOffsetY,
+            glowIntensity: values.glowIntensity,
+            speedMultiplier: values.speedMultiplier
+          })
+          .catch((err) => console.warn('[App] Immediate updateVideoConfig error:', err))
+      }
+    }
+  }
+
+  const handleUndo = (): void => {
+    if (undoStack.length === 0) return
+    const prevSnapshot = undoStack[undoStack.length - 1]
+    setUndoStack((prev) => prev.slice(0, prev.length - 1))
+    applyParametricValues(prevSnapshot, true)
+    setCodeEditorStatus('Perubahan terakhir dibatalkan (Undo ↶)')
+    setTimeout(() => {
+      setCodeEditorStatus((c) => (c.startsWith('Perubahan terakhir dibatalkan') ? '' : c))
+    }, 2500)
+  }
+
+  const handleRevert = (): void => {
+    if (!initialParamSnapshot) return
+    const current = getCurrentParametricValues()
+    setUndoStack((prev) => {
+      const next = [...prev, current]
+      return next.length > 20 ? next.slice(next.length - 20) : next
+    })
+    applyParametricValues(initialParamSnapshot, true)
+    setCodeEditorStatus('Parameter berhasil dikembalikan ke nilai awal (↺ Revert)')
+    setTimeout(() => {
+      setCodeEditorStatus((c) => (c.startsWith('Parameter berhasil') ? '' : c))
+    }, 3000)
+  }
 
   // Synchronize video configuration with remotion_env/src/video_config.json (debounced 120ms for smooth slider performance)
   useEffect(() => {
@@ -426,11 +608,17 @@ export function App(): React.JSX.Element {
             fps,
             durationInFrames,
             titleText: paramTitleText,
+            subtitleText: paramSubtitleText,
+            badgeText: paramBadgeText,
             accentColor: paramAccentColor,
+            secondaryColor: paramSecondaryColor,
             backgroundColor: paramBackgroundColor,
             isTransparent,
+            scale: paramScale,
             textOffsetX,
-            textOffsetY
+            textOffsetY,
+            glowIntensity: paramGlowIntensity,
+            speedMultiplier: paramSpeedMultiplier
           })
           .catch((err) => {
             console.warn('[App] updateVideoConfig error:', err)
@@ -445,19 +633,27 @@ export function App(): React.JSX.Element {
     fps,
     durationInFrames,
     paramTitleText,
+    paramSubtitleText,
+    paramBadgeText,
     paramAccentColor,
+    paramSecondaryColor,
     paramBackgroundColor,
     isTransparent,
+    paramScale,
     textOffsetX,
-    textOffsetY
+    textOffsetY,
+    paramGlowIntensity,
+    paramSpeedMultiplier
   ])
 
-  const handleResetPosition = (): void => {
+  const handleResetTransform = (): void => {
+    handleSnapshotBeforeChange()
     setTextOffsetX(0)
     setTextOffsetY(0)
+    setParamScale(1)
     const api = getElectronAPI()
     if (api?.updateVideoConfig) {
-      api.updateVideoConfig({ textOffsetX: 0, textOffsetY: 0 }).catch(() => {})
+      api.updateVideoConfig({ textOffsetX: 0, textOffsetY: 0, scale: 1 }).catch(() => {})
     }
   }
 
@@ -1204,6 +1400,8 @@ export function App(): React.JSX.Element {
         setHasGeneratedContent(true)
         setIframeKey((prev) => prev + 1)
         setCapturedError('')
+        setInitialParamSnapshot(getCurrentParametricValues())
+        setUndoStack([])
         setAiGenStatus({
           type: 'success',
           message: 'Motion asset berhasil digenerate dan dimuat ke kanvas preview!'
@@ -1442,10 +1640,16 @@ export function App(): React.JSX.Element {
         isTransparent: exportFormat === 'mp4' ? false : isTransparent,
         customOutputFolder,
         titleText: paramTitleText,
+        subtitleText: paramSubtitleText,
+        badgeText: paramBadgeText,
         accentColor: paramAccentColor,
+        secondaryColor: paramSecondaryColor,
         backgroundColor: paramBackgroundColor,
+        scale: paramScale,
         textOffsetX,
-        textOffsetY
+        textOffsetY,
+        glowIntensity: paramGlowIntensity,
+        speedMultiplier: paramSpeedMultiplier
       }
       localStorage.setItem(STORAGE_KEY_VIDEO_SETTINGS, JSON.stringify(settings))
       if (customOutputFolder) {
@@ -1463,10 +1667,16 @@ export function App(): React.JSX.Element {
     isTransparent,
     customOutputFolder,
     paramTitleText,
+    paramSubtitleText,
+    paramBadgeText,
     paramAccentColor,
+    paramSecondaryColor,
     paramBackgroundColor,
+    paramScale,
     textOffsetX,
-    textOffsetY
+    textOffsetY,
+    paramGlowIntensity,
+    paramSpeedMultiplier
   ])
 
   // Subscribe to render progress event from Main Process
@@ -1581,6 +1791,24 @@ export function App(): React.JSX.Element {
 
   // Reset Live Editor to clean boilerplate template
   const handleResetBoilerplate = async (): Promise<void> => {
+    const defaultSnap: ParametricValues = {
+      titleText: 'VERSUS ESPORTS',
+      subtitleText: 'CHAMPIONSHIP SERIES',
+      badgeText: 'TOURNAMENT COUNTDOWN',
+      accentColor: '#00f2fe',
+      secondaryColor: '#ff0055',
+      backgroundColor: '#0a0d14',
+      isTransparent: false,
+      scale: 1,
+      textOffsetX: 0,
+      textOffsetY: 0,
+      glowIntensity: 15,
+      speedMultiplier: 1
+    }
+    setInitialParamSnapshot(defaultSnap)
+    setUndoStack([])
+    applyParametricValues(defaultSnap, true)
+
     try {
       const api = getElectronAPI()
       if (api?.getCurrentMotionCode) {
@@ -1645,10 +1873,16 @@ export function App(): React.JSX.Element {
         renderMode,
         customOutputFolder: customOutputFolder || undefined,
         titleText: paramTitleText,
+        subtitleText: paramSubtitleText,
+        badgeText: paramBadgeText,
         accentColor: paramAccentColor,
+        secondaryColor: paramSecondaryColor,
         backgroundColor: paramBackgroundColor,
+        scale: paramScale,
         textOffsetX,
-        textOffsetY
+        textOffsetY,
+        glowIntensity: paramGlowIntensity,
+        speedMultiplier: paramSpeedMultiplier
       })
 
       if (res.canceled) {
@@ -2467,9 +2701,9 @@ export function App(): React.JSX.Element {
                     type="button"
                     className={`btn-bar-action ${isParamTweakerOpen ? 'active' : ''}`}
                     onClick={() => setIsParamTweakerOpen((prev) => !prev)}
-                    title="Buka / tutup panel kontrol parameter visual & posisi"
+                    title="Buka / tutup panel kontrol parameter visual & transformasi (Visual Tweaker)"
                   >
-                    🎛️ Sliders / Tweak
+                    🎛️ Visual Tweaker
                   </button>
                   <button
                     type="button"
@@ -2595,32 +2829,46 @@ export function App(): React.JSX.Element {
                   </div>
                 )}
 
-                {/* Floating Parametric Tweaker Popover */}
-                {isParamTweakerOpen && (
-                  <ParametricControlPanel
-                    titleText={paramTitleText}
-                    onChangeTitleText={setParamTitleText}
-                    accentColor={paramAccentColor}
-                    onChangeAccentColor={setParamAccentColor}
-                    backgroundColor={paramBackgroundColor}
-                    onChangeBackgroundColor={setParamBackgroundColor}
-                    isTransparent={isTransparent}
-                    onChangeIsTransparent={(val) => {
-                      setIsTransparent(val)
-                      if (val && exportFormat === 'mp4') {
-                        setExportFormat('prores4444')
-                      }
-                    }}
-                    textOffsetX={textOffsetX}
-                    onChangeTextOffsetX={setTextOffsetX}
-                    textOffsetY={textOffsetY}
-                    onChangeTextOffsetY={setTextOffsetY}
-                    onResetPosition={handleResetPosition}
-                    onClose={() => setIsParamTweakerOpen(false)}
-                    disabled={isRendering}
-                    isFloating={true}
-                  />
-                )}
+                {/* Collapsible Right Drawer (Parametric Visual Tweaker) */}
+                <ParametricControlPanel
+                  isOpen={isParamTweakerOpen}
+                  onClose={() => setIsParamTweakerOpen(false)}
+                  onUndo={handleUndo}
+                  canUndo={undoStack.length > 0}
+                  onRevert={handleRevert}
+                  onSnapshotBeforeChange={handleSnapshotBeforeChange}
+                  titleText={paramTitleText}
+                  onChangeTitleText={setParamTitleText}
+                  subtitleText={paramSubtitleText}
+                  onChangeSubtitleText={setParamSubtitleText}
+                  badgeText={paramBadgeText}
+                  onChangeBadgeText={setParamBadgeText}
+                  accentColor={paramAccentColor}
+                  onChangeAccentColor={setParamAccentColor}
+                  secondaryColor={paramSecondaryColor}
+                  onChangeSecondaryColor={setParamSecondaryColor}
+                  backgroundColor={paramBackgroundColor}
+                  onChangeBackgroundColor={setParamBackgroundColor}
+                  isTransparent={isTransparent}
+                  onChangeIsTransparent={(val) => {
+                    setIsTransparent(val)
+                    if (val && exportFormat === 'mp4') {
+                      setExportFormat('prores4444')
+                    }
+                  }}
+                  scale={paramScale}
+                  onChangeScale={setParamScale}
+                  textOffsetX={textOffsetX}
+                  onChangeTextOffsetX={setTextOffsetX}
+                  textOffsetY={textOffsetY}
+                  onChangeTextOffsetY={setTextOffsetY}
+                  onResetTransform={handleResetTransform}
+                  glowIntensity={paramGlowIntensity}
+                  onChangeGlowIntensity={setParamGlowIntensity}
+                  speedMultiplier={paramSpeedMultiplier}
+                  onChangeSpeedMultiplier={setParamSpeedMultiplier}
+                  disabled={isRendering}
+                />
               </div>
 
               {/* Preview Controls Container: 2 Separate Structured Rows */}

@@ -2,29 +2,46 @@ import React from 'react'
 import { useCurrentFrame, interpolate, spring, useVideoConfig, Img } from 'remotion'
 
 export interface VibeGraphicProps {
+  // Teks
   titleText?: string
+  subtitleText?: string
+  badgeText?: string
+  // Warna & Latar
   accentColor?: string
+  secondaryColor?: string
   backgroundColor?: string
   isTransparent?: boolean
+  // Transformasi Dinamis
+  scale?: number           // Rentang: 0.5 - 2.0 (Default: 1)
+  textOffsetX?: number     // Rentang: -500 - 500 px (Default: 0)
+  textOffsetY?: number     // Rentang: -500 - 500 px (Default: 0)
+  // FX & Aksen
+  glowIntensity?: number   // Rentang: 0 - 40 px (Default: 15)
+  speedMultiplier?: number // Rentang: 0.5 - 2.0 (Default: 1)
   width?: number
   height?: number
   durationInFrames?: number
   fps?: number
   customAssetUrl?: string
-  textOffsetX?: number
-  textOffsetY?: number
 }
 
 export const VibeGraphic: React.FC<VibeGraphicProps> = ({
   titleText = 'VERSUS ESPORTS',
+  subtitleText = 'CHAMPIONSHIP SERIES',
+  badgeText = 'TOURNAMENT COUNTDOWN',
   accentColor = '#00f2fe',
+  secondaryColor = '#ff0055',
   backgroundColor = '#0a0d14',
   isTransparent = true,
-  customAssetUrl,
+  scale = 1,
   textOffsetX = 0,
-  textOffsetY = 0
+  textOffsetY = 0,
+  glowIntensity = 15,
+  speedMultiplier = 1,
+  customAssetUrl
 }) => {
-  const frame = useCurrentFrame()
+  const rawFrame = useCurrentFrame()
+  const frame = rawFrame * speedMultiplier
   const { width, height, fps = 30 } = useVideoConfig()
 
   const minDim = Math.min(width, height)
@@ -72,7 +89,7 @@ export const VibeGraphic: React.FC<VibeGraphicProps> = ({
 
   // Colors
   const primaryNeon = accentColor
-  const secondaryNeon = '#ff0055' // Cyber magenta contrast
+  const secondaryNeon = secondaryColor
   const goldNeon = '#ffea00'
 
   // MATCH START visual transition variables
@@ -123,7 +140,7 @@ export const VibeGraphic: React.FC<VibeGraphicProps> = ({
       {/* MAIN CONTAINER */}
       <div
         style={{
-          transform: `scale(${globalScale})`,
+          transform: `scale(${globalScale * scale})`,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -154,7 +171,7 @@ export const VibeGraphic: React.FC<VibeGraphicProps> = ({
               background: 'rgba(10, 15, 25, 0.75)',
               border: `1px solid ${primaryNeon}66`,
               borderRadius: `${30 * baseScale}px`,
-              boxShadow: `0 0 20px ${primaryNeon}33`,
+              boxShadow: `0 0 ${glowIntensity * baseScale}px ${primaryNeon}66`,
               backdropFilter: 'blur(8px)'
             }}
           >
@@ -181,19 +198,42 @@ export const VibeGraphic: React.FC<VibeGraphicProps> = ({
             </span>
           </div>
 
-          {/* SUBTITLE BAR */}
-          <span
+          {/* SUBTITLE & BADGE BAR */}
+          <div
             style={{
-              marginTop: `${8 * baseScale}px`,
-              color: 'rgba(255, 255, 255, 0.6)',
-              fontSize: `${13 * baseScale}px`,
-              fontWeight: 700,
-              letterSpacing: `${6 * baseScale}px`,
-              textTransform: 'uppercase'
+              display: 'flex',
+              alignItems: 'center',
+              gap: `${8 * baseScale}px`,
+              marginTop: `${8 * baseScale}px`
             }}
           >
-            {isMatchStart ? 'BATTLE IS LIVE' : 'TOURNAMENT COUNTDOWN'}
-          </span>
+            <span
+              style={{
+                color: primaryNeon,
+                fontSize: `${11 * baseScale}px`,
+                fontWeight: 800,
+                letterSpacing: `${3 * baseScale}px`,
+                textTransform: 'uppercase',
+                background: `${primaryNeon}22`,
+                padding: `${2 * baseScale}px ${8 * baseScale}px`,
+                borderRadius: `${4 * baseScale}px`,
+                border: `1px solid ${primaryNeon}44`
+              }}
+            >
+              {badgeText}
+            </span>
+            <span
+              style={{
+                color: 'rgba(255, 255, 255, 0.7)',
+                fontSize: `${13 * baseScale}px`,
+                fontWeight: 700,
+                letterSpacing: `${4 * baseScale}px`,
+                textTransform: 'uppercase'
+              }}
+            >
+              {isMatchStart ? 'BATTLE IS LIVE' : subtitleText}
+            </span>
+          </div>
         </div>
 
         {/* CENTRAL HUD DISPLAY */}

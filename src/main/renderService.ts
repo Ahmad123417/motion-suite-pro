@@ -12,10 +12,16 @@ export interface StartRenderPayload {
   renderMode?: 'auto' | 'gpu' | 'cpu'
   customOutputFolder?: string
   titleText?: string
+  subtitleText?: string
+  badgeText?: string
   accentColor?: string
+  secondaryColor?: string
   backgroundColor?: string
+  scale?: number
   textOffsetX?: number
   textOffsetY?: number
+  glowIntensity?: number
+  speedMultiplier?: number
 }
 
 export interface RenderServiceResult {
@@ -216,10 +222,16 @@ export async function startRender(
       ...baseProps,
       isTransparent,
       ...(payload.titleText !== undefined ? { titleText: payload.titleText } : {}),
+      ...(payload.subtitleText !== undefined ? { subtitleText: payload.subtitleText } : {}),
+      ...(payload.badgeText !== undefined ? { badgeText: payload.badgeText } : {}),
       ...(payload.accentColor !== undefined ? { accentColor: payload.accentColor } : {}),
+      ...(payload.secondaryColor !== undefined ? { secondaryColor: payload.secondaryColor } : {}),
       ...(payload.backgroundColor !== undefined ? { backgroundColor: payload.backgroundColor } : {}),
+      ...(payload.scale !== undefined ? { scale: payload.scale } : {}),
       ...(payload.textOffsetX !== undefined ? { textOffsetX: payload.textOffsetX } : {}),
-      ...(payload.textOffsetY !== undefined ? { textOffsetY: payload.textOffsetY } : {})
+      ...(payload.textOffsetY !== undefined ? { textOffsetY: payload.textOffsetY } : {}),
+      ...(payload.glowIntensity !== undefined ? { glowIntensity: payload.glowIntensity } : {}),
+      ...(payload.speedMultiplier !== undefined ? { speedMultiplier: payload.speedMultiplier } : {})
     }
     writeFileSync(propsFilePath, JSON.stringify(renderProps), 'utf-8')
   } catch (err) {
