@@ -218,16 +218,21 @@ const customElectronAPI = {
   startUpdateDownload: (): Promise<{ success: boolean; error?: string }> => {
     return ipcRenderer.invoke('updater:start-download')
   },
+  restartAndInstall: (): void => {
+    ipcRenderer.invoke('restart-app-for-update')
+  },
   installAndRestart: (): void => {
-    ipcRenderer.invoke('updater:install-restart')
+    ipcRenderer.invoke('restart-app-for-update')
   },
   onUpdateAvailable: (
     callback: (info: { version: string; releaseNotes?: string }) => void
   ): (() => void) => {
     const handler = (_e: Electron.IpcRendererEvent, info: { version: string; releaseNotes?: string }): void =>
       callback(info)
-    ipcRenderer.on('update:available', handler)
-    return () => ipcRenderer.removeListener('update:available', handler)
+    ipcRenderer.on('update-available', handler)
+    return () => {
+      ipcRenderer.removeListener('update-available', handler)
+    }
   },
   onUpdateProgress: (
     callback: (data: { percent: number }) => void
@@ -236,10 +241,12 @@ const customElectronAPI = {
     ipcRenderer.on('update:progress', handler)
     return () => ipcRenderer.removeListener('update:progress', handler)
   },
-  onUpdateDownloaded: (callback: () => void): (() => void) => {
-    const handler = (): void => callback()
-    ipcRenderer.on('update:downloaded', handler)
-    return () => ipcRenderer.removeListener('update:downloaded', handler)
+  onUpdateDownloaded: (callback: (info?: { version: string }) => void): (() => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, info?: { version: string }): void => callback(info)
+    ipcRenderer.on('update-downloaded', handler)
+    return () => {
+      ipcRenderer.removeListener('update-downloaded', handler)
+    }
   },
   onUpdateError: (callback: (err: { message: string }) => void): (() => void) => {
     const handler = (_e: Electron.IpcRendererEvent, err: { message: string }): void => callback(err)

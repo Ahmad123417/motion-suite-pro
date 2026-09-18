@@ -19,36 +19,44 @@ import { registerAssetIPC } from './assetService'
 import { registerLicenseIPC } from './licenseService'
 
 // ─── Auto-Updater Configuration ───────────────────────────────────────────────
-autoUpdater.autoDownload = false         // User memilih sendiri kapan ingin unduh
+autoUpdater.autoDownload = true          // Unduh pembaruan otomatis di latar belakang
 autoUpdater.autoInstallOnAppQuit = true  // Install otomatis saat app ditutup setelah unduh
 autoUpdater.logger = null                // Silent — jangan spam console
 
 function setupAutoUpdater(win: BrowserWindow): void {
-  // Pengecekan update: kirim notifikasi ke renderer jika ada versi baru
+  // Event: Update terdeteksi
   autoUpdater.on('update-available', (info) => {
-    win.webContents.send('update:available', {
-      version: info.version,
-      releaseNotes: info.releaseNotes ?? ''
-    })
+    if (!win.isDestroyed()) {
+      win.webContents.send('update-available', { version: info.version })
+    }
   })
 
   // Progress unduhan
   autoUpdater.on('download-progress', (progress) => {
-    win.webContents.send('update:progress', { percent: Math.round(progress.percent) })
+    if (!win.isDestroyed()) {
+      win.webContents.send('update:progress', { percent: Math.round(progress.percent) })
+    }
   })
 
-  // Unduhan selesai
-  autoUpdater.on('update-downloaded', () => {
-    win.webContents.send('update:downloaded')
+  // Event: Update selesai diunduh & siap diinstal
+  autoUpdater.on('update-downloaded', (info) => {
+    if (!win.isDestroyed()) {
+      win.webContents.send('update-downloaded', { version: info.version })
+    }
   })
 
-  // Silent fail — jangan ganggu user jika tidak ada jaringan / update
+  // Silent fail — jangan ganggu user jika offline / tidak ada update
   autoUpdater.on('error', (err) => {
     console.warn('[AutoUpdater] Silent error:', err?.message ?? err)
-    win.webContents.send('update:error', { message: err?.message ?? String(err) })
+    if (!win.isDestroyed()) {
+      win.webContents.send('update:error', { message: err?.message ?? String(err) })
+    }
   })
 
-  // IPC: User memilih mulai unduh
+  // IPC: Mulai unduh manual jika diperlukan
+  try {
+    ipcMain.removeHandler('updater:start-download')
+  } catch (_) {}
   ipcMain.handle('updater:start-download', async () => {
     try {
       await autoUpdater.downloadUpdate()
@@ -58,19 +66,27 @@ function setupAutoUpdater(win: BrowserWindow): void {
     }
   })
 
-  // IPC: User memilih install & restart sekarang
+  // IPC Handler: User memilih install & restart sekarang
+  try {
+    ipcMain.removeHandler('restart-app-for-update')
+  } catch (_) {}
+  ipcMain.handle('restart-app-for-update', () => {
+    autoUpdater.quitAndInstall()
+  })
+
+  try {
+    ipcMain.removeHandler('updater:install-restart')
+  } catch (_) {}
   ipcMain.handle('updater:install-restart', () => {
     autoUpdater.quitAndInstall()
   })
 
-  // Cek update setelah window siap (dengan delay agar tidak ganggu startup)
+  // Pengecekan otomatis beberapa detik setelah aplikasi siap
   setTimeout(() => {
-    if (app.isPackaged) {
-      autoUpdater.checkForUpdates().catch((e) => {
-        console.warn('[AutoUpdater] checkForUpdates failed silently:', e?.message)
-      })
-    }
-  }, 5000)
+    autoUpdater.checkForUpdatesAndNotify().catch((e) => {
+      console.warn('[AutoUpdater] checkForUpdatesAndNotify failed silently:', e?.message)
+    })
+  }, 4000)
 }
 
 // Force discrete high-performance GPU (NVIDIA) and avoid software rasterizer CPU bottleneck

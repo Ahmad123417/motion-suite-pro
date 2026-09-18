@@ -177,6 +177,66 @@ export const DynamicMotion = VibeGraphic
 export type DynamicMotionProps = VibeGraphicProps
 \`\`\``
 
+// ──────────────────────────────────────────────────────────────────────────────
+// TSX Default Props Parser — extracts default prop values from component
+// destructuring parameters. Handles single quotes, double quotes, and template
+// literals, including escaped apostrophes (e.g. "DON'T MISS OUT", 'TODAY\'S DEAL').
+// ──────────────────────────────────────────────────────────────────────────────
+function parseTsxDefaultProps(code: string): Partial<{
+  titleText: string
+  subtitleText: string
+  badgeText: string
+  accentColor: string
+  secondaryColor: string
+  backgroundColor: string
+}> {
+  const result: Partial<{
+    titleText: string
+    subtitleText: string
+    badgeText: string
+    accentColor: string
+    secondaryColor: string
+    backgroundColor: string
+  }> = {}
+
+  const targets = [
+    'titleText',
+    'subtitleText',
+    'badgeText',
+    'accentColor',
+    'secondaryColor',
+    'backgroundColor'
+  ] as const
+
+  // Regex fragments — each variant handles \-escaped characters inside the string:
+  //   single-quoted:   '((?:[^'\\]|\\.)*)'
+  //   double-quoted:   "((?:[^"\\]|\\.)*)"
+  //   template-literal:`((?:[^`\\]|\\.)*)`
+  // In JS template literal strings, \\\\ becomes \\ (one backslash in regex = escape char)
+  const singleQ = `'((?:[^'\\\\]|\\\\.)*)'`
+  const doubleQ = `"((?:[^"\\\\]|\\\\.)*)"`
+  const templateL = `\`((?:[^\`\\\\]|\\\\.)*)\``
+
+  for (const prop of targets) {
+    const regex = new RegExp(
+      `${prop}\\s*=\\s*(?:${singleQ}|${doubleQ}|${templateL})`,
+      'im'
+    )
+    const match = code.match(regex)
+    if (match) {
+      // Group 1 = single-quoted, 2 = double-quoted, 3 = template-literal
+      const rawValue = (match[1] ?? match[2] ?? match[3] ?? '').trim()
+      // Unescape common escape sequences: \' → ' , \" → " , \\ → \
+      result[prop] = rawValue
+        .replace(/\\'/g, "'")
+        .replace(/\\"/g, '"')
+        .replace(/\\\\/g, '\\')
+    }
+  }
+
+  return result
+}
+
 // Compute canvas resolution based on Aspect Ratio and Quality
 const getDimensions = (
   ratio: AspectRatioType,
@@ -343,11 +403,26 @@ export interface ParametricValues {
 
 const STORAGE_KEY_VIDEO_SETTINGS = 'ms_video_settings'
 const STORAGE_KEY_EXPORT_FOLDER = 'ms_export_folder'
+const STORAGE_KEY_GEMINI_API_KEY = 'gemini_api_key'
+const STORAGE_KEY_RESOLUTION = 'ms_resolution_quality'
+const STORAGE_KEY_FORMAT = 'ms_export_format'
+const STORAGE_KEY_ASPECT_RATIO = 'ms_aspect_ratio'
 
 const loadSavedVideoSettings = (): Partial<SavedVideoSettings> => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_VIDEO_SETTINGS)
     if (raw) {
+      const upper = raw.toUpperCase()
+      // Automatic purge of legacy countdown or VERSUS templates
+      if (
+        upper.includes('VERSUS') ||
+        upper.includes('COUNTDOWN') ||
+        upper.includes('CHAMPIONSHIP')
+      ) {
+        console.warn('[App] Legacy template cache detected in localStorage, purging and resetting to Motion Suite Pro branding...')
+        localStorage.removeItem(STORAGE_KEY_VIDEO_SETTINGS)
+        return {}
+      }
       return JSON.parse(raw)
     }
   } catch (e) {
@@ -401,12 +476,16 @@ export function App(): React.JSX.Element {
   // Active Navigation Tab State (4 Tabs Architecture)
   const [activeTab, setActiveTab] = useState<'editor' | 'preview' | 'template' | 'autocoder'>('preview')
 
-  // Video Dimension, Framerate & Duration States (restored from localStorage)
+  // Video Dimension, Framerate & Duration States (restored from localStorage with dedicated keys)
   const [aspectRatio, setAspectRatio] = useState<AspectRatioType>(() => {
+    const direct = localStorage.getItem(STORAGE_KEY_ASPECT_RATIO) as AspectRatioType | null
+    if (direct === '9:16' || direct === '16:9') return direct
     const saved = loadSavedVideoSettings()
     return saved.aspectRatio === '9:16' ? '9:16' : '16:9'
   })
   const [resolutionQuality, setResolutionQuality] = useState<ResolutionQualityType>(() => {
+    const direct = localStorage.getItem(STORAGE_KEY_RESOLUTION) as ResolutionQualityType | null
+    if (direct === '1080p' || direct === '2k' || direct === '4k') return direct
     const saved = loadSavedVideoSettings()
     return saved.resolutionQuality || '1080p'
   })
@@ -419,8 +498,10 @@ export function App(): React.JSX.Element {
     return typeof saved.fps === 'number' ? saved.fps : 30
   })
 
-  // Local Video Rendering & Transparency States (restored from localStorage)
+  // Local Video Rendering & Transparency States (restored from localStorage with dedicated keys)
   const [exportFormat, setExportFormat] = useState<'mp4' | 'prores4444'>(() => {
+    const direct = localStorage.getItem(STORAGE_KEY_FORMAT) as ('mp4' | 'prores4444') | null
+    if (direct === 'mp4' || direct === 'prores4444') return direct
     const saved = loadSavedVideoSettings()
     return saved.exportFormat === 'prores4444' ? 'prores4444' : 'mp4'
   })
@@ -435,15 +516,15 @@ export function App(): React.JSX.Element {
   // Parametric Control Panel States (Quick Parameter Tweaker & Visual Inspector)
   const [paramTitleText, setParamTitleText] = useState<string>(() => {
     const saved = loadSavedVideoSettings()
-    return saved.titleText || 'CREATIVE ENGINE'
+    return saved.titleText || 'MOTION SUITE PRO'
   })
   const [paramSubtitleText, setParamSubtitleText] = useState<string>(() => {
     const saved = loadSavedVideoSettings()
-    return saved.subtitleText || 'Generate your custom motion graphics with AI'
+    return saved.subtitleText || 'AI Creative Motion Graphics Workstation'
   })
   const [paramBadgeText, setParamBadgeText] = useState<string>(() => {
     const saved = loadSavedVideoSettings()
-    return saved.badgeText || 'MOTION SUITE PRO'
+    return saved.badgeText || 'OFFICIAL RELEASE v1.0'
   })
   const [paramAccentColor, setParamAccentColor] = useState<string>(() => {
     const saved = loadSavedVideoSettings()
@@ -483,9 +564,9 @@ export function App(): React.JSX.Element {
   const [initialParamSnapshot, setInitialParamSnapshot] = useState<ParametricValues>(() => {
     const saved = loadSavedVideoSettings()
     return {
-      titleText: saved.titleText || 'CREATIVE ENGINE',
-      subtitleText: saved.subtitleText || 'Generate your custom motion graphics with AI',
-      badgeText: saved.badgeText || 'MOTION SUITE PRO',
+      titleText: saved.titleText || 'MOTION SUITE PRO',
+      subtitleText: saved.subtitleText || 'AI Creative Motion Graphics Workstation',
+      badgeText: saved.badgeText || 'OFFICIAL RELEASE v1.0',
       accentColor: saved.accentColor || '#00f2fe',
       secondaryColor: saved.secondaryColor || '#7928ca',
       backgroundColor: saved.backgroundColor || '#0a0d14',
@@ -686,32 +767,36 @@ export function App(): React.JSX.Element {
 
   // ── Auto-Updater: Subscribe to IPC events from main process ───────────────
   useEffect(() => {
-    const api = (window as any).electronAPI
+    const api = (window as any).api || (window as any).electronAPI
     if (!api?.onUpdateAvailable) return
 
     const unsubAvailable = api.onUpdateAvailable((info: { version: string }) => {
       setUpdateVersion(info.version)
-      setUpdatePhase('available')
+      setUpdatePhase('downloading')
       setUpdateDismissed(false)
     })
-    const unsubProgress = api.onUpdateProgress((data: { percent: number }) => {
+    const unsubProgress = api.onUpdateProgress?.((data: { percent: number }) => {
       setUpdatePercent(data.percent)
       setUpdatePhase('downloading')
     })
-    const unsubDownloaded = api.onUpdateDownloaded(() => {
+    const unsubDownloaded = api.onUpdateDownloaded?.((info?: { version: string }) => {
+      if (info?.version) {
+        setUpdateVersion(info.version)
+      }
       setUpdatePhase('downloaded')
       setUpdatePercent(100)
+      setUpdateDismissed(false)
     })
-    const unsubError = api.onUpdateError(() => {
-      // Silent — jangan tampilkan apapun ke user saat error update
+    const unsubError = api.onUpdateError?.(() => {
+      // Silent — jangan ganggu user jika error update
       setUpdatePhase('idle')
     })
 
     return () => {
-      unsubAvailable()
-      unsubProgress()
-      unsubDownloaded()
-      unsubError()
+      unsubAvailable?.()
+      unsubProgress?.()
+      unsubDownloaded?.()
+      unsubError?.()
     }
   }, [])
 
@@ -1007,6 +1092,16 @@ export function App(): React.JSX.Element {
   }, [isFullscreenPreview])
 
   const handleRefreshStudio = (): void => {
+    // ── Auto-sync Visual Tweaker from current active code ──
+    if (manualCode.trim()) {
+      const parsed = parseTsxDefaultProps(manualCode)
+      if (parsed.titleText) setParamTitleText(parsed.titleText)
+      if (parsed.subtitleText) setParamSubtitleText(parsed.subtitleText)
+      if (parsed.badgeText) setParamBadgeText(parsed.badgeText)
+      if (parsed.accentColor) setParamAccentColor(parsed.accentColor)
+      if (parsed.secondaryColor) setParamSecondaryColor(parsed.secondaryColor)
+      if (parsed.backgroundColor) setParamBackgroundColor(parsed.backgroundColor)
+    }
     setIframeKey((k) => k + 1)
     setCodeEditorStatus('Kanvas Motion Engine dimuat ulang.')
   }
@@ -1396,11 +1491,31 @@ export function App(): React.JSX.Element {
       })
 
       if (res.success && res.code) {
+        // ── 1. Parse default props from generated code ──
+        const parsed = parseTsxDefaultProps(res.code)
+        // ── 2. Apply parsed values to Visual Tweaker form immediately ──
+        if (parsed.titleText) setParamTitleText(parsed.titleText)
+        if (parsed.subtitleText) setParamSubtitleText(parsed.subtitleText)
+        if (parsed.badgeText) setParamBadgeText(parsed.badgeText)
+        if (parsed.accentColor) setParamAccentColor(parsed.accentColor)
+        if (parsed.secondaryColor) setParamSecondaryColor(parsed.secondaryColor)
+        if (parsed.backgroundColor) setParamBackgroundColor(parsed.backgroundColor)
+        // ── 3. Build merged snapshot (parsed values override current) ──
+        const currentSnap = getCurrentParametricValues()
+        const newSnap: ParametricValues = {
+          ...currentSnap,
+          ...(parsed.titleText ? { titleText: parsed.titleText } : {}),
+          ...(parsed.subtitleText ? { subtitleText: parsed.subtitleText } : {}),
+          ...(parsed.badgeText ? { badgeText: parsed.badgeText } : {}),
+          ...(parsed.accentColor ? { accentColor: parsed.accentColor } : {}),
+          ...(parsed.secondaryColor ? { secondaryColor: parsed.secondaryColor } : {}),
+          ...(parsed.backgroundColor ? { backgroundColor: parsed.backgroundColor } : {})
+        }
         setManualCode(res.code)
         setHasGeneratedContent(true)
         setIframeKey((prev) => prev + 1)
         setCapturedError('')
-        setInitialParamSnapshot(getCurrentParametricValues())
+        setInitialParamSnapshot(newSnap)
         setUndoStack([])
         setAiGenStatus({
           type: 'success',
@@ -1473,6 +1588,14 @@ export function App(): React.JSX.Element {
       })
 
       if (res.success && res.code) {
+        // ── Parse props from revised code and sync Visual Tweaker ──
+        const parsed = parseTsxDefaultProps(res.code)
+        if (parsed.titleText) setParamTitleText(parsed.titleText)
+        if (parsed.subtitleText) setParamSubtitleText(parsed.subtitleText)
+        if (parsed.badgeText) setParamBadgeText(parsed.badgeText)
+        if (parsed.accentColor) setParamAccentColor(parsed.accentColor)
+        if (parsed.secondaryColor) setParamSecondaryColor(parsed.secondaryColor)
+        if (parsed.backgroundColor) setParamBackgroundColor(parsed.backgroundColor)
         // 1. Langsung sinkronkan state editor lokal
         setManualCode(res.code)
         setHasGeneratedContent(true)
@@ -1545,14 +1668,49 @@ export function App(): React.JSX.Element {
     }
   }, [isChatModalOpen])
 
-  // Load initial TSX code from disk on startup (never overwrite existing non-empty code)
+  // Load initial TSX code from disk on startup with automatic legacy cache purge
   useEffect(() => {
+    // 1. Auto-purge any stale localStorage entries containing "VERSUS" or "TOURNAMENT COUNTDOWN"
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key) {
+          const val = localStorage.getItem(key) || ''
+          if (
+            val.toUpperCase().includes('VERSUS') ||
+            val.toUpperCase().includes('TOURNAMENT COUNTDOWN')
+          ) {
+            console.log(`[Sanitizer] Removing stale legacy cache key: ${key}`)
+            localStorage.removeItem(key)
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[Sanitizer] Cache cleanup warning:', e)
+    }
+
     const loadInitialCode = async (): Promise<void> => {
       try {
         const api = getElectronAPI()
         if (api?.readCurrentCode) {
           const initial = await api.readCurrentCode()
           if (initial) {
+            // Check if legacy VERSUS code is present on disk and overwrite if so
+            if (
+              initial.toUpperCase().includes('VERSUS') ||
+              initial.toUpperCase().includes('COUNTDOWN')
+            ) {
+              console.warn('[App] Legacy template detected on disk, overwriting with Motion Suite Pro branding...')
+              if (api?.getCurrentMotionCode) {
+                const fresh = await api.getCurrentMotionCode()
+                setManualCode(fresh)
+                setLastWorkingCode(fresh)
+                if (api?.applyManualCode) {
+                  await api.applyManualCode(fresh)
+                }
+                return
+              }
+            }
             setManualCode((prev) => (prev && prev.trim() ? prev : initial))
             setLastWorkingCode(initial)
             return
@@ -1652,6 +1810,9 @@ export function App(): React.JSX.Element {
         speedMultiplier: paramSpeedMultiplier
       }
       localStorage.setItem(STORAGE_KEY_VIDEO_SETTINGS, JSON.stringify(settings))
+      localStorage.setItem(STORAGE_KEY_RESOLUTION, resolutionQuality)
+      localStorage.setItem(STORAGE_KEY_FORMAT, exportFormat)
+      localStorage.setItem(STORAGE_KEY_ASPECT_RATIO, aspectRatio)
       if (customOutputFolder) {
         localStorage.setItem(STORAGE_KEY_EXPORT_FOLDER, customOutputFolder)
       }
@@ -1769,6 +1930,14 @@ export function App(): React.JSX.Element {
           }
         }
         remountPlayer()
+        // ── Parse props from applied code and sync Visual Tweaker ──
+        const parsedManual = parseTsxDefaultProps(trimmed)
+        if (parsedManual.titleText) setParamTitleText(parsedManual.titleText)
+        if (parsedManual.subtitleText) setParamSubtitleText(parsedManual.subtitleText)
+        if (parsedManual.badgeText) setParamBadgeText(parsedManual.badgeText)
+        if (parsedManual.accentColor) setParamAccentColor(parsedManual.accentColor)
+        if (parsedManual.secondaryColor) setParamSecondaryColor(parsedManual.secondaryColor)
+        if (parsedManual.backgroundColor) setParamBackgroundColor(parsedManual.backgroundColor)
         setHasGeneratedContent(true)
         setCodeEditorStatus('Kode berhasil disimpan! Kanvas melakukan hot-reload otomatis.')
         setTimeout(() => {
@@ -1792,9 +1961,9 @@ export function App(): React.JSX.Element {
   // Reset Live Editor to clean boilerplate template
   const handleResetBoilerplate = async (): Promise<void> => {
     const defaultSnap: ParametricValues = {
-      titleText: 'CREATIVE ENGINE',
-      subtitleText: 'Generate your custom motion graphics with AI',
-      badgeText: 'MOTION SUITE PRO',
+      titleText: 'MOTION SUITE PRO',
+      subtitleText: 'AI Creative Motion Graphics Workstation',
+      badgeText: 'OFFICIAL RELEASE v1.0',
       accentColor: '#00f2fe',
       secondaryColor: '#7928ca',
       backgroundColor: '#0a0d14',
@@ -2047,65 +2216,56 @@ export function App(): React.JSX.Element {
       {!updateDismissed && updatePhase !== 'idle' && (
         <div className={`update-banner update-banner--${updatePhase}`}>
           <div className="update-banner-left">
-            {/* Indikator dot */}
             <span className="update-banner-dot" />
 
-            {updatePhase === 'available' && (
+            {(updatePhase === 'downloading' || updatePhase === 'available') && (
               <span className="update-banner-text">
-                Versi baru tersedia: <strong>v{updateVersion}</strong>
-              </span>
-            )}
-            {updatePhase === 'downloading' && (
-              <span className="update-banner-text">
-                Mengunduh pembaruan...
-                <span className="update-banner-percent">{updatePercent}%</span>
-                <span className="update-progress-track">
-                  <span
-                    className="update-progress-fill"
-                    style={{ width: `${updatePercent}%` }}
-                  />
-                </span>
+                ⚡ Pembaruan Versi <strong>{updateVersion ? `v${updateVersion}` : ''}</strong> terdeteksi, sedang mengunduh di latar belakang...
+                {updatePercent > 0 && (
+                  <>
+                    <span className="update-banner-percent">{updatePercent}%</span>
+                    <span className="update-progress-track">
+                      <span
+                        className="update-progress-fill"
+                        style={{ width: `${updatePercent}%` }}
+                      />
+                    </span>
+                  </>
+                )}
               </span>
             )}
             {updatePhase === 'downloaded' && (
               <span className="update-banner-text">
-                Pembaruan siap dipasang!
+                🎉 Versi <strong>{updateVersion ? `v${updateVersion}` : ''}</strong> siap diinstal!
               </span>
             )}
           </div>
 
           <div className="update-banner-actions">
-            {updatePhase === 'available' && (
-              <button
-                type="button"
-                className="update-btn update-btn--download"
-                onClick={async () => {
-                  setUpdatePhase('downloading')
-                  await (window as any).electronAPI?.startUpdateDownload?.()
-                }}
-              >
-                Unduh Pembaruan
-              </button>
-            )}
             {updatePhase === 'downloaded' && (
               <button
                 type="button"
                 className="update-btn update-btn--install"
-                onClick={() => (window as any).electronAPI?.installAndRestart?.()}
+                onClick={() => {
+                  const api = (window as any).api || (window as any).electronAPI
+                  if (api?.restartAndInstall) {
+                    api.restartAndInstall()
+                  } else if (api?.installAndRestart) {
+                    api.installAndRestart()
+                  }
+                }}
               >
-                Pasang &amp; Mulai Ulang
+                Restart &amp; Pasang Update
               </button>
             )}
-            {updatePhase !== 'downloading' && (
-              <button
-                type="button"
-                className="update-btn update-btn--dismiss"
-                onClick={() => setUpdateDismissed(true)}
-                aria-label="Tutup banner update"
-              >
-                ✕
-              </button>
-            )}
+            <button
+              type="button"
+              className="update-btn update-btn--dismiss"
+              onClick={() => setUpdateDismissed(true)}
+              aria-label="Tutup banner update"
+            >
+              ✕
+            </button>
           </div>
         </div>
       )}
@@ -2365,7 +2525,15 @@ export function App(): React.JSX.Element {
                         type="password"
                         className="api-key-input"
                         value={apiKeyInput}
-                        onChange={(e) => setApiKeyInput(e.target.value)}
+                        onChange={(e) => {
+                          const val = e.target.value
+                          setApiKeyInput(val)
+                          const trimmed = val.trim()
+                          if (trimmed) {
+                            setGeminiApiKey(trimmed)
+                            localStorage.setItem(STORAGE_KEY_GEMINI_API_KEY, trimmed)
+                          }
+                        }}
                         placeholder="Masukkan API Key (AIza... atau AQ...)"
                       />
                       <button
@@ -3113,7 +3281,7 @@ export function App(): React.JSX.Element {
                 <div className="meta-group">
                   <div className="meta-item">
                     <strong>Title:</strong>
-                    <span>{detectedTitle}</span>
+                    <span>{paramTitleText || detectedTitle || 'Custom Motion'}</span>
                   </div>
                   <div className="meta-item">
                     <strong>Specs:</strong>

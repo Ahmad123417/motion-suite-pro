@@ -23,9 +23,9 @@ export const RemotionRoot: React.FC = () => {
           }
         }}
         defaultProps={{
-          titleText: 'CREATIVE ENGINE',
-          subtitleText: 'Generate your custom motion graphics with AI',
-          badgeText: 'MOTION SUITE PRO',
+          titleText: 'MOTION SUITE PRO',
+          subtitleText: 'AI Creative Motion Graphics Workstation',
+          badgeText: 'OFFICIAL RELEASE v1.0',
           accentColor: '#00f2fe',
           secondaryColor: '#7928ca',
           backgroundColor: '#0a0d14',

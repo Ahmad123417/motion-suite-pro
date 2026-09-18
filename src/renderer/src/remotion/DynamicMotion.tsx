@@ -25,10 +25,26 @@ export interface VibeGraphicProps {
   customAssetUrl?: string
 }
 
+// 24 Deterministic Elegant Micro-Particles for ambient depth
+const PARTICLES = Array.from({ length: 24 }, (_, i) => {
+  const seed = (i * 9301 + 49297) % 233280
+  const rnd1 = seed / 233280
+  const rnd2 = ((seed * 9301 + 49297) % 233280) / 233280
+  const rnd3 = ((rnd2 * 9301 + 49297) % 233280) / 233280
+  return {
+    baseX: (rnd1 - 0.5) * 960,
+    baseY: (rnd2 - 0.5) * 580,
+    size: 2.2 + rnd3 * 3.8,
+    speed: 0.35 + rnd1 * 0.75,
+    phase: rnd2 * Math.PI * 2,
+    colorType: i % 2 === 0 ? 'accent' : 'secondary'
+  }
+})
+
 export const VibeGraphic: React.FC<VibeGraphicProps> = ({
-  titleText = 'CREATIVE ENGINE',
-  subtitleText = 'Generate your custom motion graphics with AI',
-  badgeText = 'MOTION SUITE PRO',
+  titleText = 'MOTION SUITE PRO',
+  subtitleText = 'AI Creative Motion Graphics Workstation',
+  badgeText = 'OFFICIAL RELEASE v1.0',
   accentColor = '#00f2fe',
   secondaryColor = '#7928ca',
   backgroundColor = '#0a0d14',
@@ -51,75 +67,76 @@ export const VibeGraphic: React.FC<VibeGraphicProps> = ({
   // ANIMATION TIMING & SPRINGS
   // -------------------------------------------------------------
 
-  // Subtle global fade-in
-  const globalOpacity = interpolate(frame, [0, 15], [0, 1], { extrapolateRight: 'clamp' })
+  // Global smooth fade-in
+  const globalOpacity = interpolate(frame, [0, 14], [0, 1], { extrapolateRight: 'clamp' })
 
-  // Staggered Springs for Minimalist Elements
+  // Staggered Springs
   const badgeSpring = spring({
     frame,
     fps,
-    config: { damping: 14, stiffness: 120, mass: 0.8 }
+    config: { damping: 13, stiffness: 130, mass: 0.8 }
   })
 
   const titleSpring = spring({
-    frame: Math.max(0, frame - 6),
+    frame: Math.max(0, frame - 5),
     fps,
-    config: { damping: 13, stiffness: 110, mass: 0.9 }
+    config: { damping: 12, stiffness: 120, mass: 0.9 }
   })
 
   const lineSpring = spring({
-    frame: Math.max(0, frame - 12),
+    frame: Math.max(0, frame - 11),
     fps,
-    config: { damping: 15, stiffness: 90, mass: 0.8 }
+    config: { damping: 15, stiffness: 95, mass: 0.8 }
   })
 
   const subtitleSpring = spring({
-    frame: Math.max(0, frame - 18),
+    frame: Math.max(0, frame - 16),
     fps,
-    config: { damping: 14, stiffness: 100, mass: 0.8 }
+    config: { damping: 14, stiffness: 105, mass: 0.8 }
   })
 
-  const circleSpring = spring({
+  const ringSpring = spring({
     frame: Math.max(0, frame - 4),
     fps,
-    config: { damping: 16, stiffness: 80, mass: 1 }
+    config: { damping: 16, stiffness: 75, mass: 1 }
   })
 
-  // Continuous loop animations (smooth sine wave pulses)
+  // Continuous subtle sine breathing loops
   const time = frame / fps
-  const subtlePulse = Math.sin(time * 2.5) // ~2.5 rad/s smooth breath
-  const pulseScale = interpolate(subtlePulse, [-1, 1], [0.98, 1.02])
-  const linePulseOpacity = interpolate(subtlePulse, [-1, 1], [0.75, 1])
+  const subtleBreath = Math.sin(time * 2.2)
+  const pulseScale = interpolate(subtleBreath, [-1, 1], [0.985, 1.015])
+  const linePulseOpacity = interpolate(subtleBreath, [-1, 1], [0.8, 1])
 
-  // Orbital rotation for minimalist accent circles
-  const rotation1 = (frame * 0.4) % 360
-  const rotation2 = (-frame * 0.25) % 360
+  // Orbital rotations for minimalist futuristic geometry
+  const rotation1 = (frame * 0.35) % 360
+  const rotation2 = (-frame * 0.22) % 360
 
-  // Dynamic glow calculation based on glowIntensity prop
+  // Dynamic Neon Glow calculation based on glowIntensity prop
   const glow = glowIntensity * baseScale
-  const primaryGlow = `0 0 ${glow}px ${accentColor}cc, 0 0 ${glow * 2.2}px ${accentColor}44`
-  const secondaryGlow = `0 0 ${glow * 0.8}px ${secondaryColor}aa`
+  const primaryGlow = `0 0 ${glow}px ${accentColor}dd, 0 0 ${glow * 2.2}px ${accentColor}55`
+  const secondaryGlow = `0 0 ${glow * 0.9}px ${secondaryColor}bb`
 
-  // Badge animation
+  // Badge transformations
   const badgeOpacity = interpolate(badgeSpring, [0, 1], [0, 1])
-  const badgeY = interpolate(badgeSpring, [0, 1], [-20 * baseScale, 0])
+  const badgeY = interpolate(badgeSpring, [0, 1], [-22 * baseScale, 0])
 
-  // Title animation
+  // Title transformations
   const titleOpacity = interpolate(titleSpring, [0, 1], [0, 1])
-  const titleY = interpolate(titleSpring, [0, 1], [25 * baseScale, 0])
+  const titleY = interpolate(titleSpring, [0, 1], [24 * baseScale, 0])
   const titleScaleSpring = interpolate(titleSpring, [0, 1], [0.92, 1])
 
-  // Neon line width expansion
-  const lineWidth = interpolate(lineSpring, [0, 1], [0, 480 * baseScale])
+  // Futuristic Line expansions
+  const lineWidth = interpolate(lineSpring, [0, 1], [0, 520 * baseScale])
+  const bracketSpread = interpolate(lineSpring, [0, 1], [40 * baseScale, 0])
 
-  // Subtitle animation
-  const subtitleOpacity = interpolate(subtitleSpring, [0, 1], [0, 0.85])
-  const subtitleY = interpolate(subtitleSpring, [0, 1], [15 * baseScale, 0])
+  // Subtitle transformations
+  const subtitleOpacity = interpolate(subtitleSpring, [0, 1], [0, 0.9])
+  const subtitleY = interpolate(subtitleSpring, [0, 1], [14 * baseScale, 0])
 
-  // Accent circles size & entrance
-  const outerCircleSize = 540 * baseScale
-  const innerCircleSize = 420 * baseScale
-  const circleScale = interpolate(circleSpring, [0, 1], [0.8, 1])
+  // Futuristic orbital circles
+  const outerCircleSize = 580 * baseScale
+  const innerCircleSize = 440 * baseScale
+  const ringScale = interpolate(ringSpring, [0, 1], [0.75, 1])
 
   return (
     <div
@@ -136,7 +153,34 @@ export const VibeGraphic: React.FC<VibeGraphicProps> = ({
         opacity: globalOpacity
       }}
     >
-      {/* MINIMALIST ACCENT CIRCLES (BACKGROUND / AMBIENT) */}
+      {/* ELEGANT FLOATING MICRO-PARTICLES */}
+      {PARTICLES.map((p, idx) => {
+        const py = p.baseY - ((frame * p.speed * 2.2) % 400) + 200
+        const px = p.baseX + Math.sin(time * p.speed + p.phase) * (26 * baseScale)
+        const pOpacity =
+          interpolate(Math.sin(frame * 0.06 + p.phase), [-1, 1], [0.15, 0.8]) * globalOpacity
+        const pColor = p.colorType === 'accent' ? accentColor : secondaryColor
+
+        return (
+          <div
+            key={idx}
+            style={{
+              position: 'absolute',
+              left: `calc(50% + ${px * baseScale}px)`,
+              top: `calc(50% + ${py * baseScale}px)`,
+              width: `${p.size * baseScale}px`,
+              height: `${p.size * baseScale}px`,
+              borderRadius: '50%',
+              backgroundColor: pColor,
+              boxShadow: `0 0 ${p.size * 3 * baseScale}px ${pColor}`,
+              opacity: pOpacity,
+              pointerEvents: 'none'
+            }}
+          />
+        )
+      })}
+
+      {/* FUTURISTIC ORBITAL RINGS */}
       <div
         style={{
           position: 'absolute',
@@ -144,20 +188,20 @@ export const VibeGraphic: React.FC<VibeGraphicProps> = ({
           height: `${outerCircleSize}px`,
           borderRadius: '50%',
           border: `1px solid ${accentColor}25`,
-          transform: `scale(${circleScale * pulseScale}) rotate(${rotation1}deg)`,
+          transform: `scale(${ringScale * pulseScale}) rotate(${rotation1}deg)`,
           pointerEvents: 'none',
           boxShadow: `inset 0 0 ${glow * 1.5}px ${accentColor}10, 0 0 ${glow * 1.5}px ${accentColor}10`
         }}
       >
-        {/* Tiny orbiting accent dot */}
+        {/* Orbiting accent beacon */}
         <div
           style={{
             position: 'absolute',
-            top: '-4px',
+            top: '-5px',
             left: '50%',
             transform: 'translateX(-50%)',
-            width: `${8 * baseScale}px`,
-            height: `${8 * baseScale}px`,
+            width: `${9 * baseScale}px`,
+            height: `${9 * baseScale}px`,
             borderRadius: '50%',
             backgroundColor: accentColor,
             boxShadow: primaryGlow
@@ -171,20 +215,20 @@ export const VibeGraphic: React.FC<VibeGraphicProps> = ({
           width: `${innerCircleSize}px`,
           height: `${innerCircleSize}px`,
           borderRadius: '50%',
-          border: `1px dashed ${secondaryColor}30`,
-          transform: `scale(${circleScale}) rotate(${rotation2}deg)`,
+          border: `1px dashed ${secondaryColor}35`,
+          transform: `scale(${ringScale}) rotate(${rotation2}deg)`,
           pointerEvents: 'none'
         }}
       >
-        {/* Counter orbiting secondary accent dot */}
+        {/* Counter-orbiting secondary beacon */}
         <div
           style={{
             position: 'absolute',
-            bottom: '-4px',
+            bottom: '-5px',
             left: '50%',
             transform: 'translateX(-50%)',
-            width: `${6 * baseScale}px`,
-            height: `${6 * baseScale}px`,
+            width: `${7 * baseScale}px`,
+            height: `${7 * baseScale}px`,
             borderRadius: '50%',
             backgroundColor: secondaryColor,
             boxShadow: secondaryGlow
@@ -192,7 +236,7 @@ export const VibeGraphic: React.FC<VibeGraphicProps> = ({
         />
       </div>
 
-      {/* CENTRAL GRAPHIC & TYPOGRAPHY CONTAINER (DRIVEN BY VISUAL TWEAKER) */}
+      {/* MAIN CONTENT CONTAINER (HOT-LINKED TO VISUAL TWEAKER) */}
       <div
         style={{
           transform: `translate(${textOffsetX}px, ${textOffsetY}px) scale(${scale})`,
@@ -203,10 +247,10 @@ export const VibeGraphic: React.FC<VibeGraphicProps> = ({
           textAlign: 'center',
           zIndex: 10,
           padding: `0 ${32 * baseScale}px`,
-          maxWidth: '90%'
+          maxWidth: '92%'
         }}
       >
-        {/* ELEGANT MINIMALIST BADGE */}
+        {/* BADGE: OFFICIAL RELEASE v1.0 */}
         {badgeText && (
           <div
             style={{
@@ -218,13 +262,12 @@ export const VibeGraphic: React.FC<VibeGraphicProps> = ({
               padding: `${6 * baseScale}px ${18 * baseScale}px`,
               borderRadius: `${100 * baseScale}px`,
               border: `1px solid ${accentColor}44`,
-              background: `linear-gradient(135deg, ${accentColor}15, ${secondaryColor}15)`,
+              background: `linear-gradient(135deg, ${accentColor}18, ${secondaryColor}18)`,
               backdropFilter: 'blur(8px)',
-              boxShadow: `0 ${4 * baseScale}px ${16 * baseScale}px rgba(0, 0, 0, 0.4)`,
-              marginBottom: `${20 * baseScale}px`
+              boxShadow: `0 ${4 * baseScale}px ${16 * baseScale}px rgba(0, 0, 0, 0.45)`,
+              marginBottom: `${18 * baseScale}px`
             }}
           >
-            {/* Glowing Accent Indicator */}
             <span
               style={{
                 width: `${6 * baseScale}px`,
@@ -236,7 +279,7 @@ export const VibeGraphic: React.FC<VibeGraphicProps> = ({
             />
             <span
               style={{
-                color: '#e2e8f0',
+                color: '#f1f5f9',
                 fontSize: `${13 * baseScale}px`,
                 fontWeight: 700,
                 letterSpacing: `${3 * baseScale}px`,
@@ -248,38 +291,73 @@ export const VibeGraphic: React.FC<VibeGraphicProps> = ({
           </div>
         )}
 
-        {/* HERO TITLE */}
+        {/* HERO TITLE: MOTION SUITE PRO */}
         <h1
           style={{
             margin: 0,
             opacity: titleOpacity,
             transform: `translateY(${titleY}px) scale(${titleScaleSpring})`,
-            fontSize: `${64 * baseScale}px`,
+            fontSize: `${66 * baseScale}px`,
             fontWeight: 900,
-            letterSpacing: `${4 * baseScale}px`,
+            letterSpacing: `${5 * baseScale}px`,
             lineHeight: 1.1,
             color: '#ffffff',
             textTransform: 'uppercase',
-            textShadow: `0 ${4 * baseScale}px ${24 * baseScale}px rgba(0, 0, 0, 0.8), ${primaryGlow}`
+            textShadow: `0 ${4 * baseScale}px ${24 * baseScale}px rgba(0, 0, 0, 0.85), ${primaryGlow}`
           }}
         >
           {titleText}
         </h1>
 
-        {/* PULSING THIN NEON DIVIDER LINE */}
+        {/* FUTURISTIC NEON ACCENT DIVIDER WITH TECH CORNERS */}
         <div
           style={{
-            margin: `${22 * baseScale}px 0`,
-            width: `${lineWidth}px`,
-            height: `${2 * baseScale}px`,
-            background: `linear-gradient(90deg, transparent, ${accentColor}, ${secondaryColor}, transparent)`,
-            borderRadius: `${2 * baseScale}px`,
-            boxShadow: primaryGlow,
-            opacity: linePulseOpacity
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: `${20 * baseScale}px 0`,
+            width: '100%'
           }}
-        />
+        >
+          {/* Left corner accent */}
+          <div
+            style={{
+              width: `${12 * baseScale}px`,
+              height: `${2 * baseScale}px`,
+              backgroundColor: accentColor,
+              transform: `translateX(-${bracketSpread}px)`,
+              opacity: linePulseOpacity,
+              boxShadow: primaryGlow
+            }}
+          />
 
-        {/* SUBTITLE */}
+          {/* Central glowing gradient laser */}
+          <div
+            style={{
+              width: `${lineWidth}px`,
+              height: `${2 * baseScale}px`,
+              background: `linear-gradient(90deg, transparent, ${accentColor}, ${secondaryColor}, transparent)`,
+              borderRadius: `${2 * baseScale}px`,
+              boxShadow: primaryGlow,
+              opacity: linePulseOpacity,
+              margin: `0 ${8 * baseScale}px`
+            }}
+          />
+
+          {/* Right corner accent */}
+          <div
+            style={{
+              width: `${12 * baseScale}px`,
+              height: `${2 * baseScale}px`,
+              backgroundColor: secondaryColor,
+              transform: `translateX(${bracketSpread}px)`,
+              opacity: linePulseOpacity,
+              boxShadow: secondaryGlow
+            }}
+          />
+        </div>
+
+        {/* SUBTITLE: AI Creative Motion Graphics Workstation */}
         {subtitleText && (
           <p
             style={{
@@ -290,20 +368,20 @@ export const VibeGraphic: React.FC<VibeGraphicProps> = ({
               fontWeight: 400,
               letterSpacing: `${1.5 * baseScale}px`,
               color: '#cbd5e1',
-              maxWidth: `${720 * baseScale}px`,
+              maxWidth: `${740 * baseScale}px`,
               lineHeight: 1.5,
-              textShadow: '0 2px 8px rgba(0, 0, 0, 0.7)'
+              textShadow: '0 2px 8px rgba(0, 0, 0, 0.75)'
             }}
           >
             {subtitleText}
           </p>
         )}
 
-        {/* OPTIONAL CUSTOM ASSET / LOGO */}
+        {/* OPTIONAL CUSTOM BRANDING LOGO */}
         {customAssetUrl && (
           <div
             style={{
-              marginTop: `${28 * baseScale}px`,
+              marginTop: `${26 * baseScale}px`,
               filter: `drop-shadow(0 0 ${12 * baseScale}px ${accentColor}66)`
             }}
           >

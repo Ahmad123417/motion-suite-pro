@@ -143,6 +143,13 @@ export interface CustomElectronAPI {
   validateLicense: (
     key: string
   ) => Promise<{ success: boolean; message: string; data?: any }>
+  restartAndInstall: () => void
+  installAndRestart?: () => void
+  startUpdateDownload?: () => Promise<{ success: boolean; error?: string }>
+  onUpdateAvailable: (callback: (info: { version: string; releaseNotes?: string }) => void) => () => void
+  onUpdateDownloaded: (callback: (info?: { version: string }) => void) => () => void
+  onUpdateProgress?: (callback: (data: { percent: number }) => void) => () => void
+  onUpdateError?: (callback: (err: { message: string }) => void) => () => void
 }
 
 declare global {

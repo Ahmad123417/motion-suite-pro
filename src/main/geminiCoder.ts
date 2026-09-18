@@ -4,81 +4,158 @@ import { resolve, join } from 'path'
 import { app } from 'electron'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
-export const REMOTION_CODER_SYSTEM_PROMPT = `You are an expert Remotion animation and Creative Coding engineer.
+export const REMOTION_CODER_SYSTEM_PROMPT = `You are an expert Remotion animation and Creative Coding engineer for Motion Suite Pro.
 
-BEHAVIORAL & INTERACTIVE PROTOCOL (CRITICAL):
-- When the user asks for a theme or multiple videos (e.g., "12 warning videos"), DO NOT immediately output raw code blindly. 
-- First, act as a creative director: reply with a short conversational outline listing the proposed titles/styles, and ask the user for confirmation or prompt them: "Shall I generate Code 1 for [Style A] now?"
-- Once confirmed, output ONLY the clean TSX code for that specific video.
+BEHAVIORAL PROTOCOL:
+- For a single video request: output ONLY the raw TypeScript TSX code. DO NOT wrap with markdown backticks. Output MUST begin directly with 'import React'.
+- For multiple/batch videos: act as creative director first — outline proposed titles/styles and ask for confirmation before generating.
+- NO conversational text, explanations, or commentary inside the code output.
 
-CRITICAL RULES FOR CODE & RENDERING:
-1. CONDITIONAL OUTPUT: If the user asks for a single video, output ONLY the raw TypeScript TSX code. If multiple/batch videos are requested, act conversationally first.
-2. DONT wrap with markdown backticks for single code outputs (NO \`\`\`tsx, NO \`\`\`). Output MUST begin directly with 'import React'.
-3. NO conversational text, explanations, or commentary INSIDE the code block itself.
-4. MANDATORY IMPORTS:
-   import React from 'react'
-   import { useCurrentFrame, interpolate, spring, useVideoConfig, Img, staticFile } from 'remotion'
-5. ALLOWED IMPORTS:
-   Only 'react', 'remotion', and official Remotion motion libraries are permitted:
-   - 'remotion' (hooks & Img component)
-   - '@remotion/shapes' (Circle, Rect, Triangle, Star, Polygon, Ellipse, Pie, etc.)
-   - '@remotion/paths' (evolvePath, getLength, getPointAtLength, warpPath, reversePath, etc.)
-   - '@remotion/noise' (noise2D, noise3D, noise4D)
-   FORBIDDEN: Do NOT import unsupported external packages (no framer-motion, lucide-react, three, etc.). ONLY 'react', 'remotion', '@remotion/shapes', '@remotion/paths', and '@remotion/noise'.
-6. COMPONENT & PROPS INTERFACE:
-   You MUST define and export the exact props interface and component:
+==================================================
+MANDATORY STRICT RULES (ZERO TOLERANCE)
+==================================================
 
-   export interface DynamicMotionProps {
-     titleText?: string
-     accentColor?: string
-     backgroundColor?: string
-     isTransparent?: boolean
-     width?: number
-     height?: number
-     durationInFrames?: number
-     fps?: number
-     customAssetUrl?: string
-   }
+RULE 1 — ANTI-HARDCODE TEXT (ABSOLUTE):
+  NEVER write literal display text directly inside JSX tags.
+  WRONG: <h1>70% OFF</h1>  or  <span>FLASH SALE</span>
+  CORRECT: <h1>{titleText}</h1>  and  <span>{badgeText}</span>
+  ALL visual text MUST come from props: {titleText}, {subtitleText}, {badgeText}.
 
-   export const DynamicMotion: React.FC<DynamicMotionProps> = ({
-     titleText = 'APPLICABLE_THEME_TITLE',
-     accentColor = '#00f2fe',
-     backgroundColor = '#080c18',
-     isTransparent = false,
-     customAssetUrl
-   }) => {
-     const frame = useCurrentFrame()
-     const { durationInFrames, width, height, fps } = useVideoConfig()
-     ...
-   }
-   export default DynamicMotion
+RULE 2 — FRAME 0 SAFE (VISIBLE AT FRAME 0):
+  The composition MUST be at least 90% visible at Frame 0. NEVER start at opacity 0.
+  Use: interpolate(frame, [0, 6], [0.92, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
+  FORBIDDEN: blank/black screen at frame 0.
 
-7. STRICT DYNAMIC TITLE RULE (NO GENERIC TEXT):
-   - NEVER use generic filler like 'DYNAMIC MOTION' or 'LIVE MOTION' for the default \`titleText\` value in your code boilerplate.
-   - ALWAYS set the default value of \`titleText\` to something highly relevant, contextual, and professional matching the user's specific theme (e.g., if the theme is cybersecurity warning, default it to 'SYSTEM BREACH' or 'ACCESS DENIED').
+RULE 3 — PERFORMANCE BUDGET (LAPTOP-SAFE):
+  - Maximum 15–20 total DOM/SVG elements.
+  - Maximum 6–8 deterministic particle points. NO random() — use seeded math only.
+  - NO useState, useEffect, or CSS filters. All motion MUST be deterministic from useCurrentFrame().
 
-8. RESPONSIVE SCALING:
-   const minDim = Math.min(width, height)
-   const baseScale = minDim / 1080
-   Multiply pixel sizes, font sizes, margins, and radii by baseScale.
+RULE 4 — DYNAMIC SCALING (MANDATORY):
+  const baseScale = Math.min(width, height) / 1080
+  ALL font sizes, padding, margin, stroke widths, SVG dimensions, and coordinate offsets
+  MUST be multiplied by baseScale.
 
-9. SEAMLESS LOOPING ANIMATION:
-   Design animations to loop seamlessly using interpolate and Math.sin across durationInFrames.
+RULE 5 — STRICT INTERFACE (VibeGraphicProps):
+  Use EXACTLY this interface name and ALL these props:
 
-10. CPU & RENDER SAFETY BOUNDS (CRITICAL TO PREVENT FREEZE):
-    - Maximum 20 visual elements. NO useState, useEffect, or heavy filters. All animations must be purely deterministic based on \`useCurrentFrame()\`.
+  export interface VibeGraphicProps {
+    titleText?: string        // Main title — ALWAYS READ FROM PROP, never hardcode
+    subtitleText?: string     // Secondary info — ALWAYS READ FROM PROP
+    badgeText?: string        // Badge/label — ALWAYS READ FROM PROP
+    accentColor?: string
+    secondaryColor?: string
+    backgroundColor?: string
+    isTransparent?: boolean
+    scale?: number            // Range 0.5–2.0 (Default: 1)
+    textOffsetX?: number      // Range -500–500px (Default: 0)
+    textOffsetY?: number      // Range -500–500px (Default: 0)
+    glowIntensity?: number    // Range 0–40px (Default: 15)
+    speedMultiplier?: number  // Range 0.5–2.0 (Default: 1)
+    customAssetUrl?: string
+  }
 
-11. ASSET INTEGRATION:
-    If local asset path is provided, use <Img src={staticFile('...')} style={{ ... }} /> from 'remotion'.
-    If \`customAssetUrl\` is present, embed it cleanly using Remotion's <Img src={customAssetUrl} style={{ ... }} /> as a key visual focal point (e.g. animated emblem, badge, or center icon). If undefined, fallback cleanly to procedural SVG / geometric shapes.
+RULE 6 — MANDATORY IMPORTS:
+  import React from 'react'
+  import { useCurrentFrame, interpolate, spring, useVideoConfig, Img } from 'remotion'
+  ALLOWED OPTIONAL: '@remotion/shapes', '@remotion/paths', '@remotion/noise'
+  FORBIDDEN: framer-motion, lucide-react, three.js, or any non-Remotion packages.
 
-12. CRITICAL RULE FOR INTERPOLATE:
-    - In Remotion's interpolate(frame, [start, end], [out1, out2]), the inputRange array MUST be strictly monotonically increasing. NEVER output identical numbers like [405, 405] or [0, 0]. Ensure end is always at least start + 1 (e.g. [start, Math.max(start + 1, end)]).
-    - Seluruh nilai dalam array inputRange WAJIB berurutan naik dari nilai terkecil ke terbesar (strictly monotonically increasing, contoh: [0, 30, 60, 90]).
-    - DILARANG KERAS memasukkan angka yang lebih kecil atau sama setelah angka sebelumnya (contoh terlarang: [405, 405], [360, 375, 390, 150]).
-    - Selalu samakan panjang elemen antara inputRange dan outputRange.
+RULE 7 — MANDATORY EXPORTS (exact names, no deviation):
+  export const VibeGraphic: React.FC<VibeGraphicProps> = ({ ... }) => { ... }
+  export default VibeGraphic
+  export const DynamicMotion = VibeGraphic
+  export type DynamicMotionProps = VibeGraphicProps
 
----
+RULE 8 — RELEVANT DEFAULT PROP VALUES:
+  NEVER use generic filler like 'DYNAMIC MOTION' for titleText default.
+  Set defaults that match the user's specific theme contextually.
+  Example for flash sale: titleText = '70% OFF', badgeText = 'FLASH SALE', subtitleText = 'LIMITED TIME DEAL'
+
+RULE 9 — CRITICAL INTERPOLATE RULE:
+  inputRange array MUST be strictly monotonically increasing.
+  FORBIDDEN: [405, 405], [0, 0], or any descending sequence.
+  ALWAYS ensure: end > start (e.g., [start, Math.max(start + 1, end)]).
+
+==================================================
+BLUEPRINT CODE REFERENCE (MUST FOLLOW THIS ARCHITECTURE)
+==================================================
+
+import React from 'react'
+import { useCurrentFrame, interpolate, spring, useVideoConfig } from 'remotion'
+
+export interface VibeGraphicProps {
+  titleText?: string
+  subtitleText?: string
+  badgeText?: string
+  accentColor?: string
+  secondaryColor?: string
+  backgroundColor?: string
+  isTransparent?: boolean
+  scale?: number
+  textOffsetX?: number
+  textOffsetY?: number
+  glowIntensity?: number
+  speedMultiplier?: number
+  customAssetUrl?: string
+}
+
+export const VibeGraphic: React.FC<VibeGraphicProps> = ({
+  titleText = 'RELEVANT_THEME_TITLE',   // ← match user theme
+  subtitleText = 'RELEVANT_SUBTITLE',   // ← match user theme
+  badgeText = 'RELEVANT_BADGE',         // ← match user theme
+  accentColor = '#00f2fe',
+  secondaryColor = '#7928ca',
+  backgroundColor = '#0a0d14',
+  isTransparent = true,
+  scale = 1,
+  textOffsetX = 0,
+  textOffsetY = 0,
+  glowIntensity = 15,
+  speedMultiplier = 1,
+  customAssetUrl
+}) => {
+  const rawFrame = useCurrentFrame()
+  const frame = rawFrame * (speedMultiplier || 1)
+  const { width, height, fps = 30 } = useVideoConfig()
+  const baseScale = Math.min(width, height) / 1080
+
+  // Frame 0 Safe: always visible at frame 0 (opacity starts at 0.92)
+  const introOpacity = interpolate(frame, [0, 6], [0.92, 1], {
+    extrapolateLeft: 'clamp', extrapolateRight: 'clamp'
+  })
+  const pop = spring({ frame, fps, config: { damping: 10, stiffness: 140, mass: 0.8 } })
+
+  return (
+    <div style={{
+      width: '100%', height: '100%',
+      backgroundColor: isTransparent ? 'transparent' : backgroundColor,
+      display: 'flex', justifyContent: 'center', alignItems: 'center',
+      overflow: 'hidden', position: 'relative', opacity: introOpacity
+    }}>
+      <div style={{
+        transform: \`translate(\${textOffsetX}px, \${textOffsetY}px) scale(\${scale * pop})\`,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
+        filter: \`drop-shadow(0 0 \${glowIntensity * baseScale}px \${accentColor}44)\`
+      }}>
+        {/* BADGE — always from prop, NEVER hardcoded */}
+        {badgeText && <span style={{ /* badge styles */ }}>{badgeText}</span>}
+        {/* TITLE — always from prop, NEVER hardcoded */}
+        <h1 style={{ /* title styles scaled by baseScale */ }}>{titleText}</h1>
+        {/* SUBTITLE — always from prop, NEVER hardcoded */}
+        {subtitleText && <p style={{ /* subtitle styles */ }}>{subtitleText}</p>}
+        {/* Optional: SVG ornaments, geometric accents, particles (max 6–8) */}
+        {/* Optional: customAssetUrl logo */}
+      </div>
+    </div>
+  )
+}
+
+export default VibeGraphic
+export const DynamicMotion = VibeGraphic
+export type DynamicMotionProps = VibeGraphicProps
+
+==================================================
 CURRENT USER REQUEST / THEME TO BUILD:
 [Tulis tema atau konsep video yang Anda inginkan di sini]
 `
@@ -195,74 +272,124 @@ export const getDynamicMotionFilePath = (): string => {
 }
 
 // Local Procedural Boilerplate / Starter Template (guaranteed 100% compile and never crash)
+// Fully compliant with VibeGraphicProps: no hardcoded JSX text, Frame 0 Safe, all text from props.
 export const generateProceduralFallback = (prompt: string = 'DYNAMIC MOTION'): string => {
   const lower = prompt.toLowerCase()
   let detectedAccent = '#00f2fe'
+  let detectedSecondary = '#7928ca'
   let detectedBg = '#080c18'
-  let detectedTitle = 'LIVE MOTION'
+  let detectedTitle = 'MOTION SUITE PRO'
+  let detectedSubtitle = 'AI Creative Motion Graphics'
+  let detectedBadge = 'OFFICIAL RELEASE v1.0'
 
   const quoteMatch = prompt.match(/["']([^"']+)["']/)
   if (quoteMatch && quoteMatch[1].trim()) {
     detectedTitle = quoteMatch[1].trim().toUpperCase()
   } else if (prompt.trim() && prompt !== 'DYNAMIC MOTION') {
-    detectedTitle = prompt.trim().slice(0, 20).toUpperCase()
+    detectedTitle = prompt.trim().slice(0, 24).toUpperCase()
   }
 
   if (lower.includes('gold') || lower.includes('luxury') || lower.includes('royal')) {
     detectedAccent = '#f59e0b'
+    detectedSecondary = '#fbbf24'
     detectedBg = '#120c02'
+    detectedBadge = 'PREMIUM LUXURY'
+    detectedSubtitle = 'Exclusive Collection'
   } else if (lower.includes('purple') || lower.includes('synth') || lower.includes('retro')) {
     detectedAccent = '#c084fc'
+    detectedSecondary = '#818cf8'
     detectedBg = '#0f0721'
-  } else if (lower.includes('red') || lower.includes('solar') || lower.includes('flame')) {
-    detectedAccent = '#f43f5e'
-    detectedBg = '#140507'
+    detectedBadge = 'SYNTHWAVE'
+    detectedSubtitle = 'Retro Futuristic Vibes'
+  } else if (lower.includes('red') || lower.includes('fire') || lower.includes('flame') || lower.includes('sale') || lower.includes('promo')) {
+    detectedAccent = '#ff1744'
+    detectedSecondary = '#ffea00'
+    detectedBg = '#0b0f19'
+    detectedBadge = 'FLASH SALE'
+    detectedSubtitle = 'Limited Time Offer'
   } else if (lower.includes('emerald') || lower.includes('green') || lower.includes('matrix')) {
     detectedAccent = '#10b981'
+    detectedSecondary = '#34d399'
     detectedBg = '#04140d'
+    detectedBadge = 'SYSTEM ONLINE'
+    detectedSubtitle = 'Matrix Protocol Active'
   } else if (lower.includes('arctic') || lower.includes('ice') || lower.includes('blue')) {
     detectedAccent = '#38bdf8'
+    detectedSecondary = '#818cf8'
     detectedBg = '#071321'
+    detectedBadge = 'ARCTIC EDITION'
+    detectedSubtitle = 'Ultra Clean Design'
+  } else if (lower.includes('cyber') || lower.includes('neon') || lower.includes('hud') || lower.includes('tech')) {
+    detectedAccent = '#00f2fe'
+    detectedSecondary = '#4facfe'
+    detectedBg = '#060913'
+    detectedBadge = 'CYBER TECH'
+    detectedSubtitle = 'Futuristic HUD Interface'
   }
 
   return `import React from 'react'
 import { useCurrentFrame, interpolate, spring, useVideoConfig } from 'remotion'
 
-export interface DynamicMotionProps {
+export interface VibeGraphicProps {
   titleText?: string
+  subtitleText?: string
+  badgeText?: string
   accentColor?: string
+  secondaryColor?: string
   backgroundColor?: string
   isTransparent?: boolean
-  width?: number
-  height?: number
-  durationInFrames?: number
-  fps?: number
+  scale?: number
+  textOffsetX?: number
+  textOffsetY?: number
+  glowIntensity?: number
+  speedMultiplier?: number
+  customAssetUrl?: string
 }
 
-export const DynamicMotion: React.FC<DynamicMotionProps> = ({
+export const VibeGraphic: React.FC<VibeGraphicProps> = ({
   titleText = '${detectedTitle}',
+  subtitleText = '${detectedSubtitle}',
+  badgeText = '${detectedBadge}',
   accentColor = '${detectedAccent}',
+  secondaryColor = '${detectedSecondary}',
   backgroundColor = '${detectedBg}',
-  isTransparent = false
+  isTransparent = false,
+  scale = 1,
+  textOffsetX = 0,
+  textOffsetY = 0,
+  glowIntensity = 15,
+  speedMultiplier = 1
 }) => {
-  const frame = useCurrentFrame()
-  const { durationInFrames, width, height, fps } = useVideoConfig()
+  const rawFrame = useCurrentFrame()
+  const frame = rawFrame * (speedMultiplier || 1)
+  const { durationInFrames, width, height, fps = 30 } = useVideoConfig()
+  const baseScale = Math.min(width, height) / 1080
 
-  const minDim = Math.min(width, height)
-  const baseScale = minDim / 1080
-
-  const rotation = interpolate(frame, [0, durationInFrames], [0, 360])
-  const counterRotation = interpolate(frame, [0, durationInFrames], [360, 0])
-  const pulseFactor = Math.sin((frame / durationInFrames) * Math.PI * 2)
-  const scale = interpolate(pulseFactor, [-1, 1], [0.93, 1.07])
-  const glow = interpolate(pulseFactor, [-1, 1], [15, 35]) * baseScale
-
-  const entrance = spring({
-    frame,
-    fps,
-    config: { damping: 14, stiffness: 90 }
+  // Frame 0 Safe: always visible at frame 0 (opacity 0.92 → 1.0)
+  const introOpacity = interpolate(frame, [0, 6], [0.92, 1], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp'
   })
-  const titleScale = interpolate(entrance, [0, 1], [0.85, 1])
+
+  const dur = Math.max(durationInFrames, 1)
+  const rotation = interpolate(frame, [0, dur], [0, 360], {
+    extrapolateLeft: 'clamp', extrapolateRight: 'clamp'
+  })
+  const counterRotation = interpolate(frame, [0, dur], [360, 0], {
+    extrapolateLeft: 'clamp', extrapolateRight: 'clamp'
+  })
+  const pulseFactor = Math.sin((frame / dur) * Math.PI * 2)
+  const pulseScale = interpolate(pulseFactor, [-1, 1], [0.94, 1.06])
+  const glow = (interpolate(pulseFactor, [-1, 1], [12, 28]) * baseScale) * (glowIntensity / 15)
+
+  const entrance = spring({ frame, fps, config: { damping: 13, stiffness: 110, mass: 0.85 } })
+  const contentScale = interpolate(entrance, [0, 1], [0.88, 1])
+  const contentOpacity = interpolate(entrance, [0, 1], [0, 1])
+
+  const badgeEntrance = spring({ frame: Math.max(0, frame - 4), fps, config: { damping: 14, stiffness: 120 } })
+  const subtitleEntrance = spring({ frame: Math.max(0, frame - 10), fps, config: { damping: 12, stiffness: 100 } })
+
+  const lineWidth = interpolate(entrance, [0, 1], [0, 420 * baseScale])
 
   return (
     <div
@@ -275,105 +402,147 @@ export const DynamicMotion: React.FC<DynamicMotionProps> = ({
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: isTransparent ? 'transparent' : backgroundColor,
-        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
         overflow: 'hidden',
-        position: 'relative'
+        position: 'relative',
+        opacity: introOpacity
       }}
     >
+      {/* Outer orbital ring (1 element) */}
       <div
         style={{
           position: 'absolute',
           width: 500 * baseScale,
           height: 500 * baseScale,
-          transform: \`scale(\${scale}) rotate(\${rotation}deg)\`,
+          transform: \`scale(\${pulseScale}) rotate(\${rotation}deg)\`,
           borderRadius: '50%',
-          border: \`\${3 * baseScale}px dashed \${accentColor}88\`,
-          boxShadow: \`0 0 \${glow}px \${accentColor}40\`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
+          border: \`\${2.5 * baseScale}px dashed \${accentColor}55\`,
+          boxShadow: \`0 0 \${glow}px \${accentColor}30\`,
+          pointerEvents: 'none'
         }}
       >
-        <div
-          style={{
-            position: 'absolute',
-            top: -6 * baseScale,
-            width: 14 * baseScale,
-            height: 14 * baseScale,
-            borderRadius: '50%',
-            backgroundColor: accentColor,
-            boxShadow: \`0 0 \${16 * baseScale}px \${accentColor}\`
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            bottom: -6 * baseScale,
-            width: 14 * baseScale,
-            height: 14 * baseScale,
-            borderRadius: '50%',
-            backgroundColor: '#ffffff',
-            boxShadow: \`0 0 \${16 * baseScale}px #ffffff\`
-          }}
-        />
+        {/* Orbiting accent beacon (1 element) */}
+        <div style={{
+          position: 'absolute',
+          top: -(6 * baseScale),
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: 12 * baseScale,
+          height: 12 * baseScale,
+          borderRadius: '50%',
+          backgroundColor: accentColor,
+          boxShadow: \`0 0 \${16 * baseScale}px \${accentColor}\`
+        }} />
       </div>
 
+      {/* Inner counter-rotating frame (1 element) */}
       <div
         style={{
           position: 'absolute',
           width: 360 * baseScale,
           height: 360 * baseScale,
-          transform: \`scale(\${scale}) rotate(\${counterRotation}deg)\`,
-          borderRadius: \`\${40 * baseScale}px\`,
-          border: \`\${2.5 * baseScale}px solid \${accentColor}\`,
-          boxShadow: \`inset 0 0 \${20 * baseScale}px \${accentColor}30, 0 0 \${20 * baseScale}px \${accentColor}30\`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
+          transform: \`scale(\${pulseScale}) rotate(\${counterRotation}deg)\`,
+          borderRadius: \`\${36 * baseScale}px\`,
+          border: \`\${1.8 * baseScale}px solid \${secondaryColor}50\`,
+          boxShadow: \`inset 0 0 \${18 * baseScale}px \${secondaryColor}18\`,
+          pointerEvents: 'none'
         }}
       />
 
+      {/* Main content container (hot-linked to Visual Tweaker) */}
       <div
         style={{
-          transform: \`scale(\${titleScale})\`,
+          transform: \`translate(\${textOffsetX}px, \${textOffsetY}px) scale(\${scale * contentScale})\`,
+          opacity: contentOpacity,
           zIndex: 10,
           textAlign: 'center',
-          padding: \`0 \${32 * baseScale}px\`
+          padding: \`0 \${36 * baseScale}px\`,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: \`\${12 * baseScale}px\`,
+          filter: \`drop-shadow(0 0 \${glowIntensity * baseScale * 0.5}px \${accentColor}33)\`
         }}
       >
-        <div
-          style={{
-            fontSize: \`\${16 * baseScale}px\`,
-            fontWeight: 700,
-            letterSpacing: \`\${5 * baseScale}px\`,
-            color: accentColor,
-            textTransform: 'uppercase',
-            marginBottom: \`\${8 * baseScale}px\`,
-            textShadow: \`0 0 \${10 * baseScale}px \${accentColor}aa\`
-          }}
-        >
-          LIVE MOTION STUDIO
-        </div>
-        <h1
-          style={{
-            fontSize: \`\${56 * baseScale}px\`,
-            fontWeight: 900,
-            letterSpacing: \`\${4 * baseScale}px\`,
-            color: '#ffffff',
-            margin: 0,
-            lineHeight: 1.1,
-            textTransform: 'uppercase',
-            textShadow: \`0 \${4 * baseScale}px \${20 * baseScale}px rgba(0,0,0,0.8), 0 0 \${24 * baseScale}px \${accentColor}80\`
-          }}
-        >
+        {/* BADGE — reads from prop, never hardcoded */}
+        {badgeText && (
+          <div style={{
+            opacity: interpolate(badgeEntrance, [0, 1], [0, 1]),
+            transform: \`translateY(\${interpolate(badgeEntrance, [0, 1], [-14 * baseScale, 0])}px)\`,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: \`\${7 * baseScale}px\`,
+            padding: \`\${5 * baseScale}px \${16 * baseScale}px\`,
+            borderRadius: \`\${100 * baseScale}px\`,
+            border: \`1px solid \${accentColor}44\`,
+            background: \`linear-gradient(135deg, \${accentColor}18, \${secondaryColor}14)\`,
+            backdropFilter: 'blur(8px)'
+          }}>
+            <span style={{
+              width: \`\${5 * baseScale}px\`, height: \`\${5 * baseScale}px\`,
+              borderRadius: '50%', backgroundColor: accentColor,
+              boxShadow: \`0 0 \${8 * baseScale}px \${accentColor}\`
+            }} />
+            <span style={{
+              color: '#e2e8f0',
+              fontSize: \`\${12 * baseScale}px\`,
+              fontWeight: 700,
+              letterSpacing: \`\${3 * baseScale}px\`,
+              textTransform: 'uppercase'
+            }}>
+              {badgeText}
+            </span>
+          </div>
+        )}
+
+        {/* TITLE — reads from prop, never hardcoded */}
+        <h1 style={{
+          fontSize: \`\${60 * baseScale}px\`,
+          fontWeight: 900,
+          letterSpacing: \`\${4 * baseScale}px\`,
+          color: '#ffffff',
+          margin: 0,
+          lineHeight: 1.05,
+          textTransform: 'uppercase',
+          textShadow: \`0 \${4 * baseScale}px \${20 * baseScale}px rgba(0,0,0,0.85), 0 0 \${24 * baseScale}px \${accentColor}70\`
+        }}>
           {titleText}
         </h1>
+
+        {/* Neon divider line */}
+        <div style={{
+          width: \`\${lineWidth}px\`,
+          height: \`\${2 * baseScale}px\`,
+          background: \`linear-gradient(90deg, transparent, \${accentColor}, \${secondaryColor}, transparent)\`,
+          borderRadius: \`\${2 * baseScale}px\`,
+          boxShadow: \`0 0 \${8 * baseScale}px \${accentColor}60\`
+        }} />
+
+        {/* SUBTITLE — reads from prop, never hardcoded */}
+        {subtitleText && (
+          <p style={{
+            margin: 0,
+            opacity: interpolate(subtitleEntrance, [0, 1], [0, 0.88]),
+            transform: \`translateY(\${interpolate(subtitleEntrance, [0, 1], [12 * baseScale, 0])}px)\`,
+            fontSize: \`\${18 * baseScale}px\`,
+            fontWeight: 400,
+            letterSpacing: \`\${1.5 * baseScale}px\`,
+            color: '#94a3b8',
+            maxWidth: \`\${680 * baseScale}px\`,
+            lineHeight: 1.5,
+            textShadow: '0 2px 8px rgba(0,0,0,0.75)'
+          }}>
+            {subtitleText}
+          </p>
+        )}
       </div>
     </div>
   )
 }
 
-export default DynamicMotion
+export default VibeGraphic
+export const DynamicMotion = VibeGraphic
+export type DynamicMotionProps = VibeGraphicProps
 `
 }
 
