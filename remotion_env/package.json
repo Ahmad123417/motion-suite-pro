@@ -1,6 +1,6 @@
 {
   "name": "remotion-env",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "dependencies": {
     "@remotion/cli": "^4.0.520",

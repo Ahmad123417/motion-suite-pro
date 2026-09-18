@@ -1,7 +1,7 @@
 {
   "name": "motion-suite-pro",
   "productName": "Motion Suite Pro",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Motion Suite Pro - AI Motion Graphics Generator & Remotion Desktop",
   "main": "./out/main/index.js",
   "author": "Motion Suite Pro",

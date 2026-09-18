@@ -65,7 +65,7 @@ nsis:
 publish:
   provider: "github"
   owner: "Ahmad123417"
-  repo: "motion-studio-release"
-  releaseType: release
+  repo: "motion-suite-pro"
+  releaseType: "release"
 
 npmRebuild: false

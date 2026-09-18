@@ -94,20 +94,26 @@ async function diagnose() {
 
     // Best model determination
     let selectedModel = null
-    const v36Flash = flashModels.find(
-      (m) =>
-        m.name.includes('gemini-3.6-flash') && !m.name.includes('image') && !m.name.includes('tts')
-    )
-    const v37Flash = flashModels.find(
-      (m) =>
-        m.name.includes('gemini-3.7-flash') && !m.name.includes('image') && !m.name.includes('tts')
-    )
+    const v38Flash = flashModels.find((m) => m.name.includes('gemini-3.8-flash'))
+    const v37Flash = flashModels.find((m) => m.name.includes('gemini-3.7-flash'))
+    const v36Flash = flashModels.find((m) => m.name.includes('gemini-3.6-flash'))
+    const v35Flash = flashModels.find((m) => m.name.includes('gemini-3.5-flash') && !m.name.includes('lite'))
+    const v35FlashLite = flashModels.find((m) => m.name.includes('gemini-3.5-flash-lite'))
+    const flashLiteLatest = flashModels.find((m) => m.name.includes('gemini-flash-lite-latest'))
     const flashLatest = flashModels.find((m) => m.name.includes('gemini-flash-latest'))
 
-    if (v36Flash) {
-      selectedModel = v36Flash.name
+    if (v38Flash) {
+      selectedModel = v38Flash.name
     } else if (v37Flash) {
       selectedModel = v37Flash.name
+    } else if (v36Flash) {
+      selectedModel = v36Flash.name
+    } else if (v35Flash) {
+      selectedModel = v35Flash.name
+    } else if (v35FlashLite) {
+      selectedModel = v35FlashLite.name
+    } else if (flashLiteLatest) {
+      selectedModel = flashLiteLatest.name
     } else if (flashLatest) {
       selectedModel = flashLatest.name
     } else if (flashModels.length > 0) {

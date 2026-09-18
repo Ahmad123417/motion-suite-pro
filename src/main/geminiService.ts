@@ -3,7 +3,7 @@ import { existsSync } from 'fs'
 import fsPromises from 'fs/promises'
 import { ipcMain } from 'electron'
 import { writeComponentCode, getVibeGraphicPath } from './remotionStudio'
-import { sanitizeInterpolateCode, isTransientError, delay } from './geminiCoder'
+import { sanitizeInterpolateCode, isTransientError, delay, withTimeout } from './geminiCoder'
 
 export interface GenerateVideoPayload {
   prompt: string
@@ -212,13 +212,17 @@ export async function readCurrentCode(): Promise<string> {
 }
 
 export const CANDIDATE_MODELS = [
-  'gemini-3.6-flash',
+  'gemini-3.8-flash',
   'gemini-3.7-flash',
+  'gemini-3.6-flash',
+  'gemini-3.5-flash',
+  'gemini-3.5-flash-lite',
+  'gemini-flash-lite-latest',
   'gemini-flash-latest'
 ]
 
 /**
- * Call Gemini model with auto-retry (backoff 1.5s on 503/429) and multi-model fallback across CANDIDATE_MODELS
+ * Call Gemini model with auto-retry (backoff 1s on 503/429/timeout) and multi-model fallback across CANDIDATE_MODELS
  */
 async function callGemini(
   apiKey: string,
@@ -229,7 +233,7 @@ async function callGemini(
   let lastError: Error | null = null
 
   for (const modelName of CANDIDATE_MODELS) {
-    const maxAttempts = 2 // 1 initial attempt + 1 retry on 503/429
+    const maxAttempts = 2 // 1 initial attempt + 1 retry on 503/429/timeout
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
         console.log(
@@ -240,7 +244,11 @@ async function callGemini(
           systemInstruction
         })
 
-        const response = await model.generateContent(contents)
+        const response = await withTimeout(
+          model.generateContent(contents),
+          25000,
+          `Batas waktu (25s) terlampaui saat memanggil model ${modelName}`
+        )
         const resultText = response.response.text()
         if (resultText && resultText.trim()) {
           console.log(`[GeminiService] Successfully generated with ${modelName}`)
@@ -253,12 +261,12 @@ async function callGemini(
           lastError.message
         )
 
-        // If error is 503 / 429 / transient and retry attempts remain, wait 1.5s delay backoff
+        // If error is 503 / 429 / transient / timeout and retry attempts remain, wait 1000ms delay backoff
         if (attempt < maxAttempts && isTransientError(err)) {
           console.warn(
-            `[GeminiService] Google API 503/429 on ${modelName}. Waiting 1500ms before auto-retry...`
+            `[GeminiService] Google API 503/429/Transient on ${modelName}. Waiting 1000ms before auto-retry...`
           )
-          await delay(1500)
+          await delay(1000)
           continue
         }
 

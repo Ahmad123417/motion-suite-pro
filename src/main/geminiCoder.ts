@@ -598,19 +598,44 @@ export async function getCurrentMotionCode(): Promise<string> {
 }
 
 export const CANDIDATE_MODELS = [
-  'gemini-3.6-flash',
+  'gemini-3.8-flash',
   'gemini-3.7-flash',
+  'gemini-3.6-flash',
+  'gemini-3.5-flash',
+  'gemini-3.5-flash-lite',
+  'gemini-flash-lite-latest',
   'gemini-flash-latest'
 ]
 
 export const delay = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms))
 
+/**
+ * Executes a promise with an enforced timeout to avoid hanging when upstream AI is congested.
+ */
+export async function withTimeout<T>(
+  promise: Promise<T>,
+  ms = 25000,
+  errorMsg = 'Request timed out'
+): Promise<T> {
+  let timer: NodeJS.Timeout
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      reject(new Error(`${errorMsg} after ${ms}ms`))
+    }, ms)
+  })
+  try {
+    return await Promise.race([promise, timeoutPromise])
+  } finally {
+    clearTimeout(timer!)
+  }
+}
+
 export function isTransientError(err: unknown): boolean {
   if (!err) return false
   const anyErr = err as Record<string, unknown>
   const status = Number(anyErr.status || (anyErr.response as Record<string, unknown> | undefined)?.status)
-  if (status === 503 || status === 429 || status === 500 || status === 504) {
+  if (status === 503 || status === 429 || status === 500 || status === 504 || status === 408) {
     return true
   }
   const msg = (err instanceof Error ? err.message : String(err)).toLowerCase()
@@ -619,6 +644,9 @@ export function isTransientError(err: unknown): boolean {
     msg.includes('429') ||
     msg.includes('500') ||
     msg.includes('504') ||
+    msg.includes('408') ||
+    msg.includes('timeout') ||
+    msg.includes('timed out') ||
     msg.includes('service unavailable') ||
     msg.includes('high demand') ||
     msg.includes('overloaded') ||
@@ -660,7 +688,7 @@ export async function generateMotionCode(
     : `BUAT KODE ANIMASI REMOTION TSX UNTUK TEMA BERIKUT: ${prompt}`
 
   for (const modelName of CANDIDATE_MODELS) {
-    const maxAttempts = 2 // 1 initial attempt + 1 retry on 503/429
+    const maxAttempts = 2 // 1 initial attempt + 1 retry on 503/429/timeout
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
         console.log(
@@ -668,10 +696,14 @@ export async function generateMotionCode(
         )
         const model = genAI.getGenerativeModel({ model: modelName })
 
-        const response = await model.generateContent([
-          REMOTION_CODER_SYSTEM_PROMPT,
-          userPrompt
-        ])
+        const response = await withTimeout(
+          model.generateContent([
+            REMOTION_CODER_SYSTEM_PROMPT,
+            userPrompt
+          ]),
+          25000,
+          `Batas waktu (25s) terlampaui saat memanggil model ${modelName}`
+        )
 
         const text = response.response.text()
         const cleanedCode = cleanGeneratedCode(text)
@@ -695,12 +727,12 @@ export async function generateMotionCode(
           lastError.message
         )
 
-        // If error is 503 / 429 / transient and retry attempts remain, wait 1.5s delay backoff
+        // If error is 503 / 429 / transient / timeout and retry attempts remain, wait 1000ms delay backoff
         if (attempt < maxAttempts && isTransientError(err)) {
           console.warn(
-            `[GeminiCoder] Google API 503/429 on ${modelName}. Waiting 1500ms before auto-retry...`
+            `[GeminiCoder] Google API 503/429/Transient error on ${modelName}. Waiting 1000ms before auto-retry...`
           )
-          await delay(1500)
+          await delay(1000)
           continue
         }
 
