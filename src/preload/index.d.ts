@@ -62,6 +62,7 @@ export interface CustomElectronAPI {
   applyManualCode: (code: string) => Promise<ApplyManualCodeResult>
   getCurrentMotionCode: () => Promise<string>
   getSystemPrompt: () => Promise<string>
+  getAppVersion: () => Promise<string>
   generateMotionCode: (params: GenerateMotionCodeParams) => Promise<GenerateMotionCodeResult>
   startRender: (payload: {
     format: 'mp4' | 'mov' | 'prores422' | 'prores4444'

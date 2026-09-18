@@ -633,6 +633,11 @@ app.whenReady().then(() => {
   ipcMain.handle('shell:open-path', handleOpenExportFolder)
   ipcMain.handle('open-path', handleOpenExportFolder)
 
+  // Return current application version from package.json
+  ipcMain.handle('get-app-version', () => {
+    return app.getVersion()
+  })
+
   // Show file in directory / file manager
   ipcMain.handle('open-file-location', async (_event, filePath: string) => {
     if (filePath && existsSync(filePath)) {

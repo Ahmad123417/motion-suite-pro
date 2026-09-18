@@ -476,6 +476,31 @@ export function App(): React.JSX.Element {
   // Active Navigation Tab State (4 Tabs Architecture)
   const [activeTab, setActiveTab] = useState<'editor' | 'preview' | 'template' | 'autocoder'>('preview')
 
+  // Dynamic App Version from package.json via app.getVersion()
+  const [appVersion, setAppVersion] = useState<string>('v1.0.1')
+
+  useEffect(() => {
+    let isMounted = true
+    const fetchAppVersion = async (): Promise<void> => {
+      try {
+        const api = getElectronAPI()
+        const ver = await (
+          api?.getAppVersion?.() ||
+          (window as any).electron?.ipcRenderer?.invoke('get-app-version')
+        )
+        if (ver && isMounted) {
+          setAppVersion(ver.startsWith('v') ? ver : `v${ver}`)
+        }
+      } catch (err) {
+        console.warn('[App] Gagal memuat versi aplikasi:', err)
+      }
+    }
+    fetchAppVersion()
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
   // Video Dimension, Framerate & Duration States (restored from localStorage with dedicated keys)
   const [aspectRatio, setAspectRatio] = useState<AspectRatioType>(() => {
     const direct = localStorage.getItem(STORAGE_KEY_ASPECT_RATIO) as AspectRatioType | null
@@ -2279,7 +2304,7 @@ export function App(): React.JSX.Element {
           </div>
           <div className="brand-title">
             MOTION SUITE PRO
-            <span className="brand-badge">PRO v1.0</span>
+            <span className="brand-badge">PRO {appVersion}</span>
           </div>
         </div>
 

@@ -79,6 +79,9 @@ const customElectronAPI = {
   getSystemPrompt: (): Promise<string> => {
     return ipcRenderer.invoke('get-system-prompt')
   },
+  getAppVersion: (): Promise<string> => {
+    return ipcRenderer.invoke('get-app-version')
+  },
   generateMotionCode: (params: GenerateMotionCodeParams): Promise<GenerateMotionCodeResult> => {
     return ipcRenderer.invoke('generate-motion-code', params)
   },
