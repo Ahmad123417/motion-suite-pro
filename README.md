@@ -1,8 +1,8 @@
 # Motion Suite Pro
 
-> **Official Production Release v1.0.4** — Prompt-to-Code Motion Graphics Suite
+> **Official Production Release v1.0.5** — Prompt-to-Code Motion Graphics Suite
 
-[![Version](https://img.shields.io/badge/version-1.0.4-blue.svg)](https://github.com/Ahmad123417/motion-studio-release)
+[![Version](https://img.shields.io/badge/version-1.0.5-blue.svg)](https://github.com/Ahmad123417/motion-studio-release)
 [![License](https://img.shields.io/badge/license-Flexible%20Tiered%20%7C%20Lifetime-emerald.svg)](https://lynk.id)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011%20(64--bit)-lightgrey.svg)](#kebutuhan-spesifikasi-sistem)
 [![Engine](https://img.shields.io/badge/engine-Remotion%20%2B%20React%2019-violet.svg)](https://remotion.dev)
@@ -147,6 +147,6 @@ npm run build:win
 
 ## 📄 Lisensi & Dukungan Resmi
 
-* **Produk**: Motion Suite Pro (v1.0.4 Production Release)
+* **Produk**: Motion Suite Pro (v1.0.5 Production Release)
 * **Distribusi & Lisensi**: Official Lynk.id Store & GitHub Release
 * **Hak Cipta**: &copy; 2026 Motion Suite Pro Team. Seluruh hak cipta dilindungi undang-undang.
