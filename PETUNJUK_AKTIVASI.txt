@@ -1,0 +1,38 @@
+================================================================================
+           PANDUAN AKTIVASI CEPAT — MOTION SUITE PRO v1.0.4 (OFFICIAL)
+================================================================================
+PENTING: HARAP BACA SEMUA LANGKAH DI BAWAH INI SEBELUM MEMASANG APLIKASI
+================================================================================
+
+1. BUKA & PASANG APLIKASI:
+   - Jalankan "Motion Suite Pro Setup v1.0.4.exe" sampai aplikasi terbuka.
+   - Jika muncul peringatan Windows SmartScreen, klik "More info" lalu pilih "Run anyway".
+
+2. SALIN MACHINE ID:
+   - Di dalam aplikasi, lihat panel kiri atas pada bagian "Status Lisensi".
+   - Salin deretan kode "Machine ID" perangkat Anda.
+
+3. KLAIM KODE LISENSI KE WHATSAPP ADMIN:
+   - Kirim chat ke WA Admin: 085161180423 dengan format:
+     * Bukti Pembayaran / Invoice Lynk.id
+     * Machine ID laptop Anda
+   - Catatan Antrean: Lisensi diproses berurutan dari chat paling bawah (yang masuk lebih awal).
+     Mohon TIDAK melakukan spam atau chat berulang-ulang, karena chat baru akan menaikkan posisi Anda ke paling atas dan menunda antrean aktivasi.
+
+4. AKTIVASI LISENSI:
+   - Setelah menerima kode lisensi dari admin, tempelkan kodenya ke kolom Lisensi di aplikasi, lalu klik "Validasi".
+   - Status akan berubah menjadi "Aktif" dengan indikator hijau sesuai paket yang Anda beli (misal: 1 Hari, 7 Hari, 30 Hari, atau Lifetime).
+
+5. PASANG GEMINI API KEY (GRATIS):
+   - Buka aistudio.google.com di browser, login dengan akun Google.
+   - Klik "Get API key" -> "Create API key in new project" -> Salin kode token AIzaSy...
+   - Tempel ke kolom "Gemini API Key" di aplikasi, lalu klik "Simpan".
+
+6. SELESAI:
+   - Motion Suite Pro siap digunakan untuk membuat animasi motion graphic 4K!
+
+================================================================================
+BANTUAN & PANDUAN LENGKAP:
+- Buka berkas "user-guide.html" di folder ini untuk dokumentasi visual A4, tips ekspor ProRes 4444 Alpha vs MP4, dan penanganan kendala (troubleshooting).
+- Admin WA Resmi: 085161180423
+================================================================================

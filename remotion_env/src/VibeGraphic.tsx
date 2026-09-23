@@ -17,6 +17,12 @@ export interface VibeGraphicProps {
   glowIntensity?: number
   speedMultiplier?: number
   customAssetUrl?: string
+
+  // Composition props
+  width?: number
+  height?: number
+  durationInFrames?: number
+  fps?: number
 }
 
 export const VibeGraphic: React.FC<VibeGraphicProps> = ({

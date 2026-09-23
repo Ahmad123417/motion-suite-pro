@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Motion Suite Pro v1.0.5 — Panduan Resmi & Petunjuk Aktivasi</title>
+  <style>
+    /* ─── RESET & ROOT VARIABLES ────────────────────────────────────────── */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg-dark: #0f172a;
+      --bg-card: #1e293b;
+      --bg-card-subtle: #162032;
+      --border-subtle: #334155;
+      --border-accent: #38bdf8;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --accent-cyan: #06b6d4;
+      --accent-blue: #38bdf8;
+      --accent-purple: #818cf8;
+      --accent-emerald: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+      --glow-cyan: rgba(6, 182, 212, 0.18);
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    body {
+      background-color: #090d16;
+      color: var(--text-main);
+      font-family: var(--font-family);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* ─── SCREEN UTILITY TOPBAR (NO-PRINT) ───────────────────────────────── */
+    .topbar-control {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: rgba(15, 23, 42, 0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .topbar-branding {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-logo-icon {
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, #0284c7, #818cf8);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 900;
+      font-size: 14px;
+    }
+
+    .topbar-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-main);
+      letter-spacing: 0.5px;
+    }
+
+    .topbar-version {
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: var(--accent-blue);
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-print {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #0284c7, #06b6d4);
+      color: #ffffff;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 2px 10px rgba(6, 182, 212, 0.35);
+      transition: all 0.2s ease;
+    }
+
+    .btn-print:hover {
+      background: linear-gradient(135deg, #0369a1, #0891b2);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(6, 182, 212, 0.5);
+    }
+
+    .print-tip-hint {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* ─── DOCUMENT CONTAINER ─────────────────────────────────────────────── */
+    .document-wrapper {
+      max-width: 860px;
+      margin: 32px auto;
+      padding: 0 16px;
+    }
+
+    /* ─── A4 PAGE SIMULATOR ──────────────────────────────────────────────── */
+    .page {
+      background-color: var(--bg-dark);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 48px 44px;
+      margin-bottom: 32px;
+      position: relative;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
+      min-height: 1120px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+    }
+
+    /* ─── PAGE HEADER & FOOTER ───────────────────────────────────────────── */
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 14px;
+      margin-bottom: 28px;
+    }
+
+    .header-logo-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-doc-label {
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--accent-blue);
+    }
+
+    .header-page-tag {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-dim);
+      background: var(--bg-card-subtle);
+      padding: 3px 10px;
+      border-radius: 4px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .page-footer {
+      border-top: 1px solid var(--border-subtle);
+      padding-top: 14px;
+      margin-top: 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    .footer-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .footer-dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--text-dim);
+    }
+
+    /* ─── TYPOGRAPHY & HEADINGS ─────────────────────────────────────────── */
+    h1, h2, h3, h4 {
+      color: var(--text-main);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .section-title {
+      font-size: 22px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+
+    p {
+      color: var(--text-muted);
+      font-size: 13.5px;
+      line-height: 1.65;
+    }
+
+    strong {
+      color: var(--text-main);
+    }
+
+    /* ─── BADGES ─────────────────────────────────────────────────────────── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+
+    .badge-success {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      color: #34d399;
+    }
+
+    .badge-warning {
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      color: #fbbf24;
+    }
+
+    .badge-info {
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      color: #38bdf8;
+    }
+
+    .badge-purple {
+      background: rgba(129, 140, 248, 0.15);
+      border: 1px solid rgba(129, 140, 248, 0.35);
+      color: #a5b4fc;
+    }
+
+    /* ─── CALLOUT BOXES ─────────────────────────────────────────────────── */
+    .callout {
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin: 18px 0;
+      border-left: 4px solid;
+      background: var(--bg-card);
+    }
+
+    .callout-warning {
+      border-left-color: var(--accent-amber);
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      border-left-width: 4px;
+    }
+
+    .callout-warning .callout-title {
+      color: #fbbf24;
+    }
+
+    .callout-success {
+      border-left-color: var(--accent-emerald);
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      border-left-width: 4px;
+    }
+
+    .callout-success .callout-title {
+      color: #34d399;
+    }
+
+    .callout-info {
+      border-left-color: var(--accent-blue);
+      background: rgba(56, 189, 248, 0.08);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-left-width: 4px;
+    }
+
+    .callout-info .callout-title {
+      color: #38bdf8;
+    }
+
+    .callout-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .callout-desc {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* ─── CARDS & GRID ──────────────────────────────────────────────────── */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 16px 0;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 16px 18px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .card-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    /* ─── STEP LIST ─────────────────────────────────────────────────────── */
+    .steps-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin: 16px 0;
+    }
+
+    .step-item {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 13px 16px;
+    }
+
+    .step-num {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #0284c7, #06b6d4);
+      color: #fff;
+      font-weight: 800;
+      font-size: 12.5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(6, 182, 212, 0.3);
+    }
+
+    .step-content {
+      flex: 1;
+    }
+
+    .step-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 3px;
+    }
+
+    .step-desc {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      line-height: 1.55;
+    }
+
+    .code-pill {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+      background: #0b1120;
+      border: 1px solid var(--border-subtle);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #38bdf8;
+    }
+
+    /* ─── UI MOCKUP ELEMENTS ────────────────────────────────────────────── */
+    .ui-mockup-box {
+      background: #0b1120;
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin: 14px 0;
+      font-family: inherit;
+    }
+
+    .mockup-header {
+      font-size: 11.5px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .mockup-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      margin-bottom: 8px;
+    }
+
+    .mockup-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    /* ─── TABLES ────────────────────────────────────────────────────────── */
+    .table-custom {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0;
+      font-size: 12px;
+    }
+
+    .table-custom th {
+      background: var(--bg-card-subtle);
+      color: var(--text-main);
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border-subtle);
+      font-weight: 700;
+    }
+
+    .table-custom td {
+      padding: 9px 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      color: var(--text-muted);
+    }
+
+    .table-custom tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* ─── COVER PAGE SPECIFIC ────────────────────────────────────────────── */
+    .cover-container {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 100%;
+      padding: 24px 0;
+    }
+
+    .cover-hero {
+      margin-top: 40px;
+      text-align: center;
+    }
+
+    .cover-brand-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      color: var(--accent-blue);
+      padding: 6px 16px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+
+    .cover-title {
+      font-size: 48px;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      background: linear-gradient(135deg, #ffffff 40%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 14px;
+    }
+
+    .cover-subtitle {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--accent-cyan);
+      letter-spacing: -0.01em;
+      margin-bottom: 12px;
+    }
+
+    .cover-desc {
+      font-size: 14.5px;
+      color: var(--text-muted);
+      max-width: 600px;
+      margin: 0 auto 36px auto;
+      line-height: 1.6;
+    }
+
+    .cover-features-bar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin: 32px 0;
+    }
+
+    .cover-feat-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 14px 10px;
+      text-align: center;
+    }
+
+    .cover-feat-val {
+      font-size: 14.5px;
+      font-weight: 800;
+      color: var(--text-main);
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .cover-feat-lbl {
+      font-size: 10px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* ─── PRINT OPTIMIZATIONS (A4 EXACT) ────────────────────────────────── */
+    @page {
+      size: A4 portrait;
+      margin: 10mm 12mm;
+    }
+
+    @media print {
+      body {
+        background-color: #0f172a !important;
+        color: #f8fafc !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      .no-print, .topbar-control {
+        display: none !important;
+      }
+
+      .document-wrapper {
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      .page {
+        margin: 0 0 0 0 !important;
+        padding: 24px 28px !important;
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        background-color: #0f172a !important;
+        min-height: 277mm !important;
+        height: 277mm !important;
+        page-break-after: always !important;
+        break-after: page !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+
+      .card, .step-item, .callout, .ui-mockup-box, .cover-feat-item {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Screen Topbar (Hidden on Print) -->
+  <header class="topbar-control no-print">
+    <div class="topbar-branding">
+      <div class="header-logo-icon">M</div>
+      <span class="topbar-title">Motion Suite Pro Documentation</span>
+      <span class="topbar-version">v1.0.5 Production</span>
+    </div>
+    <div class="topbar-actions">
+      <span class="print-tip-hint">Disarankan: Save as PDF &bull; A4 &bull; Centang "Background graphics"</span>
+      <button type="button" class="btn-print" onclick="window.print()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 6 2 18 2 18 9"></polyline>
+          <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+          <rect x="6" y="14" width="12" height="8"></rect>
+        </svg>
+        Cetak ke PDF (A4)
+      </button>
+    </div>
+  </header>
+
+  <main class="document-wrapper">
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         HALAMAN 1: COVER
+    ══════════════════════════════════════════════════════════════════════ -->
+    <article class="page" id="page-1">
+      <div class="page-header">
+        <div class="header-logo-group">
+          <div class="header-logo-icon">M</div>
+          <span class="header-doc-label">Dokumentasi &amp; Panduan Pengguna Resmi</span>
+        </div>
+        <span class="header-page-tag">Halaman 1 dari 5</span>
+      </div>
+
+      <div class="cover-container">
+        <div class="cover-hero">
+          <div class="cover-brand-pill">
+            <span>Official Production Release &bull; Build v1.0.5</span>
+          </div>
+          <h1 class="cover-title">Motion Suite Pro</h1>
+          <div class="cover-subtitle">Prompt-to-Code Motion Studio</div>
+          <p class="cover-desc">
+            Workstation kreatif desktop modern berbasis Remotion (React + TypeScript) &amp; Google Gemini AI untuk memproduksi motion graphic presisi matematis, aset microstock bernilai tinggi, dan animasi siaran berkualitas 4K.
+          </p>
+
+          <div class="cover-features-bar">
+            <div class="cover-feat-item">
+              <span class="cover-feat-val">4K / 60 FPS</span>
+              <span class="cover-feat-lbl">Resolusi Ultra HD</span>
+            </div>
+            <div class="cover-feat-item">
+              <span class="cover-feat-val">ProRes 4444</span>
+              <span class="cover-feat-lbl">Alpha Transparan</span>
+            </div>
+            <div class="cover-feat-item">
+              <span class="cover-feat-val">BYOK Gemini</span>
+              <span class="cover-feat-lbl">Free Tier API</span>
+            </div>
+            <div class="cover-feat-item">
+              <span class="cover-feat-val">Flexible License</span>
+              <span class="cover-feat-lbl">Harian s/d Lifetime</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Callout Peringatan Wajib Baca -->
+        <div class="callout callout-warning">
+          <div class="callout-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+              <line x1="12" y1="9" x2="12" y2="13"></line>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+            PERINGATAN KRUSIAL: BACA PETUNJUK SEBELUM MEMASANG APLIKASI
+          </div>
+          <div class="callout-desc">
+            <strong>Harap ikuti tahapan aktivasi dengan cermat!</strong>
+            Buka aplikasi terlebih dahulu untuk menyalin <strong>Machine ID</strong> perangkat Anda, lalu klaim kode lisensi resmi ke <strong>WhatsApp Admin (085161180423)</strong> bersama bukti invoice Lynk.id Anda. Jangan lupa siapkan Gemini API Key gratis (Halaman 3) agar engine AI dapat berfungsi penuh.
+          </div>
+        </div>
+
+        <div style="margin-top: 10px;">
+          <div class="mockup-row" style="background: rgba(15, 23, 42, 0.6); border: 1px dashed var(--border-subtle);">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span class="badge badge-purple">Flexible Licensing</span>
+              <span style="font-size:12px; color:var(--text-muted);">Akses Harian, Mingguan, Bulanan, hingga Lifetime &bull; WA: 085161180423</span>
+            </div>
+            <span class="badge badge-success">Terverifikasi Siap Pakai</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="page-footer">
+        <div class="footer-left">
+          <span>&copy; 2026 Motion Suite Pro Team</span>
+          <span class="footer-dot"></span>
+          <span>Hak Cipta Dilindungi Undang-Undang</span>
+        </div>
+        <span>motion-studio-v1 &bull; Cover</span>
+      </div>
+    </article>
+
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         HALAMAN 2: INSTALASI & AKTIVASI LISENSI
+    ══════════════════════════════════════════════════════════════════════ -->
+    <article class="page" id="page-2">
+      <div class="page-header">
+        <div class="header-logo-group">
+          <div class="header-logo-icon">M</div>
+          <span class="header-doc-label">Bagian 1 &bull; Instalasi &amp; Lisensi</span>
+        </div>
+        <span class="header-page-tag">Halaman 2 dari 5</span>
+      </div>
+
+      <div>
+        <h2 class="section-title">
+          <span>Instalasi &amp; Alur Aktivasi Lisensi</span>
+        </h2>
+        <p class="section-subtitle">
+          Petunjuk lengkap pemasangan installer, penyalinan Machine ID, dan klaim lisensi resmi ke WhatsApp Admin.
+        </p>
+
+        <!-- Langkah Instalasi & Aktivasi -->
+        <div class="steps-list">
+          <div class="step-item">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Buka &amp; Pasang Aplikasi</div>
+              <div class="step-desc">
+                Jalankan <span class="code-pill">Motion Suite Pro Setup v1.0.5.exe</span> sampai aplikasi terbuka. Jika muncul peringatan <em>Windows SmartScreen</em>, klik teks <strong>"More info"</strong> lalu pilih <strong>"Run anyway"</strong>.
+              </div>
+            </div>
+          </div>
+
+          <div class="step-item">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Salin Machine ID Laptop Anda</div>
+              <div class="step-desc">
+                Di dalam aplikasi, perhatikan panel <strong>"Status Lisensi"</strong> pada bilah kiri atas. Salin deretan kode unik <strong>Machine ID</strong> perangkat Anda.
+              </div>
+            </div>
+          </div>
+
+          <div class="step-item">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Klaim Kode Lisensi ke WhatsApp Admin</div>
+              <div class="step-desc">
+                Kirim chat ke <strong>WA Admin: 085161180423</strong> dengan melampirkan: (1) <strong>Bukti Pembayaran / Invoice Lynk.id</strong> dan (2) <strong>Machine ID</strong> Anda.<br>
+                <em style="color:#fbbf24; font-size:11.5px;">* Catatan Antrean: Lisensi diproses berurutan dari chat terbawah (masuk lebih awal). Mohon TIDAK spam chat agar posisi Anda tidak naik ke atas dan menunda aktivasi.</em>
+              </div>
+            </div>
+          </div>
+
+          <div class="step-item">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <div class="step-title">Masukkan Kode Lisensi &amp; Validasi</div>
+              <div class="step-desc">
+                Setelah menerima kode lisensi dari admin, tempelkan kodenya ke kolom Lisensi di aplikasi, lalu klik <strong>"Validasi"</strong>. Status otomatis berubah menjadi <strong>"Aktif"</strong> dengan indikator hijau sesuai paket yang Anda beli (1 Hari, 7 Hari, 30 Hari, atau Lifetime).
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Visual Simulator Sukses -->
+        <div class="ui-mockup-box">
+          <div class="mockup-header">
+            <span>Tampilan Indikator Sukses (Panel Kiri Atas)</span>
+            <span class="badge badge-success">RSA-2048 Cryptography Verified</span>
+          </div>
+          <div class="mockup-row">
+            <div>
+              <div class="mockup-label">Status Lisensi:</div>
+              <span style="font-size:11px; color:var(--text-muted);">Durasi &amp; Masa Berlaku Dinamis (Hardware Binding)</span>
+            </div>
+            <span class="badge badge-success" style="font-size:12px; padding:6px 14px;">
+              🟢 Aktif (1 Hari / 7 Hari / 30 Hari / Lifetime)
+            </span>
+          </div>
+        </div>
+
+        <!-- Spesifikasi Sistem Minimum -->
+        <div class="card" style="margin-top: 10px;">
+          <div class="card-header">
+            <span class="card-title">Kebutuhan Sistem Singkat</span>
+            <span class="badge badge-info">Windows 10 / 11 64-bit</span>
+          </div>
+          <p style="font-size: 11.5px; line-height: 1.5; color: var(--text-muted);">
+            <strong>Minimum:</strong> 4 Core CPU &bull; 8 GB RAM DDR4 &bull; Intel UHD 620 / AMD Vega &bull; 5 GB SSD.<br>
+            <strong>Rekomendasi (4K 60FPS):</strong> 6+ Core CPU (Intel i7/Ryzen 5+) &bull; 16-32 GB RAM &bull; Dedicated GPU NVIDIA GTX/RTX &bull; NVMe SSD.
+          </p>
+        </div>
+      </div>
+
+      <div class="page-footer">
+        <div class="footer-left">
+          <span>Motion Suite Pro v1.0.5</span>
+          <span class="footer-dot"></span>
+          <span>Panduan Instalasi &amp; Aktivasi Lisensi</span>
+        </div>
+        <span>Halaman 2</span>
+      </div>
+    </article>
+
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         HALAMAN 3: SETUP GEMINI API KEY GRATIS
+    ══════════════════════════════════════════════════════════════════════ -->
+    <article class="page" id="page-3">
+      <div class="page-header">
+        <div class="header-logo-group">
+          <div class="header-logo-icon">M</div>
+          <span class="header-doc-label">Bagian 2 &bull; Integrasi AI Engine</span>
+        </div>
+        <span class="header-page-tag">Halaman 3 dari 5</span>
+      </div>
+
+      <div>
+        <h2 class="section-title">
+          <span>Integrasi Mandiri Google Gemini API (100% Gratis)</span>
+        </h2>
+        <p class="section-subtitle">
+          Panduan langkah demi langkah mendapatkan dan menghubungkan Google Gemini API Key resmi tanpa biaya langganan bulanan.
+        </p>
+
+        <!-- Callout Pengenalan Konsep Coding Engine -->
+        <div class="callout callout-info">
+          <div class="callout-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+            Mengapa Motion Suite Pro Memerlukan Gemini API?
+          </div>
+          <div class="callout-desc">
+            Motion Suite Pro menerapkan model <strong>BYOK (Bring Your Own Key)</strong>. Gemini digunakan secara eksklusif sebagai <strong>Creative Coding Engine</strong> untuk menyusun kode animasi programatis TypeScript/React Remotion berkecepatan tinggi. Anda <strong>TIDAK dikenakan biaya langganan</strong> karena Google menyediakan kuota Free-Tier harian yang sangat leluasa.
+          </div>
+        </div>
+
+        <!-- 4 Langkah Setup API Key -->
+        <h3 style="font-size: 15px; margin: 20px 0 12px 0; color: var(--text-main);">4 Langkah Cepat Menghubungkan Gemini API Key:</h3>
+        <div class="steps-list">
+          <div class="step-item">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Buka Portal Resmi Google AI Studio</div>
+              <div class="step-desc">
+                Buka browser (Chrome/Edge/Firefox) dan kunjungi: <span class="code-pill">https://aistudio.google.com</span>. Masuk (Sign in) menggunakan akun Google pribadi atau kerja Anda.
+              </div>
+            </div>
+          </div>
+
+          <div class="step-item">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Buat API Key Baru (Create API Key)</div>
+              <div class="step-desc">
+                Di panel navigasi sebelah kiri, klik menu <strong>"Get API key"</strong>, lalu klik tombol biru <strong>"Create API key"</strong>. Pada jendela pop-up, pilih opsi <strong>"Create API key in new project"</strong> (atau pilih project Google Cloud yang tersedia).
+              </div>
+            </div>
+          </div>
+
+          <div class="step-item">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Salin Kunci Rahasia Anda</div>
+              <div class="step-desc">
+                Google akan membuat sebuah string token unik yang diawali dengan kode <span class="code-pill">AIzaSy...</span>. Klik tombol <strong>"Copy"</strong> pada baris kunci tersebut untuk menyalinnya ke papan klip komputer Anda.
+              </div>
+            </div>
+          </div>
+
+          <div class="step-item">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <div class="step-title">Tempel &amp; Simpan di Motion Suite Pro</div>
+              <div class="step-desc">
+                Kembali ke aplikasi Motion Suite Pro. Cari panel <strong>"Gemini API Key"</strong> di sidebar kiri, tempelkan kunci ke kolom input, lalu klik tombol hijau <strong>"Simpan"</strong>. Indikator akan berubah menjadi hijau bertuliskan <em>"Tersimpan"</em>.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Kuota & Batas Pemakaian -->
+        <div class="card" style="margin-top: 14px;">
+          <div class="card-header">
+            <span class="card-title">Kapasitas Kuota Google AI Studio (Free Tier)</span>
+            <span class="badge badge-success">Gratis Permanen</span>
+          </div>
+          <div class="grid-2" style="margin: 0;">
+            <div>
+              <p style="font-size: 12px; margin-bottom: 4px;"><strong>Batas Permintaan Per Menit (RPM):</strong></p>
+              <p style="font-size: 12px; color: var(--accent-blue);">Hingga 15 RPM (Cukup untuk pembuatan puluhan animasi per jam).</p>
+            </div>
+            <div>
+              <p style="font-size: 12px; margin-bottom: 4px;"><strong>Batas Permintaan Harian (RPD):</strong></p>
+              <p style="font-size: 12px; color: var(--accent-emerald);">1.500 RPD (Sangat besar untuk penggunaan intensif harian).</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="page-footer">
+        <div class="footer-left">
+          <span>Motion Suite Pro v1.0.5</span>
+          <span class="footer-dot"></span>
+          <span>Setup Gemini API Key Gratis</span>
+        </div>
+        <span>Halaman 3</span>
+      </div>
+    </article>
+
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         HALAMAN 4: PANDUAN RENDER & EKSPOR
+    ══════════════════════════════════════════════════════════════════════ -->
+    <article class="page" id="page-4">
+      <div class="page-header">
+        <div class="header-logo-group">
+          <div class="header-logo-icon">M</div>
+          <span class="header-doc-label">Bagian 3 &bull; Render Engine &amp; Ekspor</span>
+        </div>
+        <span class="header-page-tag">Halaman 4 dari 5</span>
+      </div>
+
+      <div>
+        <h2 class="section-title">
+          <span>Panduan Prompt Engine, Resolusi 4K &amp; Format Ekspor</span>
+        </h2>
+        <p class="section-subtitle">
+          Memahami arsitektur rendering berbasis kode matematis dan pemilihan format ProRes 4444 Alpha vs MP4.
+        </p>
+
+        <!-- Perbandingan Filosofi: Code-based vs Diffusion AI -->
+        <div class="card" style="margin-bottom: 16px;">
+          <div class="card-header">
+            <span class="card-title">Arsitektur Prompt-to-Code: Mengapa Berbeda?</span>
+            <span class="badge badge-purple">Zero Hallucination</span>
+          </div>
+          <div class="grid-2" style="margin:0;">
+            <div style="padding-right: 8px;">
+              <p style="font-size: 12.5px; color: #f87171; margin-bottom: 4px;"><strong>❌ Model AI Generatif Video Biasa (Difusi)</strong></p>
+              <p style="font-size: 11.5px; line-height: 1.5;">Menghasilkan video buram/noise, teks acak tidak terbaca, bentuk melengkung tak terkendali, resolusi terbatas, dan tidak bisa diedit ulang secara parametrik.</p>
+            </div>
+            <div style="padding-left: 8px; border-left: 1px solid var(--border-subtle);">
+              <p style="font-size: 12.5px; color: #34d399; margin-bottom: 4px;"><strong>✅ Motion Suite Pro (Prompt-to-Code)</strong></p>
+              <p style="font-size: 11.5px; line-height: 1.5;">Prompt diterjemahkan menjadi kode programatis React/TypeScript. Teks tajam presisi piksel, kurva animasi matematis, transparan asli, dan dapat di-tweak kapan saja!</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pemilihan Format Ekspor -->
+        <h3 style="font-size: 15px; margin: 18px 0 10px 0; color: var(--text-main);">Pemilihan Format Ekspor Video:</h3>
+        <div class="grid-2">
+          <!-- Card ProRes 4444 -->
+          <div class="card" style="border-color: rgba(6, 182, 212, 0.4);">
+            <div class="card-header">
+              <span class="card-title" style="color: var(--accent-cyan);">Apple ProRes 4444 (.MOV)</span>
+              <span class="badge badge-info">Alpha Channel Murni</span>
+            </div>
+            <p style="font-size: 12px; margin-bottom: 10px;">
+              Standar tertinggi industri broadcast dan motion design untuk transparansi murni (tanpa latar belakang hitam).
+            </p>
+            <ul style="font-size: 11.5px; color: var(--text-muted); padding-left: 16px; line-height: 1.6;">
+              <li>Mendukung <strong>Transparansi Penuh (Alpha 10-bit)</strong> dengan pixel format <span class="code-pill">yuva444p10le</span>.</li>
+              <li>Wajib untuk compositing di <strong>Premiere Pro, After Effects, DaVinci Resolve, &amp; Final Cut Pro</strong>.</li>
+              <li>Sangat bernilai tinggi untuk penjualan aset video di pasar microstock (Envato, Pond5, Motion Array).</li>
+            </ul>
+          </div>
+
+          <!-- Card MP4 -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">MPEG-4 H.264 (.MP4)</span>
+              <span class="badge badge-success">Universal Standard</span>
+            </div>
+            <p style="font-size: 12px; margin-bottom: 10px;">
+              Format video solid dengan efisiensi kompresi tinggi untuk distribusi langsung ke media sosial dan presentasi.
+            </p>
+            <ul style="font-size: 11.5px; color: var(--text-muted); padding-left: 16px; line-height: 1.6;">
+              <li>Ukuran file ringkas dengan kualitas visual prima.</li>
+              <li>Kompatibilitas 100% pada semua player, smartphone, YouTube, Instagram, dan TikTok.</li>
+              <li>Proses encoding cepat dan stabil untuk peninjauan cepat klien.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Pengaturan Resolusi & Rasio -->
+        <h3 style="font-size: 15px; margin: 18px 0 10px 0; color: var(--text-main);">Pilihan Resolusi, Aspek Rasio &amp; Frame Rate:</h3>
+        <div class="card">
+          <table class="table-custom">
+            <thead>
+              <tr>
+                <th>Preset Resolusi</th>
+                <th>Dimensi Piksel</th>
+                <th>Rasio Aspek</th>
+                <th>Kebutuhan Optimal</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>4K Ultra HD</strong></td>
+                <td><span class="code-pill">3840 &times; 2160</span></td>
+                <td>16:9 (Landscape)</td>
+                <td>Produksi siaran premium, film, stok video komersial</td>
+              </tr>
+              <tr>
+                <td><strong>2K Quad HD</strong></td>
+                <td><span class="code-pill">2560 &times; 1440</span></td>
+                <td>16:9 (Landscape)</td>
+                <td>Monitor gaming, presentasi korporat resolusi tinggi</td>
+              </tr>
+              <tr>
+                <td><strong>Full HD 1080p</strong></td>
+                <td><span class="code-pill">1920 &times; 1080</span></td>
+                <td>16:9 (Landscape)</td>
+                <td>YouTube standar, website, video promosi universal</td>
+              </tr>
+              <tr>
+                <td><strong>Vertical Story/Reels</strong></td>
+                <td><span class="code-pill">1080 &times; 1920</span></td>
+                <td>9:16 (Vertikal)</td>
+                <td>Instagram Reels, TikTok, YouTube Shorts</td>
+              </tr>
+              <tr>
+                <td><strong>Square Feed</strong></td>
+                <td><span class="code-pill">1080 &times; 1080</span></td>
+                <td>1:1 (Persegi)</td>
+                <td>Postingan carousel media sosial &amp; iklan feed</td>
+              </tr>
+            </tbody>
+          </table>
+          <p style="font-size: 11.5px; color: var(--text-dim); margin-top: 6px;">
+            * Pilihan Frame Rate tersedia dalam <strong>30 FPS</strong> (standar media sosial) dan <strong>60 FPS</strong> (gerakan ultra-mulus untuk grafis kinetik cepat).
+          </p>
+        </div>
+      </div>
+
+      <div class="page-footer">
+        <div class="footer-left">
+          <span>Motion Suite Pro v1.0.5</span>
+          <span class="footer-dot"></span>
+          <span>Panduan Render &amp; Format Ekspor</span>
+        </div>
+        <span>Halaman 4</span>
+      </div>
+    </article>
+
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         HALAMAN 5: TROUBLESHOOTING CEPAT
+    ══════════════════════════════════════════════════════════════════════ -->
+    <article class="page" id="page-5">
+      <div class="page-header">
+        <div class="header-logo-group">
+          <div class="header-logo-icon">M</div>
+          <span class="header-doc-label">Bagian 4 &bull; Troubleshooting &amp; Bantuan</span>
+        </div>
+        <span class="header-page-tag">Halaman 5 dari 5</span>
+      </div>
+
+      <div>
+        <h2 class="section-title">
+          <span>Pemecahan Masalah Cepat (Troubleshooting)</span>
+        </h2>
+        <p class="section-subtitle">
+          Solusi langsung untuk kendala umum saat inisialisasi awal, pemanggilan API, dan proses rendering.
+        </p>
+
+        <div class="steps-list" style="margin-top: 10px;">
+          <!-- Kasus 1 -->
+          <div class="step-item">
+            <div class="step-num" style="background: linear-gradient(135deg, #0284c7, #818cf8);">1</div>
+            <div class="step-content">
+              <div class="step-title">Inisialisasi Kanvas Butuh Beberapa Detik Saat Pertama Dibuka</div>
+              <div class="step-desc">
+                <strong>Gejala:</strong> Kanvas preview menampilkan layar gelap atau indikator <em>"Port 10871 Offline / Initializing"</em> selama 3–5 detik awal.<br>
+                <strong>Penyebab:</strong> Remotion compiler dan background bundling service sedang melakukan inisialisasi modul TypeScript secara lokal di latar belakang.<br>
+                <strong>Solusi:</strong> Biarkan aplikasi berjalan beberapa detik hingga server lokal siap. Jika dalam 8 detik kanvas belum tersinkronisasi, cukup klik tombol <strong>"Sync Canvas"</strong> pada bilah atas kanvas untuk memicu auto-reload.
+              </div>
+            </div>
+          </div>
+
+          <!-- Kasus 2 -->
+          <div class="step-item">
+            <div class="step-num" style="background: linear-gradient(135deg, #f59e0b, #ef4444);">2</div>
+            <div class="step-content">
+              <div class="step-title">Galat Kuota API Key (HTTP 429: Resource Exhausted)</div>
+              <div class="step-desc">
+                <strong>Gejala:</strong> Muncul pesan galat permintaan gagal atau kuota API tercapai saat melakukan generate animasi baru.<br>
+                <strong>Penyebab:</strong> Batas kecepatan (RPM / Request Per Minute) kuota gratis dari Google AI Studio telah terlampaui karena beberapa prompt dikirimkan terlalu cepat.<br>
+                <strong>Solusi:</strong> Tunggu 30–60 detik hingga Google mereset jendela kuota per-menit. Atau, buat API Key baru dengan membuat project baru di <span class="code-pill">aistudio.google.com</span> lalu simpan kunci baru tersebut di sidebar aplikasi.
+              </div>
+            </div>
+          </div>
+
+          <!-- Kasus 3 -->
+          <div class="step-item">
+            <div class="step-num" style="background: linear-gradient(135deg, #10b981, #06b6d4);">3</div>
+            <div class="step-content">
+              <div class="step-title">Galat Kode Komposisi Saat Mengedit Manual</div>
+              <div class="step-desc">
+                <strong>Gejala:</strong> Kanvas menampilkan layar merah dengan keterangan galat sintaks TypeScript.<br>
+                <strong>Solusi:</strong> Anda tidak perlu memperbaiki kode secara manual! Cukup klik tombol <strong>"⚡ Auto-Fix Error"</strong> pada bilah aksi. AI Self-Healing Engine akan menganalisis tumpukan galat (stack trace) dan memperbaikinya dalam 2–3 detik secara otomatis.
+              </div>
+            </div>
+          </div>
+
+          <!-- Kasus 4 -->
+          <div class="step-item">
+            <div class="step-num" style="background: linear-gradient(135deg, #64748b, #334155);">4</div>
+            <div class="step-content">
+              <div class="step-title">Di Mana Lokasi File Video Hasil Render Disimpan?</div>
+              <div class="step-desc">
+                Folder penyimpanan default berada di: <br>
+                <span class="code-pill">C:\Users\&lt;NamaUser&gt;\Downloads\Motion Studio Exports</span><br>
+                Anda dapat mengubah folder penyimpanan kapan saja sebelum memulai render atau mengklik tombol <strong>"Buka Folder"</strong> setelah proses render selesai.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sistem Pembaruan & Dukungan -->
+        <div class="callout callout-success" style="margin-top: 14px;">
+          <div class="callout-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            Sistem Pembaruan Otomatis (In-App Auto-Update)
+          </div>
+          <div class="callout-desc">
+            Motion Suite Pro v1.0.5 dilengkapi fitur deteksi pembaruan otomatis. Saat versi terbaru tersedia, jendela pop-up notifikasi akan muncul menawarkan opsi unduh dan instalasi instan tanpa perlu mengunduh ulang installer secara manual.
+          </div>
+        </div>
+
+        <div class="mockup-row" style="margin-top: 12px; background: rgba(15, 23, 42, 0.8);">
+          <div>
+            <div class="mockup-label">Pusat Bantuan &amp; WhatsApp Admin Resmi:</div>
+            <span style="font-size:12px; color:var(--accent-emerald); font-weight:700;">WhatsApp: 085161180423 &bull; Format: Invoice Lynk.id + Machine ID</span>
+          </div>
+          <span class="badge badge-info">24/7 Official Support</span>
+        </div>
+      </div>
+
+      <div class="page-footer">
+        <div class="footer-left">
+          <span>Motion Suite Pro v1.0.5</span>
+          <span class="footer-dot"></span>
+          <span>Troubleshooting &amp; WhatsApp: 085161180423</span>
+        </div>
+        <span>Halaman 5</span>
+      </div>
+    </article>
+
+  </main>
+
+</body>
+</html>

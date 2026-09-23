@@ -17,6 +17,12 @@ export interface VibeGraphicProps {
   glowIntensity?: number
   speedMultiplier?: number
   customAssetUrl?: string
+
+  // Composition props passed from Remotion Root calculateMetadata
+  width?: number
+  height?: number
+  durationInFrames?: number
+  fps?: number
 }
 
 export const VibeGraphic: React.FC<VibeGraphicProps> = ({
@@ -42,9 +48,6 @@ export const VibeGraphic: React.FC<VibeGraphicProps> = ({
   const { durationInFrames, width, height, fps } = useVideoConfig()
   const minDim = Math.min(width, height)
   const baseScale = minDim / 1080
-
-  const introEnd = Math.floor(durationInFrames * 0.2)
-  const actionEnd = Math.floor(durationInFrames * 0.8)
 
   const cameraZoom = interpolate(frame, [0, durationInFrames], [1, 1.05], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
   const floatingY = Math.sin(frame / 12) * (8 * baseScale)

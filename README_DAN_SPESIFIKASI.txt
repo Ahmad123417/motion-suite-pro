@@ -1,7 +1,7 @@
 ================================================================================
                  MOTION SUITE PRO — SPESIFIKASI & PANDUAN SISTEM
 ================================================================================
-Versi     : 1.0.4 (Official Production Release)
+Versi     : 1.0.5 (Official Production Release)
 Produk    : Motion Suite Pro
 Pengembang: Motion Suite Pro Team
 Platform  : Windows 10 & 11 (64-bit)
@@ -84,38 +84,69 @@ E. COLLAPSIBLE VISUAL TWEAKER DRAWER (INSPECTOR PANEL)
    - Live Hot-Sync Engine: Pergeseran slider disinkronkan langsung ke video preview secara seketika.
 
 F. SISTEM UNDO BERURUTAN & REVERT TO INITIAL STATE
-   - Snapshot Nilai Asli: Menyimpan baseline parameter awal template atau hasil generate AI.
-   - Tombol "↺ Kembalikan ke Asli" (Revert): Sekali klik mengembalikan seluruh slider dan teks ke kondisi awal.
-   - Riwayat Undo Berurutan ("↶ Undo"): Kapasitas 20 langkah riwayat perubahan terakhir.
+Setiap grafik dibangun secara deterministik via React TSX murni:
+- Teks selalu tajam sempurna di resolusi 4K tanpa degradasi piksel.
+- Tata letak, warna aksen, skala, dan posisi dapat dikontrol manual secara instan.
+- Ekspor video Alpha Channel (transparan) 100% tembus pandang tanpa green screen.
+- Gerakan animasi mengikuti formula matematis dan hukum fisika pegas (spring physics).
 
-G. AI SELF-HEALING & AUTO-FIX ERROR
-   - Tombol "⚡ Auto-Fix Error": Jika terjadi galat sintaks saat pengeditan kode manual, 
-     AI secara otomatis menganalisis stack trace dan memperbaikinya dalam hitungan detik.
+--------------------------------------------------------------------------------
+1. FITUR UTAMA & SISTEM LISENSI FLEKSIBEL (V1.0.5)
+--------------------------------------------------------------------------------
+
+A. DUAL-ENGINE AI PRODUCER & REFINEMENT
+   - Prompt-to-Motion Generator bertenaga Gemini 2.5 Flash / Pro.
+   - Smart Refinement Chat Assistant: Revisi spesifik tanpa merusak struktur visual lainnya.
+
+B. UNIVERSAL DYNAMIC TIMELINE & NEVER-FREEZE ENGINE
+   - Dukungan penuh opsi durasi fleksibel: 5 Detik, 10 Detik, 15 Detik, dan 20 Detik (600f/1200f).
+   - Animasi dihitung secara dinamis (% of durationInFrames) sehingga bebas dari freeze di durasi berapa pun.
+   - Micro-motion kontinu: Oscillating floating, breathing glow, camera zoom drift, dan data ticks.
+
+C. 4-CATEGORY VISUAL TWEAKER LIVE HOT-SYNC
+   - Kontrol parametrik manual instan tanpa perlu memanggil AI:
+     * Konten Teks: titleText, subtitleText, badgeText
+     * Skema Warna: accentColor, secondaryColor, backgroundColor, isTransparent (Alpha)
+     * Transform: Posisi X, Posisi Y, Scale (50% - 200%), Reset Transform
+     * Efek & Ritme: Neon Glow Intensity, Speed Multiplier
+   - Terintegrasi penuh ke kanvas preview dan pipeline ekspor (MP4 H.264 & ProRes 4444).
+
+D. AUTOMATED ERROR CAPTURE & SELF-HEALING RECOVERY
+   - Deteksi runtime error otomatis dari compiler dan canvas Remotion.
+   - Tombol "Auto-Fix Bug" interaktif untuk pemulihan kode cerdas satu kali klik.
+
+E. STUDIO CANVAS LIVE PREVIEW
+   - Live Player Remotion dengan dukungan Play/Pause, scrubber timeline, hot-reload instan.
+
+F. PHYSICAL EXPORT PIPELINE
+   - MP4 (H.264 CRF 18) untuk web/sosial media standar broadcast.
+   - MOV ProRes 4444 Alpha Channel (yuva444p10le) untuk Adobe Premiere, After Effects, CapCut, DaVinci Resolve.
+
+G. TIERED MACHINE-LOCKED LICENSING
+   - Perlindungan lisensi offline berbasis Machine ID dengan verifikasi kriptografi.
 
 H. IN-APP AUTO-UPDATE SYSTEM
    - Notifikasi pembaruan aplikasi modern model OBS Studio dengan pemantauan unduhan di latar belakang.
 
 --------------------------------------------------------------------------------
-2. CATATAN RILIS (CHANGELOG V1.0.4)
+2. CATATAN RILIS (CHANGELOG V1.0.5)
 --------------------------------------------------------------------------------
 
-Pembaruan v1.0.4 menghadirkan peningkatan signifikan pada stabilitas dan kontrol ekspor:
+Pembaruan v1.0.5 menghadirkan penyempurnaan menyeluruh pada alur kerja motion graphics:
 
-1. Optimalisasi Remotion Engine di Latar Belakang:
-   - Peningkatan efisiensi manajemen worker Node.js dan proses compilation pipeline.
-   - Optimalisasi konsumsi memori (RAM) saat merender komposisi 4K berdurasi panjang.
-   - Sinkronisasi alokasi progress render fisik (25% - 100%) langsung ke status bar.
+1. Fungsionalisasi Penuh Visual Tweaker 4-Kategori:
+   - Standarisasi kontrak props VibeGraphicProps pada semua prompt AI.
+   - Kontrol manual real-time untuk Teks, Warna, Transformasi (Offset X/Y, Scale), dan Efek (Glow, Speed).
+   - Dukungan Undo history, Revert to Original, dan sinkronisasi otomatis ke pipeline render.
 
-2. Perbaikan Stabilitas Canvas Preview:
-   - Penanganan isu port offline (Port 10871) dengan fitur auto-recovery dan tombol "Sync Canvas".
-   - Sinkronisasi visual tweaker tanpa kedipan (flicker-free dynamic state sync).
-   - Garansi Frame 0 Safe: Memastikan komposisi langsung terlihat jelas di frame awal tanpa blank screen.
+2. Universal Dynamic Timeline & Anti-Freeze Engine:
+   - Penambahan opsi durasi 20 Detik (600 frames @ 30fps / 1200 frames @ 60fps).
+   - Seluruh logika animasi menggunakan formula persentase durasi dinamis tanpa hardcoded frames.
+   - Gerakan mikro kontinu memastikan visual tidak pernah membeku di detik mana pun.
 
-3. Penyesuaian Kontrol Ekspor Video:
-   - Penguncian ketat ProRes 4444 Alpha Channel pada format piksel `yuva444p10le` dan 
-     format gambar `png` murni untuk menjamin 100% transparansi bebas latar hitam.
-   - Antarmuka pemilihan resolusi terpadu (1080p, 2K, 4K) dan rasio aspek (16:9, 9:16, 1:1).
-   - Penambahan modal auto-update pop-up untuk kemudahan update ke versi mendatang.
+3. Automated Error Capture & Self-Healing Pipeline:
+   - Penangkapan error runtime instan dari Remotion Studio IPC tanpa copy-paste manual.
+   - Auto-Fix terpandu dengan jeda buffer aman dan pencegahan race condition bundler.
 
 --------------------------------------------------------------------------------
 3. SPESIFIKASI SISTEM MINIMUM & REKOMENDASI
@@ -142,7 +173,7 @@ Pembaruan v1.0.4 menghadirkan peningkatan signifikan pada stabilitas dan kontrol
 --------------------------------------------------------------------------------
 
 Langkah 1: BUKA & PASANG APLIKASI
-- Jalankan "Motion Suite Pro Setup v1.0.4.exe" sampai aplikasi terbuka.
+- Jalankan "Motion Suite Pro Setup v1.0.5.exe" sampai aplikasi terbuka.
 - Jika muncul peringatan Windows SmartScreen, klik "More info" lalu pilih "Run anyway".
 
 Langkah 2: SALIN MACHINE ID

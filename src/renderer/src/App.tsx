@@ -516,7 +516,7 @@ export function App(): React.JSX.Element {
   const [activeTab, setActiveTab] = useState<'editor' | 'preview' | 'template' | 'autocoder'>('preview')
 
   // Dynamic App Version from package.json via app.getVersion()
-  const [appVersion, setAppVersion] = useState<string>('PRO v1.0.4')
+  const [appVersion, setAppVersion] = useState<string>('PRO v1.0.5')
 
   useEffect(() => {
     let isMounted = true
@@ -2410,7 +2410,7 @@ export function App(): React.JSX.Element {
               title="Buka jendela pembaruan"
             >
               <span className="update-badge-dot" />
-              <span>Update v{updateVersion || '1.0.4'}</span>
+              <span>Update v{updateVersion || '1.0.5'}</span>
             </button>
           )}
           <div className="meta-status">
@@ -3937,7 +3937,7 @@ export function App(): React.JSX.Element {
                     Pembaruan Tersedia
                   </h3>
                   <p className="update-modal-version-tag">
-                    Motion Suite Pro <strong>v{updateVersion || '1.0.4'}</strong>
+                    Motion Suite Pro <strong>v{updateVersion || '1.0.5'}</strong>
                   </p>
                 </div>
               </div>
@@ -3961,7 +3961,7 @@ export function App(): React.JSX.Element {
               <div className="update-modal-notes-section">
                 <div className="update-modal-notes-label">
                   <span>Catatan Rilis (Release Notes):</span>
-                  <span className="update-modal-tag">v{updateVersion || '1.0.4'}</span>
+                  <span className="update-modal-tag">v{updateVersion || '1.0.5'}</span>
                 </div>
                 <div className="update-release-notes-box">
                   {updateReleaseNotes}
@@ -3995,7 +3995,7 @@ export function App(): React.JSX.Element {
                   <div className="downloaded-text">
                     <strong>Pembaruan Siap Dipasang!</strong>
                     <span>
-                      Paket instalasi v{updateVersion || '1.0.4'} telah selesai diunduh dan diverifikasi. Klik tombol di bawah untuk memasang dan me-restart aplikasi.
+                      Paket instalasi v{updateVersion || '1.0.5'} telah selesai diunduh dan diverifikasi. Klik tombol di bawah untuk memasang dan me-restart aplikasi.
                     </span>
                   </div>
                 </div>

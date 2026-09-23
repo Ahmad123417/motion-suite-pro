@@ -47,38 +47,53 @@ Sebaliknya, **Motion Suite Pro adalah Prompt-to-Code Motion Graphics Workstation
 * Panel *slide-in* samping kanan (tema Dark Cyber Pro) tanpa memotong ruang kanvas preview (100% full viewport).
 * Pengaturan instan: **Teks** (Judul, Subjudul, Badge), **Warna & Latar** (Warna aksen utama, sekunder, mode solid vs alpha), **Transformasi** (Posisi X/Y, Skala 50%–200%, Tombol Reset), dan **Efek FX** (Neon Glow, Speed Multiplier 0.5x–2.0x).
 * Dilengkapi *Live Hot-Sync* yang mencerminkan pergeseran kontrol ke kanvas preview secara seketika.
-
-### 6. Sistem Undo Berurutan & Revert to Initial State
-* Riwayat *Undo Stack* pintar berkapasitas 20 langkah terakhir.
-* Tombol **"Kembalikan ke Asli" (Revert)** untuk mereset seluruh parameter kembali ke wujud asli template dengan satu klik.
-
-### 7. AI Self-Healing & Auto-Fix Error
-* Fitur auto-koreksi pintar seketika: Jika terjadi galat sintaks TypeScript saat manipulasi kode manual, cukup klik tombol **`⚡ Auto-Fix Error`** untuk perbaikan kode otomatis oleh AI dalam hitungan detik.
-
-### 8. In-App Auto-Update System
-* Sistem pembaruan pop-up modern bergaya OBS Studio.
-* Menampilkan catatan rilis versi baru, progress unduhan di latar belakang, dan tombol instalasi instan.
+* **Transparansi Asli (True Alpha Channel)**: Menghasilkan video berlatar transparan murni (*Apple ProRes 4444*) tanpa latar hitam, siap pakai untuk video overlay di Premiere Pro, After Effects, CapCut, DaVinci Resolve, dan Final Cut Pro.
 
 ---
 
-## 📝 Catatan Rilis: Changelog v1.0.4
+## 🌟 Fitur Utama & Keunggulan
 
-Pembaruan **v1.0.4** berfokus pada stabilitas engine render fisik, keandalan kanvas preview, dan penyempurnaan kontrol ekspor video:
+### 1. 🎛️ 4-Category Visual Tweaker Live Hot-Sync
+* **Kontrol Parametrik Instan**: Mengubah teks (`titleText`, `subtitleText`, `badgeText`), warna (`accentColor`, `secondaryColor`, `backgroundColor`), posisi (`offsetX`, `offsetY`), skala (`scale`), intensitas glow (`glowIntensity`), dan ritme animasi (`speedMultiplier`) secara langsung.
+* **Undo History & Revert to Initial**: Riwayat perubahan berurutan hingga 20 langkah dan tombol sekali klik untuk mengembalikan ke nilai awal template.
+* **Terintegrasi Penuh ke Render**: Nilai kontrol langsung disinkronkan ke kanvas preview dan file `render_props.json` untuk ekspor fisik.
 
-### ⚙️ 1. Optimalisasi Remotion Engine di Latar Belakang
-* **Background Worker & Compilation Pipeline**: Mengoptimalkan inisialisasi compiler TypeScript lokal dan proses *bundling* Remotion di latar belakang, mengurangi penggunaan CPU saat *idle*.
-* **Manajemen Alokasi Memori**: Pengurangan *memory footprint* saat melakukan rendering animasi beresolusi 4K dengan durasi panjang.
-* **Render Pipeline Berjenjang**: Sinkronisasi proses render media fisik dengan pelaporan progress akurat (alokasi progress 25% – 100%) langsung ke *status bar* aplikasi.
+### 2. ⚡ Universal Dynamic Timeline & Anti-Freeze Engine
+* **Pilihan Durasi Fleksibel**: 5 Detik, 10 Detik, 15 Detik, dan 20 Detik (600 frames @ 30 FPS / 1200 frames @ 60 FPS).
+* **Perhitungan Timeline Dinamis**: AI menggunakan persentase durasi (`durationInFrames`), menghilangkan pembekuan visual di detik akhir.
+* **Continuous Micro-Motions**: Osilasi mengambang (*floating*), *breathing glow*, *camera zoom drift*, dan denyut data terus aktif sepanjang durasi.
 
-### 🖥️ 2. Perbaikan Stabilitas Canvas Preview
-* **Resiliensi Koneksi Port Lokal**: Memperbaiki isu transien saat engine pertama kali dimuat (*Port 10871 Offline / Initializing*) dengan *auto-reconnect* pintar dan penambahan kontrol manual **Sync Canvas**.
-* **Zero-Lag State Synchronization**: Perbaikan sinkronisasi data parameter visual antara Visual Tweaker Drawer dan Remotion Player tanpa kedipan (*flicker-free hot reload*).
-* **Frame 0 Safe Guarantee**: Menjamin komposisi selalu terlihat jelas pada Frame 0 tanpa efek layar hitam sesaat (*blank initial frame*).
+### 3. 🛡️ Automated Error Capture & Self-Healing Pipeline
+* **Zero Manual Copy-Paste**: Error runtime Remotion ditangkap langsung oleh IPC backend.
+* **Tombol Auto-Fix Interaktif**: Memperbaiki galat kompilasi secara cerdas dengan satu kali klik.
 
-### 🎬 3. Penyesuaian Kontrol Ekspor Video
-* **Lockdown Apple ProRes 4444 Alpha**: Konfigurasi ketat flag rendering Remotion dengan format piksel `yuva444p10le` dan format gambar frame `png` murni—mencegah galat degradasi warna atau transparansi hitam yang sebelumnya dipicu oleh format JPEG default.
-* **Penyesuaian Preset Resolusi & Rasio**: Antarmuka kontrol ekspor kini menyajikan pemilih rasio aspek (16:9, 9:16, 1:1) dan preset resolusi (1080p, 2K, 4K) yang lebih intuitif dan presisi.
-* **Auto-Updater Integration**: Penambahan modal dialog pembaruan interaktif dengan pemantauan unduhan *real-time*.
+### 4. 🤖 Prompt-to-Motion AI Generator & Refinement Assistant
+* Terhubung langsung dengan Google Gemini Flash/Pro dengan integrasi BYOK (*Bring Your Own Key*) 100% gratis.
+* Chat revisi cerdas untuk memperbarui motion graphic tanpa menghancurkan tata letak yang sudah bagus.
+
+### 5. 🎬 Pipeline Ekspor Fisik Resolusi 4K & True Alpha Channel
+* **MP4 (H.264)** untuk media sosial dan web.
+* **Apple ProRes 4444 (.MOV)** dengan format piksel `yuva444p10le` untuk transparansi 10-bit berkualitas studio.
+
+---
+
+## 📝 Catatan Rilis: Changelog v1.0.5
+
+Pembaruan **v1.0.5** menghadirkan fungsionalitas penuh Visual Tweaker, durasi baru 20 detik, dan pipeline self-healing:
+
+### 🎛️ 1. Fungsionalisasi Penuh Panel Visual Tweaker 4-Kategori
+* Standarisasi kontrak props `VibeGraphicProps` (Teks, Warna, Transform, Efek) di semua template prompt AI.
+* Integrasi dua arah slider Visual Tweaker ke kanvas preview Remotion (hot-sync 120ms) dan pipeline ekspor fisik.
+* Parser cerdas `parseTsxDefaultProps` untuk mendeteksi nilai default prop dari kode TSX secara otomatis.
+
+### ⏱️ 2. Universal Dynamic Timeline & Anti-Freeze Engine
+* Penambahan opsi durasi **20 Detik (600f @ 30fps / 1200f @ 60fps)** pada panel kontrol dan Remotion Player.
+* Aturan AI ketat: Melarang frame statis hardcoded, wajib menggunakan persentase dinamis dari `durationInFrames`.
+* Micro-motion kontinu dari frame 0 hingga akhir untuk menjaga animasi tetap hidup (*never-freeze*).
+
+### ⚡ 3. Automated Error Capture & Self-Healing
+* Penangkapan error runtime compiler Remotion secara otomatis melalui IPC channel `studio:error`.
+* Pemulihan kode instan dengan proteksi jeda buffer untuk menghindari race condition file bundler.
 
 ---
 
@@ -97,7 +112,7 @@ Pembaruan **v1.0.4** berfokus pada stabilitas engine render fisik, keandalan kan
 
 ## 🏁 Panduan Singkat Memulai (Quick Start)
 
-1. **Jalankan Installer**: Pasang `Motion-Suite-Pro.Setup.1.0.4.exe` pada sistem Windows Anda.
+1. **Jalankan Installer**: Pasang `Motion-Suite-Pro.Setup.1.0.5.exe` pada sistem Windows Anda.
 2. **Aktivasi Lisensi**: Buka aplikasi, cari panel **Status Lisensi** di pojok kiri atas, masukkan Kunci Lisensi resmi dari nota pembelian Lynk.id, lalu klik **Validasi** hingga status menjadi **"Aktif"** sesuai paket lisensi Anda (Hijau).
 3. **Masukkan Gemini API Key**: Ambil API Key gratis di [Google AI Studio](https://aistudio.google.com), masukkan ke panel **Gemini API Key** di sidebar kiri, lalu klik **Simpan**.
 4. **Rancang Animasi**: Masukkan prompt konsep Anda, sesuaikan teks/warna/posisi di **Visual Tweaker Drawer**, dan tonton preview seketika.
