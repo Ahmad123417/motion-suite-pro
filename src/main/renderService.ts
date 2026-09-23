@@ -11,6 +11,8 @@ export interface StartRenderPayload {
   resolutionLabel?: string
   renderMode?: 'auto' | 'gpu' | 'cpu'
   customOutputFolder?: string
+  durationInFrames?: number
+  fps?: number
   titleText?: string
   subtitleText?: string
   badgeText?: string
@@ -210,6 +212,9 @@ export async function startRender(
   const propsFilePath = join(remotionEnvDir, 'render_props.json')
 
   // Write temporary render_props.json to avoid Windows shell quote stripping
+  let finalDurationInFrames = 150
+  let finalFps = 30
+
   try {
     let baseProps: Record<string, any> = {}
     const configPath = join(remotionEnvDir, 'src', 'video_config.json')
@@ -218,8 +223,20 @@ export async function startRender(
         baseProps = JSON.parse(readFileSync(configPath, 'utf-8'))
       } catch (_) {}
     }
+
+    finalDurationInFrames = Math.max(
+      1,
+      Number(payload.durationInFrames) || Number(baseProps.durationInFrames) || 150
+    )
+    finalFps = Math.max(
+      1,
+      Number(payload.fps) || Number(baseProps.fps) || 30
+    )
+
     const renderProps: Record<string, any> = {
       ...baseProps,
+      durationInFrames: finalDurationInFrames,
+      fps: finalFps,
       isTransparent,
       ...(payload.titleText !== undefined ? { titleText: payload.titleText } : {}),
       ...(payload.subtitleText !== undefined ? { subtitleText: payload.subtitleText } : {}),
@@ -256,24 +273,33 @@ export async function startRender(
     glFlags.push('--gl=swiftshader')
   }
 
-  // ProRes codec flags configuration
+  // ProRes codec & pixel / image format flags configuration
+  const isProResAlpha = isMov && (isTransparent || payload.format === 'prores4444' && payload.isTransparent !== false)
+  const pixelFormat = isProResAlpha ? 'yuva444p10le' : undefined
+  // Lock imageFormat directly to pixelFormat / ProRes Alpha:
+  // Remotion strictly rejects anything other than PNG for yuva444p10le
+  const imageFormat = (pixelFormat === 'yuva444p10le' || isProResAlpha) ? 'png' : 'jpeg'
+
   const codecFlags: string[] = []
   if (isMov) {
     codecFlags.push('--codec=prores', '--prores-profile=4444')
-    if (isTransparent) {
+    if (pixelFormat === 'yuva444p10le' || isProResAlpha) {
       codecFlags.push('--pixel-format=yuva444p10le')
     }
+    codecFlags.push(`--image-format=${imageFormat}`)
   } else {
-    codecFlags.push('--codec=h264')
+    codecFlags.push('--codec=h264', `--image-format=${imageFormat}`)
   }
 
   // Discrete arguments array to prevent space truncation in paths like 'Motion Studio'
+  // Dynamic frame range: --frames=0-${finalDurationInFrames - 1} ensures full export without hardcoded limits
   const remotionSubArgs = [
     'render',
     'src/index.ts',
     'VibeGraphic',
     `--output=${resolvedOutputPath}`,
     `--props=${propsFilePath}`,
+    `--frames=0-${finalDurationInFrames - 1}`,
     ...codecFlags,
     ...glFlags
   ]

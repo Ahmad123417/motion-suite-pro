@@ -71,6 +71,8 @@ export interface CustomElectronAPI {
     resolutionLabel?: string
     renderMode?: 'auto' | 'gpu' | 'cpu'
     customOutputFolder?: string
+    durationInFrames?: number
+    fps?: number
     titleText?: string
     subtitleText?: string
     badgeText?: string
@@ -85,6 +87,7 @@ export interface CustomElectronAPI {
   }) => Promise<{ success: boolean; outputPath?: string; canceled?: boolean; error?: string }>
   cancelRender: () => Promise<boolean>
   onRenderProgress: (callback: (data: { percent: number; statusText: string }) => void) => () => void
+  onStudioError: (callback: (errorMsg: string) => void) => () => void
   startStudioServer: (port?: number) => Promise<{ success: boolean; port: number; url: string; error?: string }>
   stopStudioServer: () => Promise<{ success: boolean }>
   restartStudioServer: (port?: number) => Promise<{ success: boolean; port: number; url: string; error?: string }>
@@ -93,6 +96,7 @@ export interface CustomElectronAPI {
   generateVideo: (payload: {
     prompt: string
     imageBase64?: string
+    mimeType?: string
     apiKey: string
     assetPath?: string
   }) => Promise<{ success: boolean; code?: string; filePath?: string; error?: string }>
@@ -103,9 +107,15 @@ export interface CustomElectronAPI {
     assetPath?: string
   }) => Promise<{ success: boolean; code?: string; filePath?: string; error?: string }>
   autoFixVideo: (payload: {
-    errorMessage: string
+    errorMessage?: string
     apiKey: string
     currentCode?: string
+    mode?: 'runtime_error' | 'visual_recovery'
+    width?: number
+    height?: number
+    fps?: number
+    durationInFrames?: number
+    aspectRatio?: string
   }) => Promise<{ success: boolean; code?: string; filePath?: string; error?: string }>
   readCurrentCode: () => Promise<string>
   saveLocalAsset: (
@@ -147,7 +157,8 @@ export interface CustomElectronAPI {
   restartAndInstall: () => void
   installAndRestart?: () => void
   startUpdateDownload?: () => Promise<{ success: boolean; error?: string }>
-  onUpdateAvailable: (callback: (info: { version: string; releaseNotes?: string }) => void) => () => void
+  startDownloadUpdate?: () => Promise<{ success: boolean; error?: string }>
+  onUpdateAvailable: (callback: (info: { version: string; releaseNotes?: any; [key: string]: any }) => void) => () => void
   onUpdateDownloaded: (callback: (info?: { version: string }) => void) => () => void
   onUpdateProgress?: (callback: (data: { percent: number }) => void) => () => void
   onUpdateError?: (callback: (err: { message: string }) => void) => () => void

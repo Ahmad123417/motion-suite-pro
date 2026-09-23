@@ -12,7 +12,7 @@ interface RenderNotification {
 
 export type AspectRatioType = '16:9' | '9:16'
 export type ResolutionQualityType = '1080p' | '2k' | '4k'
-export type DurationSecondsType = 5 | 10 | 15
+export type DurationSecondsType = 5 | 10 | 15 | 20
 export type FpsType = 24 | 30 | 60
 
 export const MASTER_PROMPT_TEMPLATE = `Kamu adalah Creative Director & Motion Prompt Architect khusus untuk Remotion (React + TypeScript).
@@ -67,6 +67,8 @@ Setelah user setuju, buatlah SATU PROMPT EKSEKUSI KODE LENGKAP di dalam blok mar
    - Breakdown timeline per frame dari Frame 0 hingga akhir.
 
 2. ATURAN WAJIB STRUKTUR KODE:
+   - Universal Dynamic Timeline (Semua Durasi: 5s, 10s, 15s, 20s): DILARANG MENGGUNAKAN ANGKA FRAME STATIS / HARDCODED (seperti [0, 60] atau [0, 150]). SEMUA fase timeline WAJIB dihitung dari persentase 'durationInFrames' (useVideoConfig()): Intro [0, Math.floor(durationInFrames * 0.2)], Main Action [Math.floor(durationInFrames * 0.2), Math.floor(durationInFrames * 0.8)], Ending [Math.floor(durationInFrames * 0.8), durationInFrames].
+   - Never-Freeze Engine (Micro-Motion Berkelanjutan): Elemen visual TIDAK BOLEH berhenti bergerak total di detik mana pun. Wajib ada gerakan matematis berkelanjutan (floating Math.sin(frame / 15), breathing glow, camera zoom 1.0 -> 1.04).
    - Frame 0 Visibility: Artwork awal SUDAH TERLIHAT (opacity 0.88–0.95 -> 1.0, dilarang blank/hitam).
    - Scaling Dinamis: Wajib \`baseScale = Math.min(width, height) / 1080\` pada semua font, margin, padding, SVG dimensions, dan coordinate offsets.
    - Readability: Teks wajib memiliki text-shadow / outline kontras tinggi agar terbaca di footage terang maupun gelap.
@@ -97,19 +99,6 @@ export interface VibeGraphicProps {
   // FX & Aksen
   glowIntensity?: number   // Rentang: 0 - 40 px (Default: 15)
   speedMultiplier?: number // Rentang: 0.5 - 2.0 (Default: 1)
-  customAssetUrl?: string
-}
-
-// Helper pergerakan snap deterministik (sesuaikan titik transisi)
-const STEP_FRAMES = [0, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 360]
-const NUMBERS = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
-
-const getSnapForT = (frame: number, t: number, maxSnap: number) => {
-  if (frame < t - 4 || frame > t + 8) return 0
-  if (frame <= t) {
-    return interpolate(frame, [t - 4, t], [0, maxSnap], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
-  }
-  return interpolate(frame, [t, t + 8], [maxSnap, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
 }
 
 export const VibeGraphic: React.FC<VibeGraphicProps> = ({
@@ -124,14 +113,22 @@ export const VibeGraphic: React.FC<VibeGraphicProps> = ({
   textOffsetX = 0,
   textOffsetY = 0,
   glowIntensity = 15,
-  speedMultiplier = 1,
-  customAssetUrl
+  speedMultiplier = 1
 }) => {
   const rawFrame = useCurrentFrame()
   const frame = rawFrame * speedMultiplier
-  const { width, height } = useVideoConfig()
+  const { width, height, durationInFrames = 150 } = useVideoConfig()
   const minDim = Math.min(width, height)
   const baseScale = minDim / 1080
+
+  // Universal Dynamic Timeline (All Durations 5s, 10s, 15s, 20s)
+  const introEnd = Math.floor(durationInFrames * 0.2)
+  const actionEnd = Math.floor(durationInFrames * 0.8)
+
+  // Anti-Freeze Continuous Micro-Motions (Frame 0 to End)
+  const cameraZoom = interpolate(frame, [0, durationInFrames], [1, 1.04], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
+  const floatY = Math.sin(frame / 15) * (6 * baseScale)
+  const breathingGlow = 0.4 + Math.sin(frame / 20) * 0.2
 
   // Frame 0 Safe
   const introOpacity = interpolate(frame, [0, 15], [0.88, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
@@ -281,6 +278,25 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: st
     }),
     timeoutPromise
   ])
+}
+
+// Clean and strip markdown code fences and extraneous text from AI generated code
+export function cleanAndStripMarkdownCode(raw: string): string {
+  let cleaned = (raw || '').trim()
+  const fenceMatch = cleaned.match(/```(?:tsx|typescript|jsx|javascript)?\s*([\s\S]*?)```/i)
+  if (fenceMatch && fenceMatch[1]) {
+    cleaned = fenceMatch[1].trim()
+  } else {
+    cleaned = cleaned.replace(/^```(?:tsx|typescript|jsx|javascript)?\s*/i, '')
+    cleaned = cleaned.replace(/\s*```+\s*$/i, '')
+    cleaned = cleaned.trim()
+  }
+  const importIdx = cleaned.indexOf('import ')
+  if (importIdx > 0) {
+    cleaned = cleaned.slice(importIdx).trim()
+  }
+  cleaned = cleaned.replace(/```+\s*$/g, '').trim()
+  return cleaned
 }
 
 // Remotion Error Boundary to catch runtime exceptions in pasted TSX code
@@ -477,7 +493,7 @@ export function App(): React.JSX.Element {
   const [activeTab, setActiveTab] = useState<'editor' | 'preview' | 'template' | 'autocoder'>('preview')
 
   // Dynamic App Version from package.json via app.getVersion()
-  const [appVersion, setAppVersion] = useState<string>('v1.0.1')
+  const [appVersion, setAppVersion] = useState<string>('PRO v1.0.4')
 
   useEffect(() => {
     let isMounted = true
@@ -489,7 +505,8 @@ export function App(): React.JSX.Element {
           (window as any).electron?.ipcRenderer?.invoke('get-app-version')
         )
         if (ver && isMounted) {
-          setAppVersion(ver.startsWith('v') ? ver : `v${ver}`)
+          const cleanVer = ver.startsWith('v') ? ver : `v${ver}`
+          setAppVersion(`PRO ${cleanVer}`)
         }
       } catch (err) {
         console.warn('[App] Gagal memuat versi aplikasi:', err)
@@ -702,6 +719,50 @@ export function App(): React.JSX.Element {
     }, 3000)
   }
 
+  // Live Code Editor & Motion Lifecycle States (restored from localStorage if available)
+  const STORAGE_KEY_LAST_ACTIVE_CODE = 'motion_suite_last_active_code'
+  const [manualCode, setManualCode] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_LAST_ACTIVE_CODE)
+      if (saved && saved.trim()) return saved
+    } catch {
+      // ignore
+    }
+    return ''
+  })
+  const [isApplyingCode, setIsApplyingCode] = useState<boolean>(false)
+  const [codeEditorStatus, setCodeEditorStatus] = useState<string>('')
+
+  // Auto-Save active animation code to localStorage on state changes
+  useEffect(() => {
+    if (manualCode && manualCode.trim()) {
+      try {
+        localStorage.setItem(STORAGE_KEY_LAST_ACTIVE_CODE, manualCode)
+      } catch (err) {
+        console.warn('[App] Gagal auto-save kode ke localStorage:', err)
+      }
+    }
+  }, [manualCode])
+
+  // Self-Healing, Auto-Fix & Safe Rollback History States
+  const [lastWorkingCode, setLastWorkingCode] = useState<string>('')
+  const [capturedError, setCapturedError] = useState<string>('')
+  const [isAutoFixing, setIsAutoFixing] = useState<boolean>(false)
+  const [isAutoFixModalOpen, setIsAutoFixModalOpen] = useState<boolean>(false)
+  const [autoFixErrorInput, setAutoFixErrorInput] = useState<string>('')
+  const [autoFixMode, setAutoFixMode] = useState<'runtime_error' | 'visual_recovery'>('runtime_error')
+  const [showManualErrorInput, setShowManualErrorInput] = useState<boolean>(false)
+  const [rollbackToast, setRollbackToast] = useState<string>('')
+
+  // ── Auto-Updater States (OBS Studio Style Modal) ──────────────────────────
+  type UpdatePhase = 'idle' | 'available' | 'downloading' | 'downloaded'
+  const [updatePhase, setUpdatePhase] = useState<UpdatePhase>('idle')
+  const [updateVersion, setUpdateVersion] = useState<string>('')
+  const [updateReleaseNotes, setUpdateReleaseNotes] = useState<string>('')
+  const [updatePercent, setUpdatePercent] = useState<number>(0)
+  const [updateErrorMsg, setUpdateErrorMsg] = useState<string>('')
+  const [isUpdateDismissed, setIsUpdateDismissed] = useState<boolean>(false)
+
   // Synchronize video configuration with remotion_env/src/video_config.json (debounced 120ms for smooth slider performance)
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -763,46 +824,34 @@ export function App(): React.JSX.Element {
     }
   }
 
-  // Live Code Editor & Motion Lifecycle States
-  const [manualCode, setManualCode] = useState<string>('')
-  const [isApplyingCode, setIsApplyingCode] = useState<boolean>(false)
-  const [codeEditorStatus, setCodeEditorStatus] = useState<string>('')
-
-  // Self-Healing, Auto-Fix & Safe Rollback History States
-  const [lastWorkingCode, setLastWorkingCode] = useState<string>('')
-  const [capturedError, setCapturedError] = useState<string>('')
-  const [isAutoFixing, setIsAutoFixing] = useState<boolean>(false)
-  const [isAutoFixModalOpen, setIsAutoFixModalOpen] = useState<boolean>(false)
-  const [autoFixErrorInput, setAutoFixErrorInput] = useState<string>('')
-  const [rollbackToast, setRollbackToast] = useState<string>('')
-
-  // ── Auto-Updater Banner States ────────────────────────────────────────────
-  type UpdatePhase = 'idle' | 'available' | 'downloading' | 'downloaded'
-  const [updatePhase, setUpdatePhase] = useState<UpdatePhase>('idle')
-  const [updateVersion, setUpdateVersion] = useState<string>('')
-  const [updatePercent, setUpdatePercent] = useState<number>(0)
-  const [updateDismissed, setUpdateDismissed] = useState<boolean>(false)
-
-  // Local Asset Dropzone States (Logo/Icon SVG & PNG transparent overlay)
-  const [customAssetUrl, setCustomAssetUrl] = useState<string | null>(null)
-  const [customAssetName, setCustomAssetName] = useState<string | null>(null)
-  const [uploadedAssetPath, setUploadedAssetPath] = useState<string | null>(null)
-  const [isDraggingAsset, setIsDraggingAsset] = useState<boolean>(false)
-  const assetFileInputRef = React.useRef<HTMLInputElement>(null)
 
   // ── Auto-Updater: Subscribe to IPC events from main process ───────────────
   useEffect(() => {
     const api = (window as any).api || (window as any).electronAPI
     if (!api?.onUpdateAvailable) return
 
-    const unsubAvailable = api.onUpdateAvailable((info: { version: string }) => {
-      setUpdateVersion(info.version)
-      setUpdatePhase('downloading')
-      setUpdateDismissed(false)
+    const unsubAvailable = api.onUpdateAvailable((info: any) => {
+      if (info?.version) {
+        setUpdateVersion(info.version)
+      }
+      let notes = ''
+      if (Array.isArray(info?.releaseNotes)) {
+        notes = info.releaseNotes
+          .map((n: any) => (typeof n === 'string' ? n : n?.note || ''))
+          .filter(Boolean)
+          .join('\n')
+      } else if (typeof info?.releaseNotes === 'string') {
+        notes = info.releaseNotes
+      }
+      setUpdateReleaseNotes(notes || 'Pembaruan stabilitas dan peningkatan performa sistem.')
+      setUpdatePhase('available')
+      setUpdateErrorMsg('')
+      setIsUpdateDismissed(false)
     })
     const unsubProgress = api.onUpdateProgress?.((data: { percent: number }) => {
       setUpdatePercent(data.percent)
       setUpdatePhase('downloading')
+      setUpdateErrorMsg('')
     })
     const unsubDownloaded = api.onUpdateDownloaded?.((info?: { version: string }) => {
       if (info?.version) {
@@ -810,11 +859,11 @@ export function App(): React.JSX.Element {
       }
       setUpdatePhase('downloaded')
       setUpdatePercent(100)
-      setUpdateDismissed(false)
+      setUpdateErrorMsg('')
     })
-    const unsubError = api.onUpdateError?.(() => {
-      // Silent — jangan ganggu user jika error update
-      setUpdatePhase('idle')
+    const unsubError = api.onUpdateError?.((err: { message: string }) => {
+      console.warn('[AutoUpdater] Error event received:', err)
+      setUpdateErrorMsg(err?.message || 'Terjadi kesalahan saat mengunduh pembaruan.')
     })
 
     return () => {
@@ -825,134 +874,41 @@ export function App(): React.JSX.Element {
     }
   }, [])
 
-  // Handlers for Local Asset Dropzone (Logo / Icon)
-  const handleProcessAssetFile = async (file: File): Promise<void> => {
-    const isImage =
-      file.type.startsWith('image/') ||
-      /\.(png|svg|webp|jpe?g)$/i.test(file.name)
-    if (!isImage) {
-      setCodeEditorStatus('Harap pilih file gambar yang valid (PNG, SVG, JPG, WebP).')
-      return
-    }
-
+  const handleStartUpdateDownload = async (): Promise<void> => {
+    const api = (window as any).api || (window as any).electronAPI
+    setUpdatePhase('downloading')
+    setUpdatePercent(0)
+    setUpdateErrorMsg('')
     try {
-      setCodeEditorStatus(`Menyimpan aset "${file.name}" ke Motion Engine...`)
-      const buffer = await file.arrayBuffer()
-      const api = getElectronAPI()
-
-      if (api?.saveLocalAsset) {
-        const res = await api.saveLocalAsset({
-          name: file.name,
-          buffer
-        })
-
-        if (res.success && res.relativePath) {
-          setUploadedAssetPath(res.relativePath)
-          setCustomAssetName(file.name)
-
-          // Instant UI thumbnail display
-          const reader = new FileReader()
-          reader.onload = (): void => {
-            setCustomAssetUrl(reader.result as string)
-          }
-          reader.readAsDataURL(file)
-
-          // Update video_config.json
-          if (api.updateVideoConfig) {
-            await api.updateVideoConfig({
-              width,
-              height,
-              fps,
-              durationInFrames,
-              assetPath: res.relativePath
-            })
-          }
-
-          // Refresh Remotion Studio preview iframe
-          setIframeKey((k) => k + 1)
-          setCodeEditorStatus(`✅ Aset "${file.name}" berhasil diunggah (${res.relativePath})!`)
-          setTimeout(() => {
-            setCodeEditorStatus((c) => (c.startsWith('✅ Aset') ? '' : c))
-          }, 4000)
-          return
+      if (api?.startDownloadUpdate) {
+        const res = await api.startDownloadUpdate()
+        if (!res?.success && res?.error) {
+          setUpdateErrorMsg(res.error)
+        }
+      } else if (api?.startUpdateDownload) {
+        const res = await api.startUpdateDownload()
+        if (!res?.success && res?.error) {
+          setUpdateErrorMsg(res.error)
+        }
+      } else if ((window as any).electron?.ipcRenderer?.invoke) {
+        const res = await (window as any).electron.ipcRenderer.invoke('start-download-update')
+        if (!res?.success && res?.error) {
+          setUpdateErrorMsg(res.error)
         }
       }
-
-      // Fallback if saveLocalAsset is not present
-      const reader = new FileReader()
-      reader.onload = (): void => {
-        const result = reader.result as string
-        setCustomAssetUrl(result)
-        setCustomAssetName(file.name)
-        setUploadedAssetPath('assets/overlay-logo.png')
-        setCodeEditorStatus(`Aset "${file.name}" berhasil dimuat!`)
-        setTimeout(() => {
-          setCodeEditorStatus((c) => (c.startsWith('Aset') ? '' : c))
-        }, 4000)
-      }
-      reader.readAsDataURL(file)
-    } catch (err) {
-      console.error('[App] handleProcessAssetFile error:', err)
-      setCodeEditorStatus('Gagal membaca dan menyimpan file aset.')
+    } catch (err: any) {
+      setUpdateErrorMsg(err?.message || 'Gagal memulai unduhan pembaruan.')
     }
   }
 
-  const handleAssetFileInputChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
-    const file = e.target.files?.[0]
-    if (file) {
-      handleProcessAssetFile(file)
-    }
-    e.target.value = ''
-  }
-
-  const handleAssetDrop = (e: React.DragEvent<HTMLDivElement>): void => {
-    e.preventDefault()
-    setIsDraggingAsset(false)
-    const file = e.dataTransfer.files?.[0]
-    if (file) {
-      handleProcessAssetFile(file)
-    }
-  }
-
-  const handleAssetDragOver = (e: React.DragEvent<HTMLDivElement>): void => {
-    e.preventDefault()
-    setIsDraggingAsset(true)
-  }
-
-  const handleAssetDragLeave = (e: React.DragEvent<HTMLDivElement>): void => {
-    e.preventDefault()
-    setIsDraggingAsset(false)
-  }
-
-  const handleRemoveAsset = async (e: React.MouseEvent): Promise<void> => {
-    e.stopPropagation()
-    try {
-      const api = getElectronAPI()
-      if (api?.removeLocalAsset) {
-        await api.removeLocalAsset()
-      }
-      setCustomAssetUrl(null)
-      setCustomAssetName(null)
-      setUploadedAssetPath(null)
-      if (assetFileInputRef.current) {
-        assetFileInputRef.current.value = ''
-      }
-      if (api?.updateVideoConfig) {
-        await api.updateVideoConfig({
-          width,
-          height,
-          fps,
-          durationInFrames,
-          assetPath: null
-        })
-      }
-      setIframeKey((k) => k + 1)
-      setCodeEditorStatus('Aset kustom berhasil dihapus.')
-      setTimeout(() => {
-        setCodeEditorStatus((c) => (c === 'Aset kustom berhasil dihapus.' ? '' : c))
-      }, 3000)
-    } catch (err) {
-      console.error('[App] handleRemoveAsset error:', err)
+  const handleRestartAndInstall = (): void => {
+    const api = (window as any).api || (window as any).electronAPI
+    if (api?.restartAndInstall) {
+      api.restartAndInstall()
+    } else if (api?.installAndRestart) {
+      api.installAndRestart()
+    } else if ((window as any).electron?.ipcRenderer?.invoke) {
+      ;(window as any).electron.ipcRenderer.invoke('restart-app-for-update')
     }
   }
 
@@ -1041,6 +997,29 @@ export function App(): React.JSX.Element {
   const handleIframeElementLoad = (e: React.SyntheticEvent<HTMLIFrameElement>): void => {
     const el = e.currentTarget
     injectStudioCleanStyles(el)
+
+    // Safely attempt to listen for runtime error events inside iframe if window is accessible
+    try {
+      const win = el.contentWindow
+      if (win) {
+        win.addEventListener('error', (event) => {
+          if (event && event.message) {
+            console.warn('[Studio Iframe Error Event]:', event.message)
+            setCapturedError(String(event.message))
+          }
+        })
+        win.addEventListener('unhandledrejection', (event) => {
+          if (event && event.reason) {
+            const reasonStr = event.reason?.message || String(event.reason)
+            console.warn('[Studio Iframe Unhandled Rejection]:', reasonStr)
+            setCapturedError(reasonStr)
+          }
+        })
+      }
+    } catch {
+      // Cross-origin access safely protected
+    }
+
     let count = 0
     const timer = setInterval(() => {
       count++
@@ -1056,11 +1035,26 @@ export function App(): React.JSX.Element {
           }
         }
       } catch {
-        // cross-origin protection
+        // cross-origin protection safely suppressed
       }
       if (count >= 20) clearInterval(timer)
     }, 300)
   }
+
+  // Listen for Remotion Studio stderr / runtime errors via IPC Backend (Zero Cross-Origin Risk)
+  useEffect(() => {
+    const api = getElectronAPI()
+    if (!api?.onStudioError) return
+    const unsubscribe = api.onStudioError((err: string) => {
+      if (!err || !err.trim()) return
+      const cleanErr = err.trim()
+      console.warn('[App] Remotion Studio runtime error captured via IPC:', cleanErr)
+      setCapturedError(cleanErr)
+    })
+    return (): void => {
+      unsubscribe()
+    }
+  }, [])
 
   // Silent auto-start Motion Engine background child process on mount
   useEffect(() => {
@@ -1363,6 +1357,7 @@ export function App(): React.JSX.Element {
   }, [detectedTitle, aiPrompt])
   const [refImageBase64, setRefImageBase64] = useState<string | null>(null)
   const [refImageName, setRefImageName] = useState<string | null>(null)
+  const [refImageMimeType, setRefImageMimeType] = useState<string | null>(null)
   const [isDraggingRef, setIsDraggingRef] = useState<boolean>(false)
   const refFileInputRef = React.useRef<HTMLInputElement | null>(null)
   const [isAiGenerating, setIsAiGenerating] = useState<boolean>(false)
@@ -1420,21 +1415,48 @@ export function App(): React.JSX.Element {
   }
 
   const processRefImageFile = (file: File): void => {
-    if (!file.type.startsWith('image/')) {
+    const isSupported =
+      file.type.startsWith('image/') ||
+      file.type.startsWith('video/') ||
+      /\.(mp4|webm|gif|png|jpe?g|webp|svg)$/i.test(file.name)
+
+    if (!isSupported) {
       setAiGenStatus({
         type: 'error',
-        message: 'Hanya file gambar (PNG, JPG, WebP, SVG) yang diperbolehkan.'
+        message: 'Format tidak didukung. Harap gunakan Gambar (PNG, JPG, WebP, SVG), GIF, atau Video Pendek (MP4, WebM).'
       })
       return
     }
+
+    if (file.size > 25 * 1024 * 1024) {
+      setAiGenStatus({
+        type: 'error',
+        message: 'Ukuran file referensi terlalu besar (maksimal 25MB untuk reverse-engineering AI).'
+      })
+      return
+    }
+
+    let detectedMime = file.type
+    if (!detectedMime) {
+      if (/\.mp4$/i.test(file.name)) detectedMime = 'video/mp4'
+      else if (/\.webm$/i.test(file.name)) detectedMime = 'video/webm'
+      else if (/\.gif$/i.test(file.name)) detectedMime = 'image/gif'
+      else if (/\.png$/i.test(file.name)) detectedMime = 'image/png'
+      else if (/\.jpe?g$/i.test(file.name)) detectedMime = 'image/jpeg'
+      else if (/\.webp$/i.test(file.name)) detectedMime = 'image/webp'
+      else if (/\.svg$/i.test(file.name)) detectedMime = 'image/svg+xml'
+      else detectedMime = 'application/octet-stream'
+    }
+
     const reader = new FileReader()
     reader.onload = () => {
       setRefImageBase64(reader.result as string)
       setRefImageName(file.name)
+      setRefImageMimeType(detectedMime)
       setAiGenStatus(null)
     }
     reader.onerror = () => {
-      setAiGenStatus({ type: 'error', message: 'Gagal membaca file gambar.' })
+      setAiGenStatus({ type: 'error', message: 'Gagal membaca file referensi.' })
     }
     reader.readAsDataURL(file)
   }
@@ -1469,6 +1491,7 @@ export function App(): React.JSX.Element {
     e.stopPropagation()
     setRefImageBase64(null)
     setRefImageName(null)
+    setRefImageMimeType(null)
   }
 
   const handleGenerateVideoWithAI = async (overridePrompt?: string): Promise<void> => {
@@ -1511,8 +1534,8 @@ export function App(): React.JSX.Element {
       const res = await api.generateVideo({
         prompt: promptToUse,
         imageBase64: refImageBase64 || undefined,
-        apiKey: geminiApiKey.trim(),
-        assetPath: uploadedAssetPath || undefined
+        mimeType: refImageMimeType || undefined,
+        apiKey: geminiApiKey.trim()
       })
 
       if (res.success && res.code) {
@@ -1608,8 +1631,7 @@ export function App(): React.JSX.Element {
       const res = await api.refineVideo({
         instruction: textToSend,
         apiKey: geminiApiKey.trim(),
-        currentCode: manualCode.trim() || undefined,
-        assetPath: uploadedAssetPath || undefined
+        currentCode: manualCode.trim() || undefined
       })
 
       if (res.success && res.code) {
@@ -1717,6 +1739,35 @@ export function App(): React.JSX.Element {
     const loadInitialCode = async (): Promise<void> => {
       try {
         const api = getElectronAPI()
+
+        // ── Auto-Restore active animation code session from localStorage (ignore default template) ──
+        const savedSessionCode = localStorage.getItem(STORAGE_KEY_LAST_ACTIVE_CODE)
+        if (savedSessionCode && savedSessionCode.trim()) {
+          console.log('[App] Restoring active animation code session from localStorage...')
+          setManualCode(savedSessionCode)
+          setLastWorkingCode(savedSessionCode)
+          if (api?.applyManualCode) {
+            try {
+              await api.applyManualCode(savedSessionCode)
+            } catch {}
+          }
+          if (api?.writeCode) {
+            try {
+              await api.writeCode(savedSessionCode)
+            } catch {}
+          }
+          const parsed = parseTsxDefaultProps(savedSessionCode)
+          if (parsed.titleText) setParamTitleText(parsed.titleText)
+          if (parsed.subtitleText) setParamSubtitleText(parsed.subtitleText)
+          if (parsed.badgeText) setParamBadgeText(parsed.badgeText)
+          if (parsed.accentColor) setParamAccentColor(parsed.accentColor)
+          if (parsed.secondaryColor) setParamSecondaryColor(parsed.secondaryColor)
+          if (parsed.backgroundColor) setParamBackgroundColor(parsed.backgroundColor)
+          setHasGeneratedContent(true)
+          remountPlayer()
+          return
+        }
+
         if (api?.readCurrentCode) {
           const initial = await api.readCurrentCode()
           if (initial) {
@@ -1931,6 +1982,7 @@ export function App(): React.JSX.Element {
       return
     }
 
+    const cleanCode = cleanAndStripMarkdownCode(trimmed)
     setIsApplyingCode(true)
     setCodeEditorStatus('Menulis kode ke VibeGraphic.tsx...')
 
@@ -1941,7 +1993,7 @@ export function App(): React.JSX.Element {
       }
 
       const res = await withTimeout(
-        api.writeCode(trimmed),
+        api.writeCode(cleanCode),
         15000,
         'Gagal menyimpan kode: Proses penulisan file melebihi batas waktu.'
       )
@@ -1949,14 +2001,16 @@ export function App(): React.JSX.Element {
       if (res.success) {
         if (api.applyManualCode) {
           try {
-            await api.applyManualCode(trimmed)
+            await api.applyManualCode(cleanCode)
           } catch {
             // ignore
           }
         }
+        // Buffer delay to ensure Remotion bundler completes file compile
+        await new Promise((r) => setTimeout(r, 300))
         remountPlayer()
         // ── Parse props from applied code and sync Visual Tweaker ──
-        const parsedManual = parseTsxDefaultProps(trimmed)
+        const parsedManual = parseTsxDefaultProps(cleanCode)
         if (parsedManual.titleText) setParamTitleText(parsedManual.titleText)
         if (parsedManual.subtitleText) setParamSubtitleText(parsedManual.subtitleText)
         if (parsedManual.badgeText) setParamBadgeText(parsedManual.badgeText)
@@ -2066,6 +2120,8 @@ export function App(): React.JSX.Element {
         resolutionLabel: resolutionQuality,
         renderMode,
         customOutputFolder: customOutputFolder || undefined,
+        durationInFrames,
+        fps,
         titleText: paramTitleText,
         subtitleText: paramSubtitleText,
         badgeText: paramBadgeText,
@@ -2147,14 +2203,17 @@ export function App(): React.JSX.Element {
       if (!api?.writeCode) throw new Error('API writeCode tidak tersedia.')
 
       const currentBefore = manualCode || (await api.readCurrentCode?.())
+      const cleanCode = cleanAndStripMarkdownCode(lastWorkingCode)
 
-      const res = await api.writeCode(lastWorkingCode)
+      const res = await api.writeCode(cleanCode)
       if (res.success) {
-        setManualCode(lastWorkingCode)
-        setIframeKey((k) => k + 1)
+        setManualCode(cleanCode)
+        // Delay to allow bundler hot-reload
+        await new Promise((r) => setTimeout(r, 300))
+        remountPlayer()
         setCapturedError('')
         setRollbackToast('✅ File VibeGraphic.tsx berhasil dipulihkan ke versi stabil sebelumnya!')
-        if (currentBefore && currentBefore !== lastWorkingCode) {
+        if (currentBefore && currentBefore !== cleanCode) {
           setLastWorkingCode(currentBefore)
         }
         setTimeout(() => setRollbackToast(''), 4500)
@@ -2169,22 +2228,25 @@ export function App(): React.JSX.Element {
     }
   }
 
-  // Open Auto-Fix Modal with prefilled runtime error
+  // Open Auto-Fix Modal with prefilled runtime error or visual recovery mode
   const handleOpenAutoFixModal = (): void => {
-    // Hanya isi dari capturedError jika ada; jika tidak, kosongkan agar user paste sendiri
+    const hasError = Boolean((capturedError || '').trim())
+    setAutoFixMode(hasError ? 'runtime_error' : 'visual_recovery')
     setAutoFixErrorInput(capturedError || '')
+    setShowManualErrorInput(false)
     setIsAutoFixModalOpen(true)
   }
 
-  // Execute Auto-Fix with Gemini AI
+  // Execute Auto-Fix with Gemini AI (Anti-Race Condition & Dynamic Resolution Aware)
   const handleExecuteAutoFix = async (customErrMsg?: string): Promise<void> => {
     if (!checkLicenseGate()) return
     const errorMsg = (
-      customErrMsg ||
-      autoFixErrorInput ||
-      capturedError ||
-      ''
+      customErrMsg !== undefined ? customErrMsg : (autoFixErrorInput || capturedError || '')
     ).trim()
+
+    const activeMode: 'runtime_error' | 'visual_recovery' = (errorMsg.length > 0)
+      ? 'runtime_error'
+      : autoFixMode
 
     if (!geminiApiKey || !geminiApiKey.trim()) {
       setIsApiKeyOpen(true)
@@ -2201,26 +2263,62 @@ export function App(): React.JSX.Element {
       const current = manualCode || (await api.readCurrentCode?.())
       if (current && current.trim()) {
         setLastWorkingCode(current)
+        setUndoStack((prev) => [...prev.slice(-19), getCurrentParametricValues()])
       }
 
       const res = api.autoFixVideo
         ? await api.autoFixVideo({
             errorMessage: errorMsg,
             apiKey: geminiApiKey.trim(),
-            currentCode: current
+            currentCode: current,
+            mode: activeMode,
+            width,
+            height,
+            fps,
+            durationInFrames,
+            aspectRatio
           })
         : await api.refineVideo({
-            instruction: `Kode TSX Remotion berikut mengalami error runtime: '${errorMsg}'. Analisis dan perbaiki kodenya sekarang. Pastikan semua array inputRange pada interpolate() tersusun berurutan dari kecil ke besar. Kembalikan seluruh kode TSX yang valid tanpa markdown penjelasan.`,
+            instruction:
+              activeMode === 'visual_recovery'
+                ? `Komponen VibeGraphic.tsx mengalami kegagalan tampilan (layar blank/elemen hilang tanpa crash). Pulihkan kode agar memiliki opacity minimal 0.95 pada frame 0, semua elemen berada di dalam viewport ${width}x${height}, kontras tajam dengan background solid, dan adaptif menggunakan useVideoConfig(). Kembalikan seluruh kode TSX lengkap.`
+                : `Kode TSX Remotion berikut mengalami error runtime: '${errorMsg}'. Analisis dan perbaiki kodenya sekarang. Pastikan semua array inputRange pada interpolate() tersusun berurutan dari kecil ke besar. Kembalikan seluruh kode TSX yang valid tanpa markdown penjelasan.`,
             apiKey: geminiApiKey.trim(),
             currentCode: current
           })
 
       if (res.success && res.code) {
-        setManualCode(res.code)
-        setIframeKey((k) => k + 1)
+        const cleanCode = cleanAndStripMarkdownCode(res.code)
+        setManualCode(cleanCode)
+
+        // Asynchronous write to disk
+        await api.writeCode(cleanCode)
+
+        // 300ms buffer delay to avoid race condition with Remotion bundler file watcher
+        await new Promise((resolve) => setTimeout(resolve, 300))
+
+        // Force-remount preview player programmatically
+        remountPlayer()
+
+        // Sync parsed props to Visual Tweaker
+        const parsed = parseTsxDefaultProps(cleanCode)
+        if (parsed.titleText) setParamTitleText(parsed.titleText)
+        if (parsed.subtitleText) setParamSubtitleText(parsed.subtitleText)
+        if (parsed.badgeText) setParamBadgeText(parsed.badgeText)
+        if (parsed.accentColor) setParamAccentColor(parsed.accentColor)
+        if (parsed.secondaryColor) setParamSecondaryColor(parsed.secondaryColor)
+        if (parsed.backgroundColor) setParamBackgroundColor(parsed.backgroundColor)
+        setHasGeneratedContent(true)
+
         setCapturedError('')
+        setAutoFixErrorInput('')
         setIsAutoFixModalOpen(false)
-        setRollbackToast('⚡ Auto-Fix Berhasil! Bug berhasil diperbaiki dan preview dimuat ulang.')
+
+        const successToast =
+          activeMode === 'visual_recovery'
+            ? '✨ Pemulihan Visual Berhasil! Tampilan kanvas telah dipulihkan dan preview dimuat ulang.'
+            : '⚡ Auto-Fix Berhasil! Bug berhasil diperbaiki dan preview dimuat ulang.'
+        setRollbackToast(successToast)
         setTimeout(() => setRollbackToast(''), 4500)
       } else {
         setRollbackToast(`❌ Auto-Fix Gagal: ${res.error || 'Tidak dapat memperbaiki kode'}`)
@@ -2228,7 +2326,9 @@ export function App(): React.JSX.Element {
       }
     } catch (err) {
       console.error('[App] Auto-Fix error:', err)
-      setRollbackToast(err instanceof Error ? err.message : 'Terjadi kesalahan saat menjalankan Auto-Fix.')
+      setRollbackToast(
+        err instanceof Error ? err.message : 'Terjadi kesalahan saat menjalankan Auto-Fix.'
+      )
       setTimeout(() => setRollbackToast(''), 5000)
     } finally {
       setIsAutoFixing(false)
@@ -2237,63 +2337,6 @@ export function App(): React.JSX.Element {
 
   return (
     <div className="motion-app h-screen max-h-screen overflow-hidden flex flex-col">
-      {/* ── Auto-Update Banner (hanya muncul jika ada update & belum di-dismiss) ── */}
-      {!updateDismissed && updatePhase !== 'idle' && (
-        <div className={`update-banner update-banner--${updatePhase}`}>
-          <div className="update-banner-left">
-            <span className="update-banner-dot" />
-
-            {(updatePhase === 'downloading' || updatePhase === 'available') && (
-              <span className="update-banner-text">
-                ⚡ Pembaruan Versi <strong>{updateVersion ? `v${updateVersion}` : ''}</strong> terdeteksi, sedang mengunduh di latar belakang...
-                {updatePercent > 0 && (
-                  <>
-                    <span className="update-banner-percent">{updatePercent}%</span>
-                    <span className="update-progress-track">
-                      <span
-                        className="update-progress-fill"
-                        style={{ width: `${updatePercent}%` }}
-                      />
-                    </span>
-                  </>
-                )}
-              </span>
-            )}
-            {updatePhase === 'downloaded' && (
-              <span className="update-banner-text">
-                🎉 Versi <strong>{updateVersion ? `v${updateVersion}` : ''}</strong> siap diinstal!
-              </span>
-            )}
-          </div>
-
-          <div className="update-banner-actions">
-            {updatePhase === 'downloaded' && (
-              <button
-                type="button"
-                className="update-btn update-btn--install"
-                onClick={() => {
-                  const api = (window as any).api || (window as any).electronAPI
-                  if (api?.restartAndInstall) {
-                    api.restartAndInstall()
-                  } else if (api?.installAndRestart) {
-                    api.installAndRestart()
-                  }
-                }}
-              >
-                Restart &amp; Pasang Update
-              </button>
-            )}
-            <button
-              type="button"
-              className="update-btn update-btn--dismiss"
-              onClick={() => setUpdateDismissed(true)}
-              aria-label="Tutup banner update"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-      )}
       {/* App Top Navigation Bar */}
       <header className="app-header">
         <div className="header-brand">
@@ -2304,7 +2347,7 @@ export function App(): React.JSX.Element {
           </div>
           <div className="brand-title">
             MOTION SUITE PRO
-            <span className="brand-badge">PRO {appVersion}</span>
+            <span className="brand-badge">{appVersion.startsWith('PRO') ? appVersion : `PRO ${appVersion}`}</span>
           </div>
         </div>
 
@@ -2329,6 +2372,17 @@ export function App(): React.JSX.Element {
         </nav>
 
         <div className="header-meta">
+          {updatePhase !== 'idle' && isUpdateDismissed && (
+            <button
+              type="button"
+              className="header-update-badge"
+              onClick={() => setIsUpdateDismissed(false)}
+              title="Buka jendela pembaruan"
+            >
+              <span className="update-badge-dot" />
+              <span>Update v{updateVersion || '1.0.4'}</span>
+            </button>
+          )}
           <div className="meta-status">
             <span className={`status-dot ${isStudioRunning ? 'online' : 'connecting'}`} />
             <span>{isStudioRunning ? 'Motion Engine Ready' : 'Inisialisasi Engine...'}</span>
@@ -2596,27 +2650,44 @@ export function App(): React.JSX.Element {
                   rows={3}
                 />
 
-                {/* Reference Image Dropzone */}
+                {/* Reference Media Dropzone (Video-to-Code Cloner: Image, GIF, Video MP4) */}
                 <input
                   ref={refFileInputRef}
                   type="file"
-                  accept="image/png, image/jpeg, image/webp, image/svg+xml"
+                  accept="image/*,video/mp4,video/webm,image/gif"
                   style={{ display: 'none' }}
                   onChange={handleRefImageFileInputChange}
                 />
 
                 {refImageBase64 ? (
                   <div className="ref-image-preview-card">
-                    <img src={refImageBase64} alt="Reference" className="ref-image-thumb" />
+                    {refImageMimeType?.startsWith('video/') ? (
+                      <video
+                        src={refImageBase64}
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        className="ref-image-thumb"
+                      />
+                    ) : (
+                      <img src={refImageBase64} alt="Reference" className="ref-image-thumb" />
+                    )}
                     <div className="ref-image-meta">
-                      <span className="ref-image-name">{refImageName || 'Gambar Referensi'}</span>
-                      <span className="ref-image-badge">✓ Referensi Aktif</span>
+                      <span className="ref-image-name">{refImageName || 'File Referensi'}</span>
+                      <span className="ref-image-badge">
+                        {refImageMimeType?.startsWith('video/')
+                          ? '✓ Video Referensi Aktif'
+                          : refImageMimeType === 'image/gif'
+                            ? '✓ GIF Referensi Aktif'
+                            : '✓ Referensi Aktif'}
+                      </span>
                     </div>
                     <button
                       type="button"
                       className="btn-remove-ref-image"
                       onClick={handleRemoveRefImage}
-                      title="Hapus gambar referensi"
+                      title="Hapus referensi"
                     >
                       ✕
                     </button>
@@ -2634,11 +2705,11 @@ export function App(): React.JSX.Element {
                       if (e.key === 'Enter' || e.key === ' ') refFileInputRef.current?.click()
                     }}
                   >
-                    <span style={{ fontSize: '20px' }}>🖼️</span>
+                    <span style={{ fontSize: '20px' }}>🎬</span>
                     <div className="ref-dropzone-text">
-                      <strong>Tarik & lepas Gambar Referensi</strong> atau klik di sini
+                      <strong>Drop Gambar, GIF, atau Video Pendek (MP4) Referensi</strong> atau klik di sini
                     </div>
-                    <span className="ref-dropzone-hint">(AI meniru komposisi visual, warna & layout gambar)</span>
+                    <span className="ref-dropzone-hint">(AI Video-to-Code Cloner mereverse-engineer ritme gerakan &amp; tata visual)</span>
                   </div>
                 )}
 
@@ -2673,91 +2744,6 @@ export function App(): React.JSX.Element {
             </div>
 
 
-            {/* Local Asset Dropzone (Logo/Icon SVG & PNG transparent overlay) */}
-            <div className="asset-dropzone-section">
-              <div className="asset-dropzone-header">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span className="form-label" style={{ margin: 0 }}>
-                    Local Asset Overlay
-                  </span>
-                  <span className="asset-dropzone-badge">LOGO / IKON</span>
-                </div>
-                {customAssetUrl && (
-                  <button
-                    type="button"
-                    className="btn-remove-asset"
-                    onClick={handleRemoveAsset}
-                    title="Hapus aset kustom"
-                  >
-                    🗑️ Hapus
-                  </button>
-                )}
-              </div>
-
-              <input
-                ref={assetFileInputRef}
-                type="file"
-                accept="image/png, image/svg+xml, image/jpeg, image/webp"
-                style={{ display: 'none' }}
-                onChange={handleAssetFileInputChange}
-              />
-
-              {customAssetUrl ? (
-                <div
-                  className="asset-preview-card"
-                  onClick={() => assetFileInputRef.current?.click()}
-                  title="Klik untuk mengganti aset"
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      assetFileInputRef.current?.click()
-                    }
-                  }}
-                >
-                  <div className="asset-thumb-wrapper">
-                    <img src={customAssetUrl} alt="Asset preview" className="asset-thumb-img" />
-                  </div>
-                  <div className="asset-info">
-                    <div className="asset-name">{customAssetName || 'Custom Asset'}</div>
-                    <div className="asset-size-badge">
-                      ✓ Terinjeksi ke Player • Klik untuk ganti
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    className="btn-remove-asset"
-                    onClick={handleRemoveAsset}
-                    title="Hapus aset kustom"
-                  >
-                    ✕ Hapus Aset
-                  </button>
-                </div>
-              ) : (
-                <div
-                  className={`asset-dropzone-box ${isDraggingAsset ? 'dragging' : ''}`}
-                  onClick={() => assetFileInputRef.current?.click()}
-                  onDragOver={handleAssetDragOver}
-                  onDragLeave={handleAssetDragLeave}
-                  onDrop={handleAssetDrop}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      assetFileInputRef.current?.click()
-                    }
-                  }}
-                >
-                  <div style={{ fontSize: '24px', marginBottom: '4px' }}>🖼️</div>
-                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#f1f5f9' }}>
-                    Tarik & lepas logo / ikon SVG atau PNG transparan
-                  </div>
-                  <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
-                    atau klik untuk memilih file (PNG, SVG, WebP, JPG)
-                  </div>
-                </div>
-              )}
-            </div>
 
             {/* Video Specifications: Aspect Ratio, Resolution, Duration & FPS */}
             <div className="specs-section">
@@ -2850,6 +2836,7 @@ export function App(): React.JSX.Element {
                       <option value={5}>5 Detik ({5 * fps}f)</option>
                       <option value={10}>10 Detik ({10 * fps}f)</option>
                       <option value={15}>15 Detik ({15 * fps}f)</option>
+                      <option value={20}>20 Detik ({20 * fps}f)</option>
                     </select>
                     <div className="select-caret">▼</div>
                   </div>
@@ -3390,7 +3377,7 @@ export function App(): React.JSX.Element {
         {/* TAB 4: Auto Coder (Batch Pipeline - Hidden in v1.0 Core Mode) */}
         {activeTab === 'autocoder' && (
           <div className="tab-content-pane autocoder-tab-pane" style={{ display: 'flex' }}>
-            <AutoCoder apiKey={geminiApiKey} uploadedAssetPath={uploadedAssetPath} />
+            <AutoCoder apiKey={geminiApiKey} />
           </div>
         )}
       </div>
@@ -3553,15 +3540,23 @@ export function App(): React.JSX.Element {
           <div className="auto-fix-modal" onClick={(e) => e.stopPropagation()}>
             <div className="ai-chat-modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div className="ai-modal-avatar-badge amber">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+                <div className={`ai-modal-avatar-badge ${autoFixMode === 'visual_recovery' ? 'cyan' : 'amber'}`}>
+                  {autoFixMode === 'visual_recovery' ? (
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
+                  ) : (
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+                  )}
                 </div>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '15px', color: '#fef08a', fontWeight: 800 }}>
-                    Auto-Fix Error AI (Self-Healing)
+                  <h3 style={{ margin: 0, fontSize: '15px', color: autoFixMode === 'visual_recovery' ? '#38bdf8' : '#fef08a', fontWeight: 800 }}>
+                    {autoFixMode === 'visual_recovery'
+                      ? 'Visual Recovery — Pemulihan Kanvas Blank'
+                      : 'Auto-Fix Error AI (Self-Healing)'}
                   </h3>
                   <p style={{ margin: 0, fontSize: '11px', color: '#94a3b8' }}>
-                    Analisis runtime error & perbaiki kode TSX secara otomatis
+                    {autoFixMode === 'visual_recovery'
+                      ? 'Pemulihan visual layar gelap, opacity frame 0 & sinkronisasi viewport'
+                      : 'Analisis runtime error & perbaiki kode TSX secara otomatis'}
                   </p>
                 </div>
               </div>
@@ -3576,79 +3571,146 @@ export function App(): React.JSX.Element {
             </div>
 
             <div className="auto-fix-modal-body">
-              <label className="form-label" style={{ margin: 0 }}>
-                Pesan Error Runtime yang Terjadi:
-              </label>
-              <textarea
-                className="auto-fix-textarea"
-                value={autoFixErrorInput}
-                onChange={(e) => setAutoFixErrorInput(e.target.value)}
-                rows={4}
-                placeholder="Tempel (Ctrl+V) pesan error runtime dari preview di sini... (misal: inputRange must be strictly monotonically increasing)"
-              />
-
-              <div className="auto-fix-chips">
-                <span className="chip-label">Pilihan Error Umum (Klik Cepat):</span>
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                  <button
-                    type="button"
-                    className="chip-suggestion"
-                    onClick={() =>
-                      setAutoFixErrorInput(
-                        'inputRange must be strictly monotonically increasing: values must be in ascending order'
-                      )
-                    }
-                  >
-                    ⚠️ interpolate() inputRange
-                  </button>
-                  <button
-                    type="button"
-                    className="chip-suggestion"
-                    onClick={() =>
-                      setAutoFixErrorInput(
-                        'outputRange and inputRange must have the same length'
-                      )
-                    }
-                  >
-                    ⚠️ Range length mismatch
-                  </button>
-                  <button
-                    type="button"
-                    className="chip-suggestion"
-                    onClick={() =>
-                      setAutoFixErrorInput(
-                        'Cannot read properties of undefined (reading dimensions/props)'
-                      )
-                    }
-                  >
-                    ⚠️ Cannot read undefined
-                  </button>
+              {autoFixMode === 'runtime_error' ? (
+                /* Mode 1: Runtime Error Detected (Zero Manual Copy-Paste) */
+                <div className="detected-error-box">
+                  <div className="detected-error-header">
+                    <span className="error-pulse-dot" />
+                    <strong>Runtime Error Terdeteksi Otomatis:</strong>
+                  </div>
+                  <pre className="detected-error-code">
+                    {autoFixErrorInput || capturedError || 'Runtime error terdeteksi pada engine preview.'}
+                  </pre>
+                  <p className="detected-error-help">
+                    Pesan error di atas ditangkap otomatis dari engine preview. Klik tombol di bawah untuk perbaikan 1-klik dengan AI.
+                  </p>
                 </div>
+              ) : (
+                /* Mode 2: Visual Recovery / Blank Screen (Silent Failure) */
+                <div className="visual-recovery-card">
+                  <div className="visual-recovery-header">
+                    <span className="recovery-sparkle-icon">✨</span>
+                    <strong>Tampilan Kanvas Gelap / Blank Terdeteksi</strong>
+                  </div>
+                  <p className="visual-recovery-desc">
+                    Tidak ada runtime crash teknis pada preview. Mode <strong>Visual Recovery</strong> akan memeriksa dan memperbaiki penyebab umum layar kosong:
+                  </p>
+                  <ul className="visual-recovery-checklist">
+                    <li>✓ Memastikan <strong>opacity elemen pada Frame 0</strong> minimal 0.95 (tidak tertahan di 0/NaN).</li>
+                    <li>✓ Mengoreksi koordinat agar semua elemen berada di dalam <strong>viewport kanvas aktif</strong> ({width} × {height}).</li>
+                    <li>✓ Memastikan warna teks & badge <strong>kontras tajam</strong> dengan background solid pada &lt;AbsoluteFill&gt;.</li>
+                    <li>✓ Menggunakan <code>useVideoConfig()</code> untuk tata letak dinamis sesuai resolusi aktif.</li>
+                  </ul>
+                  <div className="visual-recovery-specs-pill">
+                    <span>📐 {width} × {height} ({aspectRatio})</span>
+                    <span>•</span>
+                    <span>{fps} FPS</span>
+                    <span>•</span>
+                    <span>{durationSeconds} Detik ({durationInFrames} frames)</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Collapsible Manual Input / Notes (Optional) */}
+              <div className="manual-note-toggle-row">
+                <button
+                  type="button"
+                  className="btn-toggle-manual-input"
+                  onClick={() => setShowManualErrorInput((prev) => !prev)}
+                >
+                  {showManualErrorInput
+                    ? '▼ Sembunyikan Input Manual'
+                    : '▶ Tambah Catatan / Sesuaikan Pesan Manual (Opsional)'}
+                </button>
               </div>
+
+              {showManualErrorInput && (
+                <div className="manual-input-drawer">
+                  <textarea
+                    className="auto-fix-textarea"
+                    value={autoFixErrorInput}
+                    onChange={(e) => setAutoFixErrorInput(e.target.value)}
+                    rows={3}
+                    placeholder="Ketik atau edit catatan error/instruksi tambahan untuk AI di sini..."
+                  />
+                  <div className="auto-fix-chips">
+                    <span className="chip-label">Pilihan Error Umum (Klik Cepat):</span>
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        className="chip-suggestion"
+                        onClick={() => {
+                          setAutoFixErrorInput(
+                            'inputRange must be strictly monotonically increasing: values must be in ascending order'
+                          )
+                          setAutoFixMode('runtime_error')
+                        }}
+                      >
+                        ⚠️ interpolate() inputRange
+                      </button>
+                      <button
+                        type="button"
+                        className="chip-suggestion"
+                        onClick={() => {
+                          setAutoFixErrorInput(
+                            'outputRange and inputRange must have the same length'
+                          )
+                          setAutoFixMode('runtime_error')
+                        }}
+                      >
+                        ⚠️ Range length mismatch
+                      </button>
+                      <button
+                        type="button"
+                        className="chip-suggestion"
+                        onClick={() => {
+                          setAutoFixErrorInput(
+                            'Canvas blank / visual elements missing on Frame 0'
+                          )
+                          setAutoFixMode('visual_recovery')
+                        }}
+                      >
+                        🎨 Blank Screen Frame 0
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="auto-fix-actions">
                 <button
                   type="button"
                   className="btn-cancel-autofix"
                   onClick={() => setIsAutoFixModalOpen(false)}
+                  disabled={isAutoFixing}
                 >
                   Batal
                 </button>
                 <button
                   type="button"
-                  className="btn-execute-autofix"
-                  onClick={() => handleExecuteAutoFix(autoFixErrorInput)}
-                  disabled={isAutoFixing || !autoFixErrorInput.trim()}
+                  className={`btn-execute-autofix ${autoFixMode === 'visual_recovery' ? 'visual-recovery-btn' : ''}`}
+                  onClick={() =>
+                    handleExecuteAutoFix(
+                      autoFixErrorInput ||
+                        (autoFixMode === 'runtime_error' ? capturedError : '')
+                    )
+                  }
+                  disabled={isAutoFixing}
                 >
                   {isAutoFixing ? (
                     <>
                       <span className="ai-status-spinner" />
-                      <span>Memperbaiki Kode dengan AI...</span>
+                      <span>{autoFixMode === 'visual_recovery' ? 'Memulihkan Visual...' : 'Memperbaiki Error...'}</span>
+                    </>
+                  ) : autoFixMode === 'visual_recovery' ? (
+                    <>
+                      <span>✨</span>
+                      <span>Perbaiki Tampilan Blank / Reset Visual</span>
                     </>
                   ) : (
                     <>
                       <span>⚡</span>
-                      <span>Perbaiki Kode Sekarang</span>
+                      <span>Perbaiki Error Ini (1-Klik AI)</span>
                     </>
                   )}
                 </button>
@@ -3803,6 +3865,192 @@ export function App(): React.JSX.Element {
                 allow="fullscreen; autoplay; clipboard-read; clipboard-write"
                 allowFullScreen
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Auto-Update Pop-Up Modal (OBS Studio Style) ────────────────── */}
+      {updatePhase !== 'idle' && !isUpdateDismissed && (
+        <div
+          className="update-modal-backdrop"
+          onClick={() => setIsUpdateDismissed(true)}
+        >
+          <div
+            className="update-modal-box"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="update-modal-title"
+          >
+            {/* Modal Header */}
+            <div className="update-modal-header">
+              <div className="update-modal-title-group">
+                <div className="update-modal-icon-badge">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="20"
+                    height="20"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                </div>
+                <div className="update-modal-header-text">
+                  <h3 id="update-modal-title" className="update-modal-title">
+                    Pembaruan Tersedia
+                  </h3>
+                  <p className="update-modal-version-tag">
+                    Motion Suite Pro <strong>v{updateVersion || '1.0.4'}</strong>
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="update-modal-close-btn"
+                onClick={() => setIsUpdateDismissed(true)}
+                title="Tutup (Nanti Saja)"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="update-modal-body">
+              <p className="update-modal-description">
+                Versi baru Motion Suite Pro telah tersedia untuk dipasang. Pembaruan ini mencakup optimasi performa rendering, perbaikan stabilitas engine, dan pembaruan fitur.
+              </p>
+
+              {/* Release Notes Area */}
+              <div className="update-modal-notes-section">
+                <div className="update-modal-notes-label">
+                  <span>Catatan Rilis (Release Notes):</span>
+                  <span className="update-modal-tag">v{updateVersion || '1.0.4'}</span>
+                </div>
+                <div className="update-release-notes-box">
+                  {updateReleaseNotes}
+                </div>
+              </div>
+
+              {/* Real-time Progress Bar */}
+              {updatePhase === 'downloading' && (
+                <div className="update-modal-progress-wrap">
+                  <div className="update-progress-info">
+                    <span className="update-progress-label">
+                      {updatePercent >= 100
+                        ? 'Memverifikasi paket instalasi...'
+                        : 'Mengunduh pembaruan di latar belakang...'}
+                    </span>
+                    <span className="update-progress-number">{updatePercent}%</span>
+                  </div>
+                  <div className="update-modal-progress-track">
+                    <div
+                      className="update-modal-progress-fill"
+                      style={{ width: `${Math.max(3, updatePercent)}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Download Completed Notification */}
+              {updatePhase === 'downloaded' && (
+                <div className="update-modal-downloaded-banner">
+                  <span style={{ fontSize: '18px' }}>🎉</span>
+                  <div className="downloaded-text">
+                    <strong>Pembaruan Siap Dipasang!</strong>
+                    <span>
+                      Paket instalasi v{updateVersion || '1.0.4'} telah selesai diunduh dan diverifikasi. Klik tombol di bawah untuk memasang dan me-restart aplikasi.
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Error Banner if any */}
+              {updateErrorMsg && (
+                <div className="update-modal-error-banner">
+                  <span>⚠️</span>
+                  <span>{updateErrorMsg}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Actions / Footer */}
+            <div className="update-modal-footer">
+              {updatePhase === 'available' && (
+                <>
+                  <button
+                    type="button"
+                    className="update-modal-btn secondary"
+                    onClick={() => setIsUpdateDismissed(true)}
+                  >
+                    Nanti Saja
+                  </button>
+                  <button
+                    type="button"
+                    className="update-modal-btn primary"
+                    onClick={handleStartUpdateDownload}
+                  >
+                    <span>⚡</span>
+                    <span>Perbarui Sekarang</span>
+                  </button>
+                </>
+              )}
+
+              {updatePhase === 'downloading' && (
+                <>
+                  <button
+                    type="button"
+                    className="update-modal-btn secondary"
+                    onClick={() => setIsUpdateDismissed(true)}
+                  >
+                    Sembunyikan (Unduh di Latar)
+                  </button>
+                  {updateErrorMsg ? (
+                    <button
+                      type="button"
+                      className="update-modal-btn primary retry"
+                      onClick={handleStartUpdateDownload}
+                    >
+                      <span>🔄</span>
+                      <span>Coba Lagi</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="update-modal-btn primary disabled"
+                      disabled
+                    >
+                      <span>Mengunduh ({updatePercent}%)...</span>
+                    </button>
+                  )}
+                </>
+              )}
+
+              {updatePhase === 'downloaded' && (
+                <>
+                  <button
+                    type="button"
+                    className="update-modal-btn secondary"
+                    onClick={() => setIsUpdateDismissed(true)}
+                  >
+                    Nanti Saja
+                  </button>
+                  <button
+                    type="button"
+                    className="update-modal-btn primary install"
+                    onClick={handleRestartAndInstall}
+                  >
+                    <span>🚀</span>
+                    <span>Restart &amp; Pasang Sekarang</span>
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

@@ -47,7 +47,7 @@ win:
     - target: nsis
       arch:
         - x64
-  artifactName: Motion Suite Pro Setup ${version}.${ext}
+  artifactName: "${productName}.Setup.${version}.${ext}"
 
 nsis:
   oneClick: false

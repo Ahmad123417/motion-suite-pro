@@ -18,6 +18,15 @@ export const RemotionRoot: React.FC = () => {
       fps={videoConfig.fps || 30}
       width={videoConfig.width || 1920}
       height={videoConfig.height || 1080}
+      calculateMetadata={({ defaultProps, props }) => {
+        return {
+          durationInFrames: Number(props?.durationInFrames ?? videoConfig.durationInFrames) || 150,
+          fps: Number(props?.fps ?? videoConfig.fps) || 30,
+          width: Number(props?.width ?? videoConfig.width) || 1920,
+          height: Number(props?.height ?? videoConfig.height) || 1080,
+          props: { ...defaultProps, ...props }
+        }
+      }}
       defaultProps={{
         titleText: cfg.titleText,
         subtitleText: cfg.subtitleText,

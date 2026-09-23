@@ -19,22 +19,24 @@ import { registerAssetIPC } from './assetService'
 import { registerLicenseIPC } from './licenseService'
 
 // ─── Auto-Updater Configuration ───────────────────────────────────────────────
-autoUpdater.autoDownload = true          // Unduh pembaruan otomatis di latar belakang
-autoUpdater.autoInstallOnAppQuit = true  // Install otomatis saat app ditutup setelah unduh
+autoUpdater.autoDownload = false         // Jangan unduh otomatis; tunggu konfirmasi pengguna
+autoUpdater.autoInstallOnAppQuit = false // Kontrol instalasi eksplisit via IPC
 autoUpdater.logger = null                // Silent — jangan spam console
 
 function setupAutoUpdater(win: BrowserWindow): void {
   // Event: Update terdeteksi
   autoUpdater.on('update-available', (info) => {
     if (!win.isDestroyed()) {
-      win.webContents.send('update-available', { version: info.version })
+      win.webContents.send('update-available', info)
     }
   })
 
   // Progress unduhan
   autoUpdater.on('download-progress', (progress) => {
     if (!win.isDestroyed()) {
-      win.webContents.send('update:progress', { percent: Math.round(progress.percent) })
+      const percent = Math.round(progress.percent)
+      win.webContents.send('update:progress', { percent })
+      win.webContents.send('download-progress', { percent })
     }
   })
 
@@ -62,6 +64,20 @@ function setupAutoUpdater(win: BrowserWindow): void {
       await autoUpdater.downloadUpdate()
       return { success: true }
     } catch (err) {
+      console.warn('[AutoUpdater] downloadUpdate failed:', err)
+      return { success: false, error: String(err) }
+    }
+  })
+
+  try {
+    ipcMain.removeHandler('start-download-update')
+  } catch (_) {}
+  ipcMain.handle('start-download-update', async () => {
+    try {
+      await autoUpdater.downloadUpdate()
+      return { success: true }
+    } catch (err) {
+      console.warn('[AutoUpdater] downloadUpdate failed:', err)
       return { success: false, error: String(err) }
     }
   })
@@ -81,11 +97,15 @@ function setupAutoUpdater(win: BrowserWindow): void {
     autoUpdater.quitAndInstall()
   })
 
-  // Pengecekan otomatis beberapa detik setelah aplikasi siap
+  // Pengecekan otomatis beberapa detik setelah aplikasi siap (hanya dalam packaged build)
   setTimeout(() => {
-    autoUpdater.checkForUpdatesAndNotify().catch((e) => {
-      console.warn('[AutoUpdater] checkForUpdatesAndNotify failed silently:', e?.message)
-    })
+    if (app.isPackaged) {
+      autoUpdater.checkForUpdates().catch((e) => {
+        console.warn('[AutoUpdater] checkForUpdates failed silently:', e?.message)
+      })
+    } else {
+      console.log('[AutoUpdater] Skipped update check in development mode (app.isPackaged = false)')
+    }
   }, 4000)
 }
 
@@ -513,6 +533,12 @@ app.whenReady().then(() => {
           fps: Number(fps) || composition.fps
         }
 
+        const isProResAlpha = isMov && Boolean(isTransparent)
+        const pixelFormat = isProResAlpha ? 'yuva444p10le' : undefined
+        // Lock imageFormat directly to pixelFormat / ProRes Alpha:
+        // Remotion strictly rejects anything other than PNG for yuva444p10le
+        const imageFormat = (pixelFormat === 'yuva444p10le' || isProResAlpha) ? 'png' : 'jpeg'
+
         // Step 3: Render Media to local video file (allocating 25% - 100% overall progress)
         await renderMedia({
           composition: finalComposition,
@@ -529,14 +555,14 @@ app.whenReady().then(() => {
             const overallProgress = Math.min(100, Math.round(25 + progress * 75))
             event.sender.send('render-progress', overallProgress)
           },
+          imageFormat,
           ...(isMov
             ? {
                 codec: 'prores',
                 proResProfile: '4444',
-                ...(isTransparent
+                ...(pixelFormat
                   ? {
-                      pixelFormat: 'yuva444p10le',
-                      imageFormat: 'png'
+                      pixelFormat
                     }
                   : {})
               }
@@ -714,7 +740,15 @@ app.whenReady().then(() => {
           } catch (_) {}
         }
         mergedConfig = { ...mergedConfig, ...config }
-        writeFileSync(configPath, JSON.stringify(mergedConfig, null, 2), 'utf-8')
+        const serialized = JSON.stringify(mergedConfig, null, 2)
+        writeFileSync(configPath, serialized, 'utf-8')
+
+        // Also mirror to remotion_env/video_config.json for root-level fallback
+        try {
+          const rootConfigPath = join(envDir, 'video_config.json')
+          writeFileSync(rootConfigPath, serialized, 'utf-8')
+        } catch (_) {}
+
         console.log('[Main] video_config.json updated:', mergedConfig)
         return { success: true, filePath: configPath }
       } catch (err) {

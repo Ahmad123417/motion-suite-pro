@@ -236,10 +236,23 @@ export async function startRemotionStudio(
     })
 
     studioProcess.stderr?.on('data', (d) => {
-      const errStr = d.toString()
-      console.error(`[Remotion Studio Error]: ${errStr.trim()}`)
+      const rawErr = d.toString()
+      const cleanErr = rawErr.replace(/\x1b\[[0-9;]*m/g, '').trim()
+      console.error(`[Remotion Studio Error]: ${cleanErr}`)
       const win = BrowserWindow.getAllWindows()[0]
-      win?.webContents.send('studio:error', errStr)
+      if (
+        cleanErr &&
+        (cleanErr.includes('Error:') ||
+          cleanErr.includes('Exception') ||
+          cleanErr.includes('Failed to compile') ||
+          cleanErr.includes('inputRange') ||
+          cleanErr.includes('TypeError') ||
+          cleanErr.includes('RangeError') ||
+          cleanErr.includes('ReferenceError') ||
+          cleanErr.includes('SyntaxError'))
+      ) {
+        win?.webContents.send('studio:error', cleanErr)
+      }
     })
 
     studioProcess.on('close', (code) => {
@@ -369,13 +382,21 @@ export async function writeComponentCode(
     const targetPath = getVibeGraphicPath()
 
     let code = newCode.trim()
-    // Strip markdown code fences if present
-    code = code.replace(/^```(?:tsx|typescript|jsx|javascript)?\s*/i, '').replace(/\s*```$/i, '').trim()
+    // Robust regex strip for markdown code fences (e.g. ```tsx ... ```)
+    const fenceMatch = code.match(/```(?:tsx|typescript|jsx|javascript)?\s*([\s\S]*?)```/i)
+    if (fenceMatch && fenceMatch[1]) {
+      code = fenceMatch[1].trim()
+    } else {
+      code = code.replace(/^```(?:tsx|typescript|jsx|javascript)?\s*/i, '')
+      code = code.replace(/\s*```+\s*$/i, '')
+      code = code.trim()
+    }
 
     const importIndex = code.indexOf('import ')
     if (importIndex > 0) {
       code = code.slice(importIndex).trim()
     }
+    code = code.replace(/```+\s*$/g, '').trim()
 
     // Sanitize interpolate input ranges to prevent Remotion crash (e.g. [405, 405] -> [405, 406])
     code = sanitizeInterpolateCode(code)

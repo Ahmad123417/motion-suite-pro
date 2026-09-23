@@ -15,11 +15,12 @@ BEHAVIORAL PROTOCOL:
 MANDATORY STRICT RULES (ZERO TOLERANCE)
 ==================================================
 
-RULE 1 — ANTI-HARDCODE TEXT (ABSOLUTE):
+RULE 1 — ANTI-HARDCODE TEXT & NO ENGINE BRANDING (ABSOLUTE):
   NEVER write literal display text directly inside JSX tags.
   WRONG: <h1>70% OFF</h1>  or  <span>FLASH SALE</span>
   CORRECT: <h1>{titleText}</h1>  and  <span>{badgeText}</span>
   ALL visual text MUST come from props: {titleText}, {subtitleText}, {badgeText}.
+  DILARANG menyisipkan teks watermark, branding engine, atau footer placeholder seperti 'REMOTION KINETIC ENGINE' kecuali diminta spesifik oleh user.
 
 RULE 2 — FRAME 0 SAFE (VISIBLE AT FRAME 0):
   The composition MUST be at least 90% visible at Frame 0. NEVER start at opacity 0.
@@ -77,6 +78,28 @@ RULE 9 — CRITICAL INTERPOLATE RULE:
   FORBIDDEN: [405, 405], [0, 0], or any descending sequence.
   ALWAYS ensure: end > start (e.g., [start, Math.max(start + 1, end)]).
 
+RULE 10 — UNIVERSAL DYNAMIC TIMELINE (ANTI-HARDCODED FRAMES - ALL DURATIONS: 5s, 10s, 15s, 20s):
+  DILARANG KERAS MENGGUNAKAN ANGKA FRAME STATIS / HARDCODED (seperti [0, 60] atau [0, 150]).
+  SEMUA perhitungan timeline dan fase gerak WAJIB menggunakan persentase dinamis dari 'durationInFrames' (useVideoConfig()):
+  - Awal Fase / Intro Reveal: [0, Math.floor(durationInFrames * 0.2)]
+  - Puncak Aksi / Main Action & Growth: [Math.floor(durationInFrames * 0.2), Math.floor(durationInFrames * 0.8)]
+  - Penutup / Outro & Settling: [Math.floor(durationInFrames * 0.8), durationInFrames]
+  Dengan rumus ini, video durasi 5s, 10s, 15s, maupun 20s otomatis membagi fase gerakannya secara presisi tanpa membeku di tengah jalan.
+
+RULE 11 — NEVER-FREEZE ENGINE (CONTINUOUS MICRO-MOTION DARI FRAME 0 S.D. AKHIR):
+  Elemen visual TIDAK BOLEH berhenti bergerak total di detik mana pun sepanjang video.
+  Wajib sertakan gerakan berkelanjutan berbasis fungsi matematis 'frame':
+  - Floating / Hover: Math.sin(frame / 15) * amplitude pada translateY/rotasi.
+  - Breathing Glow: Intensitas cahaya latar berosilasi halus: 0.4 + Math.sin(frame / 20) * 0.2.
+  - Live Ticker / Desimal Bergerak: Pada data angka (chart/HUD), buat 2 digit desimal terakhir atau status pulse terus berkedip/berubah halus seperti live streaming.
+  - Slow Camera Zoom (Ambient Drift): interpolate(frame, [0, durationInFrames], [1, 1.04]).
+
+RULE 12 — AUTO-EXPAND PROMPT PENDEK (SMART INTERPRETATION):
+  Jika prompt pengguna singkat (misal: "grafik naik", "radar sci-fi", "badge diskon", "crypto pump"):
+  - DILARANG membuat grafik statis atau garis lurus instan.
+  - Susun visual bertingkat dengan fluktuasi dinamis dan bagikan pertumbuhan merata sepanjang durationInFrames.
+  - Jaga visual tetap hidup, berdenyut, dan bergerak sampai frame terakhir.
+
 ==================================================
 BLUEPRINT CODE REFERENCE (MUST FOLLOW THIS ARCHITECTURE)
 ==================================================
@@ -117,8 +140,19 @@ export const VibeGraphic: React.FC<VibeGraphicProps> = ({
 }) => {
   const rawFrame = useCurrentFrame()
   const frame = rawFrame * (speedMultiplier || 1)
-  const { width, height, fps = 30 } = useVideoConfig()
+  const { width, height, fps = 30, durationInFrames = 150 } = useVideoConfig()
   const baseScale = Math.min(width, height) / 1080
+
+  // Universal Dynamic Timeline (All Durations 5s, 10s, 15s, 20s)
+  const introEnd = Math.floor(durationInFrames * 0.2)
+  const actionEnd = Math.floor(durationInFrames * 0.8)
+
+  // Anti-Freeze Continuous Micro-Motions (Frame 0 to End)
+  const cameraZoom = interpolate(frame, [0, durationInFrames], [1, 1.04], {
+    extrapolateLeft: 'clamp', extrapolateRight: 'clamp'
+  })
+  const floatY = Math.sin(frame / 15) * (6 * baseScale)
+  const breathingGlow = 0.4 + Math.sin(frame / 20) * 0.2
 
   // Frame 0 Safe: always visible at frame 0 (opacity starts at 0.92)
   const introOpacity = interpolate(frame, [0, 6], [0.92, 1], {

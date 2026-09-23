@@ -95,6 +95,8 @@ const customElectronAPI = {
     resolutionLabel?: string
     renderMode?: 'auto' | 'gpu' | 'cpu'
     customOutputFolder?: string
+    durationInFrames?: number
+    fps?: number
     titleText?: string
     subtitleText?: string
     badgeText?: string
@@ -127,6 +129,15 @@ const customElectronAPI = {
       ipcRenderer.removeListener('render-progress', handler)
     }
   },
+  onStudioError: (callback: (errorMsg: string) => void): (() => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, err: string): void => {
+      callback(err)
+    }
+    ipcRenderer.on('studio:error', handler)
+    return (): void => {
+      ipcRenderer.removeListener('studio:error', handler)
+    }
+  },
   startStudioServer: (port?: number): Promise<{ success: boolean; port: number; url: string; error?: string }> => {
     return ipcRenderer.invoke('remotion:start-server', port)
   },
@@ -145,6 +156,7 @@ const customElectronAPI = {
   generateVideo: (payload: {
     prompt: string
     imageBase64?: string
+    mimeType?: string
     apiKey: string
     assetPath?: string
   }): Promise<{ success: boolean; code?: string; filePath?: string; error?: string }> => {
@@ -159,9 +171,15 @@ const customElectronAPI = {
     return ipcRenderer.invoke('ai:refine-video', payload)
   },
   autoFixVideo: (payload: {
-    errorMessage: string
+    errorMessage?: string
     apiKey: string
     currentCode?: string
+    mode?: 'runtime_error' | 'visual_recovery'
+    width?: number
+    height?: number
+    fps?: number
+    durationInFrames?: number
+    aspectRatio?: string
   }): Promise<{ success: boolean; code?: string; filePath?: string; error?: string }> => {
     return ipcRenderer.invoke('ai:auto-fix-video', payload)
   },
@@ -221,6 +239,9 @@ const customElectronAPI = {
   startUpdateDownload: (): Promise<{ success: boolean; error?: string }> => {
     return ipcRenderer.invoke('updater:start-download')
   },
+  startDownloadUpdate: (): Promise<{ success: boolean; error?: string }> => {
+    return ipcRenderer.invoke('start-download-update')
+  },
   restartAndInstall: (): void => {
     ipcRenderer.invoke('restart-app-for-update')
   },
@@ -228,9 +249,9 @@ const customElectronAPI = {
     ipcRenderer.invoke('restart-app-for-update')
   },
   onUpdateAvailable: (
-    callback: (info: { version: string; releaseNotes?: string }) => void
+    callback: (info: { version: string; releaseNotes?: any; [key: string]: any }) => void
   ): (() => void) => {
-    const handler = (_e: Electron.IpcRendererEvent, info: { version: string; releaseNotes?: string }): void =>
+    const handler = (_e: Electron.IpcRendererEvent, info: any): void =>
       callback(info)
     ipcRenderer.on('update-available', handler)
     return () => {
@@ -242,7 +263,11 @@ const customElectronAPI = {
   ): (() => void) => {
     const handler = (_e: Electron.IpcRendererEvent, data: { percent: number }): void => callback(data)
     ipcRenderer.on('update:progress', handler)
-    return () => ipcRenderer.removeListener('update:progress', handler)
+    ipcRenderer.on('download-progress', handler)
+    return () => {
+      ipcRenderer.removeListener('update:progress', handler)
+      ipcRenderer.removeListener('download-progress', handler)
+    }
   },
   onUpdateDownloaded: (callback: (info?: { version: string }) => void): (() => void) => {
     const handler = (_e: Electron.IpcRendererEvent, info?: { version: string }): void => callback(info)

@@ -38,8 +38,7 @@ export const RemotionRoot: React.FC = () => {
           width: 1920,
           height: 1080,
           durationInFrames: 150,
-          fps: 30,
-          customAssetUrl: undefined
+          fps: 30
         }}
       />
       <Composition
@@ -73,4 +72,6 @@ export const RemotionRoot: React.FC = () => {
   )
 }
 
+export const Root = RemotionRoot
+export default RemotionRoot
 registerRoot(RemotionRoot)
