@@ -104,6 +104,8 @@ const customElectronAPI = {
     secondaryColor?: string
     backgroundColor?: string
     scale?: number
+    offsetX?: number
+    offsetY?: number
     textOffsetX?: number
     textOffsetY?: number
     glowIntensity?: number
@@ -208,6 +210,8 @@ const customElectronAPI = {
     backgroundColor?: string
     isTransparent?: boolean
     scale?: number
+    offsetX?: number
+    offsetY?: number
     textOffsetX?: number
     textOffsetY?: number
     glowIntensity?: number

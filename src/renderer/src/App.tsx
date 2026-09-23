@@ -177,26 +177,28 @@ export type DynamicMotionProps = VibeGraphicProps
 // ──────────────────────────────────────────────────────────────────────────────
 // TSX Default Props Parser — extracts default prop values from component
 // destructuring parameters. Handles single quotes, double quotes, and template
-// literals, including escaped apostrophes (e.g. "DON'T MISS OUT", 'TODAY\'S DEAL').
-// ──────────────────────────────────────────────────────────────────────────────
-function parseTsxDefaultProps(code: string): Partial<{
-  titleText: string
-  subtitleText: string
-  badgeText: string
-  accentColor: string
-  secondaryColor: string
-  backgroundColor: string
-}> {
-  const result: Partial<{
-    titleText: string
-    subtitleText: string
-    badgeText: string
-    accentColor: string
-    secondaryColor: string
-    backgroundColor: string
-  }> = {}
+export interface ParsedTsxProps {
+  titleText?: string
+  subtitleText?: string
+  badgeText?: string
+  accentColor?: string
+  secondaryColor?: string
+  backgroundColor?: string
+  isTransparent?: boolean
+  scale?: number
+  offsetX?: number
+  offsetY?: number
+  textOffsetX?: number
+  textOffsetY?: number
+  glowIntensity?: number
+  speedMultiplier?: number
+}
 
-  const targets = [
+function parseTsxDefaultProps(code: string): ParsedTsxProps {
+  const result: ParsedTsxProps = {}
+
+  // 1. String props
+  const stringTargets = [
     'titleText',
     'subtitleText',
     'badgeText',
@@ -205,29 +207,50 @@ function parseTsxDefaultProps(code: string): Partial<{
     'backgroundColor'
   ] as const
 
-  // Regex fragments — each variant handles \-escaped characters inside the string:
-  //   single-quoted:   '((?:[^'\\]|\\.)*)'
-  //   double-quoted:   "((?:[^"\\]|\\.)*)"
-  //   template-literal:`((?:[^`\\]|\\.)*)`
-  // In JS template literal strings, \\\\ becomes \\ (one backslash in regex = escape char)
   const singleQ = `'((?:[^'\\\\]|\\\\.)*)'`
   const doubleQ = `"((?:[^"\\\\]|\\\\.)*)"`
   const templateL = `\`((?:[^\`\\\\]|\\\\.)*)\``
 
-  for (const prop of targets) {
+  for (const prop of stringTargets) {
     const regex = new RegExp(
       `${prop}\\s*=\\s*(?:${singleQ}|${doubleQ}|${templateL})`,
       'im'
     )
     const match = code.match(regex)
     if (match) {
-      // Group 1 = single-quoted, 2 = double-quoted, 3 = template-literal
       const rawValue = (match[1] ?? match[2] ?? match[3] ?? '').trim()
-      // Unescape common escape sequences: \' → ' , \" → " , \\ → \
       result[prop] = rawValue
         .replace(/\\'/g, "'")
         .replace(/\\"/g, '"')
         .replace(/\\\\/g, '\\')
+    }
+  }
+
+  // 2. Boolean props
+  const boolMatch = code.match(/isTransparent\s*=\s*(true|false)/i)
+  if (boolMatch) {
+    result.isTransparent = boolMatch[1].toLowerCase() === 'true'
+  }
+
+  // 3. Numerical props (scale, offsets, glow, speed)
+  const numberTargets = [
+    'scale',
+    'offsetX',
+    'offsetY',
+    'textOffsetX',
+    'textOffsetY',
+    'glowIntensity',
+    'speedMultiplier'
+  ] as const
+
+  for (const prop of numberTargets) {
+    const regex = new RegExp(`${prop}\\s*=\\s*(-?\\d+(?:\\.\\d+)?)`, 'im')
+    const match = code.match(regex)
+    if (match && match[1]) {
+      const numVal = parseFloat(match[1])
+      if (!isNaN(numVal)) {
+        result[prop] = numVal
+      }
     }
   }
 
@@ -684,6 +707,8 @@ export function App(): React.JSX.Element {
             backgroundColor: values.backgroundColor,
             isTransparent: values.isTransparent,
             scale: values.scale,
+            offsetX: values.textOffsetX,
+            offsetY: values.textOffsetY,
             textOffsetX: values.textOffsetX,
             textOffsetY: values.textOffsetY,
             glowIntensity: values.glowIntensity,
@@ -692,6 +717,44 @@ export function App(): React.JSX.Element {
           .catch((err) => console.warn('[App] Immediate updateVideoConfig error:', err))
       }
     }
+  }
+
+  // Batch sync parsed TSX props to visual tweaker states & initial snapshot
+  const syncParsedPropsToState = (parsed: ParsedTsxProps): void => {
+    if (parsed.titleText !== undefined) setParamTitleText(parsed.titleText)
+    if (parsed.subtitleText !== undefined) setParamSubtitleText(parsed.subtitleText)
+    if (parsed.badgeText !== undefined) setParamBadgeText(parsed.badgeText)
+    if (parsed.accentColor !== undefined) setParamAccentColor(parsed.accentColor)
+    if (parsed.secondaryColor !== undefined) setParamSecondaryColor(parsed.secondaryColor)
+    if (parsed.backgroundColor !== undefined) setParamBackgroundColor(parsed.backgroundColor)
+    if (parsed.isTransparent !== undefined) {
+      setIsTransparent(parsed.isTransparent)
+      if (parsed.isTransparent && exportFormat === 'mp4') {
+        setExportFormat('prores4444')
+      }
+    }
+    if (parsed.scale !== undefined) setParamScale(parsed.scale)
+    const effectiveOffsetX = parsed.offsetX ?? parsed.textOffsetX
+    if (effectiveOffsetX !== undefined) setTextOffsetX(effectiveOffsetX)
+    const effectiveOffsetY = parsed.offsetY ?? parsed.textOffsetY
+    if (effectiveOffsetY !== undefined) setTextOffsetY(effectiveOffsetY)
+    if (parsed.glowIntensity !== undefined) setParamGlowIntensity(parsed.glowIntensity)
+    if (parsed.speedMultiplier !== undefined) setParamSpeedMultiplier(parsed.speedMultiplier)
+
+    setInitialParamSnapshot((prev) => ({
+      titleText: parsed.titleText ?? prev.titleText,
+      subtitleText: parsed.subtitleText ?? prev.subtitleText,
+      badgeText: parsed.badgeText ?? prev.badgeText,
+      accentColor: parsed.accentColor ?? prev.accentColor,
+      secondaryColor: parsed.secondaryColor ?? prev.secondaryColor,
+      backgroundColor: parsed.backgroundColor ?? prev.backgroundColor,
+      isTransparent: parsed.isTransparent ?? prev.isTransparent,
+      scale: parsed.scale ?? prev.scale,
+      textOffsetX: effectiveOffsetX ?? prev.textOffsetX,
+      textOffsetY: effectiveOffsetY ?? prev.textOffsetY,
+      glowIntensity: parsed.glowIntensity ?? prev.glowIntensity,
+      speedMultiplier: parsed.speedMultiplier ?? prev.speedMultiplier
+    }))
   }
 
   const handleUndo = (): void => {
@@ -782,6 +845,8 @@ export function App(): React.JSX.Element {
             backgroundColor: paramBackgroundColor,
             isTransparent,
             scale: paramScale,
+            offsetX: textOffsetX,
+            offsetY: textOffsetY,
             textOffsetX,
             textOffsetY,
             glowIntensity: paramGlowIntensity,
@@ -820,7 +885,7 @@ export function App(): React.JSX.Element {
     setParamScale(1)
     const api = getElectronAPI()
     if (api?.updateVideoConfig) {
-      api.updateVideoConfig({ textOffsetX: 0, textOffsetY: 0, scale: 1 }).catch(() => {})
+      api.updateVideoConfig({ textOffsetX: 0, textOffsetY: 0, offsetX: 0, offsetY: 0, scale: 1 }).catch(() => {})
     }
   }
 
@@ -1114,12 +1179,7 @@ export function App(): React.JSX.Element {
     // ── Auto-sync Visual Tweaker from current active code ──
     if (manualCode.trim()) {
       const parsed = parseTsxDefaultProps(manualCode)
-      if (parsed.titleText) setParamTitleText(parsed.titleText)
-      if (parsed.subtitleText) setParamSubtitleText(parsed.subtitleText)
-      if (parsed.badgeText) setParamBadgeText(parsed.badgeText)
-      if (parsed.accentColor) setParamAccentColor(parsed.accentColor)
-      if (parsed.secondaryColor) setParamSecondaryColor(parsed.secondaryColor)
-      if (parsed.backgroundColor) setParamBackgroundColor(parsed.backgroundColor)
+      syncParsedPropsToState(parsed)
     }
     setIframeKey((k) => k + 1)
     setCodeEditorStatus('Kanvas Motion Engine dimuat ulang.')
@@ -1539,31 +1599,13 @@ export function App(): React.JSX.Element {
       })
 
       if (res.success && res.code) {
-        // ── 1. Parse default props from generated code ──
+        // ── 1. Parse default props from generated code & sync Visual Tweaker ──
         const parsed = parseTsxDefaultProps(res.code)
-        // ── 2. Apply parsed values to Visual Tweaker form immediately ──
-        if (parsed.titleText) setParamTitleText(parsed.titleText)
-        if (parsed.subtitleText) setParamSubtitleText(parsed.subtitleText)
-        if (parsed.badgeText) setParamBadgeText(parsed.badgeText)
-        if (parsed.accentColor) setParamAccentColor(parsed.accentColor)
-        if (parsed.secondaryColor) setParamSecondaryColor(parsed.secondaryColor)
-        if (parsed.backgroundColor) setParamBackgroundColor(parsed.backgroundColor)
-        // ── 3. Build merged snapshot (parsed values override current) ──
-        const currentSnap = getCurrentParametricValues()
-        const newSnap: ParametricValues = {
-          ...currentSnap,
-          ...(parsed.titleText ? { titleText: parsed.titleText } : {}),
-          ...(parsed.subtitleText ? { subtitleText: parsed.subtitleText } : {}),
-          ...(parsed.badgeText ? { badgeText: parsed.badgeText } : {}),
-          ...(parsed.accentColor ? { accentColor: parsed.accentColor } : {}),
-          ...(parsed.secondaryColor ? { secondaryColor: parsed.secondaryColor } : {}),
-          ...(parsed.backgroundColor ? { backgroundColor: parsed.backgroundColor } : {})
-        }
+        syncParsedPropsToState(parsed)
         setManualCode(res.code)
         setHasGeneratedContent(true)
         setIframeKey((prev) => prev + 1)
         setCapturedError('')
-        setInitialParamSnapshot(newSnap)
         setUndoStack([])
         setAiGenStatus({
           type: 'success',
@@ -1637,12 +1679,7 @@ export function App(): React.JSX.Element {
       if (res.success && res.code) {
         // ── Parse props from revised code and sync Visual Tweaker ──
         const parsed = parseTsxDefaultProps(res.code)
-        if (parsed.titleText) setParamTitleText(parsed.titleText)
-        if (parsed.subtitleText) setParamSubtitleText(parsed.subtitleText)
-        if (parsed.badgeText) setParamBadgeText(parsed.badgeText)
-        if (parsed.accentColor) setParamAccentColor(parsed.accentColor)
-        if (parsed.secondaryColor) setParamSecondaryColor(parsed.secondaryColor)
-        if (parsed.backgroundColor) setParamBackgroundColor(parsed.backgroundColor)
+        syncParsedPropsToState(parsed)
         // 1. Langsung sinkronkan state editor lokal
         setManualCode(res.code)
         setHasGeneratedContent(true)
@@ -1757,12 +1794,7 @@ export function App(): React.JSX.Element {
             } catch {}
           }
           const parsed = parseTsxDefaultProps(savedSessionCode)
-          if (parsed.titleText) setParamTitleText(parsed.titleText)
-          if (parsed.subtitleText) setParamSubtitleText(parsed.subtitleText)
-          if (parsed.badgeText) setParamBadgeText(parsed.badgeText)
-          if (parsed.accentColor) setParamAccentColor(parsed.accentColor)
-          if (parsed.secondaryColor) setParamSecondaryColor(parsed.secondaryColor)
-          if (parsed.backgroundColor) setParamBackgroundColor(parsed.backgroundColor)
+          syncParsedPropsToState(parsed)
           setHasGeneratedContent(true)
           remountPlayer()
           return
@@ -1784,11 +1816,15 @@ export function App(): React.JSX.Element {
                 if (api?.applyManualCode) {
                   await api.applyManualCode(fresh)
                 }
+                const parsedFresh = parseTsxDefaultProps(fresh)
+                syncParsedPropsToState(parsedFresh)
                 return
               }
             }
             setManualCode((prev) => (prev && prev.trim() ? prev : initial))
             setLastWorkingCode(initial)
+            const parsedInitial = parseTsxDefaultProps(initial)
+            syncParsedPropsToState(parsedInitial)
             return
           }
         }
@@ -1797,6 +1833,8 @@ export function App(): React.JSX.Element {
           if (initial) {
             setManualCode((prev) => (prev && prev.trim() ? prev : initial))
             setLastWorkingCode(initial)
+            const parsedInitial = parseTsxDefaultProps(initial)
+            syncParsedPropsToState(parsedInitial)
           }
         }
       } catch (err) {
@@ -2011,12 +2049,7 @@ export function App(): React.JSX.Element {
         remountPlayer()
         // ── Parse props from applied code and sync Visual Tweaker ──
         const parsedManual = parseTsxDefaultProps(cleanCode)
-        if (parsedManual.titleText) setParamTitleText(parsedManual.titleText)
-        if (parsedManual.subtitleText) setParamSubtitleText(parsedManual.subtitleText)
-        if (parsedManual.badgeText) setParamBadgeText(parsedManual.badgeText)
-        if (parsedManual.accentColor) setParamAccentColor(parsedManual.accentColor)
-        if (parsedManual.secondaryColor) setParamSecondaryColor(parsedManual.secondaryColor)
-        if (parsedManual.backgroundColor) setParamBackgroundColor(parsedManual.backgroundColor)
+        syncParsedPropsToState(parsedManual)
         setHasGeneratedContent(true)
         setCodeEditorStatus('Kode berhasil disimpan! Kanvas melakukan hot-reload otomatis.')
         setTimeout(() => {
@@ -2129,6 +2162,8 @@ export function App(): React.JSX.Element {
         secondaryColor: paramSecondaryColor,
         backgroundColor: paramBackgroundColor,
         scale: paramScale,
+        offsetX: textOffsetX,
+        offsetY: textOffsetY,
         textOffsetX,
         textOffsetY,
         glowIntensity: paramGlowIntensity,
@@ -2302,12 +2337,7 @@ export function App(): React.JSX.Element {
 
         // Sync parsed props to Visual Tweaker
         const parsed = parseTsxDefaultProps(cleanCode)
-        if (parsed.titleText) setParamTitleText(parsed.titleText)
-        if (parsed.subtitleText) setParamSubtitleText(parsed.subtitleText)
-        if (parsed.badgeText) setParamBadgeText(parsed.badgeText)
-        if (parsed.accentColor) setParamAccentColor(parsed.accentColor)
-        if (parsed.secondaryColor) setParamSecondaryColor(parsed.secondaryColor)
-        if (parsed.backgroundColor) setParamBackgroundColor(parsed.backgroundColor)
+        syncParsedPropsToState(parsed)
         setHasGeneratedContent(true)
 
         setCapturedError('')

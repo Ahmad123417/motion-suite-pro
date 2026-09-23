@@ -37,22 +37,31 @@ RULE 4 — DYNAMIC SCALING (MANDATORY):
   ALL font sizes, padding, margin, stroke widths, SVG dimensions, and coordinate offsets
   MUST be multiplied by baseScale.
 
-RULE 5 — STRICT INTERFACE (VibeGraphicProps):
-  Use EXACTLY this interface name and ALL these props:
+RULE 5 — STRICT INTERFACE (VibeGraphicProps 4-KATEGORI STANDAR):
+  Setiap komponen WAJIB mendeklarasikan dan men-destructure interface props standar berikut dengan nilai default:
 
   export interface VibeGraphicProps {
-    titleText?: string        // Main title — ALWAYS READ FROM PROP, never hardcode
-    subtitleText?: string     // Secondary info — ALWAYS READ FROM PROP
-    badgeText?: string        // Badge/label — ALWAYS READ FROM PROP
-    accentColor?: string
-    secondaryColor?: string
-    backgroundColor?: string
-    isTransparent?: boolean
-    scale?: number            // Range 0.5–2.0 (Default: 1)
-    textOffsetX?: number      // Range -500–500px (Default: 0)
-    textOffsetY?: number      // Range -500–500px (Default: 0)
-    glowIntensity?: number    // Range 0–40px (Default: 15)
-    speedMultiplier?: number  // Range 0.5–2.0 (Default: 1)
+    // 1. KONTEN TEKS
+    titleText?: string          // Judul Utama / Angka Utama
+    subtitleText?: string       // Sub-judul / Tagline / Info Sekunder
+    badgeText?: string          // Label Kategori / Status (contoh: 'LIVE', 'PROMO')
+    
+    // 2. SKEMA WARNA
+    accentColor?: string        // Warna Aksen Utama (#FF007F, dll)
+    secondaryColor?: string     // Warna Aksen Kedua (#00F2FE, dll)
+    backgroundColor?: string    // Warna Background Kanvas
+    isTransparent?: boolean     // Mode Transparan
+
+    // 3. TRANSFORM (KONTROL TATA LETAK MANUAL)
+    scale?: number              // Skala Objek Utama (default: 1)
+    offsetX?: number            // Geser Horizontal px (default: 0)
+    offsetY?: number            // Geser Vertikal px (default: 0)
+    textOffsetX?: number        // Alias kompatibilitas
+    textOffsetY?: number        // Alias kompatibilitas
+
+    // 4. EFEK & RITME
+    glowIntensity?: number      // Pengali Intensitas Cahaya / Shadow (default: 1)
+    speedMultiplier?: number    // Pengali Kecepatan Animasi (default: 1)
     customAssetUrl?: string
   }
 

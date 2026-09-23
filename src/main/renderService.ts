@@ -20,6 +20,8 @@ export interface StartRenderPayload {
   secondaryColor?: string
   backgroundColor?: string
   scale?: number
+  offsetX?: number
+  offsetY?: number
   textOffsetX?: number
   textOffsetY?: number
   glowIntensity?: number
@@ -245,8 +247,16 @@ export async function startRender(
       ...(payload.secondaryColor !== undefined ? { secondaryColor: payload.secondaryColor } : {}),
       ...(payload.backgroundColor !== undefined ? { backgroundColor: payload.backgroundColor } : {}),
       ...(payload.scale !== undefined ? { scale: payload.scale } : {}),
-      ...(payload.textOffsetX !== undefined ? { textOffsetX: payload.textOffsetX } : {}),
-      ...(payload.textOffsetY !== undefined ? { textOffsetY: payload.textOffsetY } : {}),
+      ...(payload.offsetX !== undefined
+        ? { offsetX: payload.offsetX, textOffsetX: payload.offsetX }
+        : payload.textOffsetX !== undefined
+        ? { textOffsetX: payload.textOffsetX, offsetX: payload.textOffsetX }
+        : {}),
+      ...(payload.offsetY !== undefined
+        ? { offsetY: payload.offsetY, textOffsetY: payload.offsetY }
+        : payload.textOffsetY !== undefined
+        ? { textOffsetY: payload.textOffsetY, offsetY: payload.textOffsetY }
+        : {}),
       ...(payload.glowIntensity !== undefined ? { glowIntensity: payload.glowIntensity } : {}),
       ...(payload.speedMultiplier !== undefined ? { speedMultiplier: payload.speedMultiplier } : {})
     }

@@ -80,6 +80,8 @@ export interface CustomElectronAPI {
     secondaryColor?: string
     backgroundColor?: string
     scale?: number
+    offsetX?: number
+    offsetY?: number
     textOffsetX?: number
     textOffsetY?: number
     glowIntensity?: number
@@ -136,6 +138,8 @@ export interface CustomElectronAPI {
     backgroundColor?: string
     isTransparent?: boolean
     scale?: number
+    offsetX?: number
+    offsetY?: number
     textOffsetX?: number
     textOffsetY?: number
     glowIntensity?: number

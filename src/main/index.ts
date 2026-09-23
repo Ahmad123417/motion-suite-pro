@@ -720,6 +720,8 @@ app.whenReady().then(() => {
         backgroundColor?: string
         isTransparent?: boolean
         scale?: number
+        offsetX?: number
+        offsetY?: number
         textOffsetX?: number
         textOffsetY?: number
         glowIntensity?: number
@@ -740,6 +742,19 @@ app.whenReady().then(() => {
           } catch (_) {}
         }
         mergedConfig = { ...mergedConfig, ...config }
+
+        // Mirror offsetX <-> textOffsetX and offsetY <-> textOffsetY for bidirectional compatibility
+        if (config.offsetX !== undefined && config.textOffsetX === undefined) {
+          mergedConfig.textOffsetX = config.offsetX
+        } else if (config.textOffsetX !== undefined && config.offsetX === undefined) {
+          mergedConfig.offsetX = config.textOffsetX
+        }
+        if (config.offsetY !== undefined && config.textOffsetY === undefined) {
+          mergedConfig.textOffsetY = config.offsetY
+        } else if (config.textOffsetY !== undefined && config.offsetY === undefined) {
+          mergedConfig.offsetY = config.textOffsetY
+        }
+
         const serialized = JSON.stringify(mergedConfig, null, 2)
         writeFileSync(configPath, serialized, 'utf-8')
 

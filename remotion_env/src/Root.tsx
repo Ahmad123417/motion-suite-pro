@@ -36,9 +36,11 @@ export const RemotionRoot: React.FC = () => {
         backgroundColor: cfg.backgroundColor,
         isTransparent: cfg.isTransparent ?? false,
         scale: cfg.scale ?? 1,
-        textOffsetX: cfg.textOffsetX ?? 0,
-        textOffsetY: cfg.textOffsetY ?? 0,
-        glowIntensity: cfg.glowIntensity ?? 15,
+        offsetX: cfg.offsetX ?? cfg.textOffsetX ?? 0,
+        offsetY: cfg.offsetY ?? cfg.textOffsetY ?? 0,
+        textOffsetX: cfg.textOffsetX ?? cfg.offsetX ?? 0,
+        textOffsetY: cfg.textOffsetY ?? cfg.offsetY ?? 0,
+        glowIntensity: cfg.glowIntensity ?? 1,
         speedMultiplier: cfg.speedMultiplier ?? 1,
         customAssetUrl
       }}

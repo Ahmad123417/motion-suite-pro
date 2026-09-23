@@ -55,32 +55,55 @@ CRITICAL RULES FOR CODE & RENDERING:
    - '@remotion/paths' (evolvePath, getLength, getPointAtLength, warpPath, reversePath, etc.)
    - '@remotion/noise' (noise2D, noise3D, noise4D)
    FORBIDDEN: Do NOT import unsupported external packages (no framer-motion, lucide-react, three, etc.).
-6. COMPONENT & PROPS INTERFACE:
+6. COMPONENT & PROPS INTERFACE (STANDARISASI 4-KATEGORI WAJIB):
+   Setiap komponen WAJIB mendeklarasikan dan men-destructure interface props standar 4-kategori berikut dengan nilai default:
+
    export interface VibeGraphicProps {
-     titleText?: string
-     accentColor?: string
-     backgroundColor?: string
-     isTransparent?: boolean
-     width?: number
-     height?: number
-     durationInFrames?: number
-     fps?: number
-     scale?: number
-     textOffsetX?: number
-     textOffsetY?: number
-     glowIntensity?: number
-     speedMultiplier?: number
+     // 1. KONTEN TEKS
+     titleText?: string          // Judul Utama / Angka Utama
+     subtitleText?: string       // Sub-judul / Tagline / Info Sekunder
+     badgeText?: string          // Label Kategori / Status (contoh: 'LIVE', 'PROMO')
+     
+     // 2. SKEMA WARNA
+     accentColor?: string        // Warna Aksen Utama (#FF007F, dll)
+     secondaryColor?: string     // Warna Aksen Kedua (#00F2FE, dll)
+     backgroundColor?: string    // Warna Background Kanvas
+     isTransparent?: boolean     // Mode Transparan
+
+     // 3. TRANSFORM (KONTROL TATA LETAK MANUAL)
+     scale?: number              // Skala Objek Utama (default: 1)
+     offsetX?: number            // Geser Horizontal px (default: 0)
+     offsetY?: number            // Geser Vertikal px (default: 0)
+     textOffsetX?: number        // Alias kompatibilitas
+     textOffsetY?: number        // Alias kompatibilitas
+
+     // 4. EFEK & RITME
+     glowIntensity?: number      // Pengali Intensitas Cahaya / Shadow (default: 1)
+     speedMultiplier?: number    // Pengali Kecepatan Animasi (default: 1)
      customAssetUrl?: string
    }
 
    export const VibeGraphic: React.FC<VibeGraphicProps> = ({
      titleText = 'CONTEXTUAL_TITLE',
+     subtitleText = 'CONTEXTUAL_SUBTITLE',
+     badgeText = 'CONTEXTUAL_BADGE',
      accentColor = '#00f2fe',
+     secondaryColor = '#7928ca',
      backgroundColor = '#080c18',
      isTransparent = false,
+     scale = 1,
+     offsetX = 0,
+     offsetY = 0,
+     textOffsetX,
+     textOffsetY,
+     glowIntensity = 1,
+     speedMultiplier = 1,
      customAssetUrl
    }) => {
-     const frame = useCurrentFrame()
+     const posX = offsetX ?? textOffsetX ?? 0
+     const posY = offsetY ?? textOffsetY ?? 0
+     const rawFrame = useCurrentFrame()
+     const frame = rawFrame * (speedMultiplier || 1)
      const { durationInFrames, width, height, fps } = useVideoConfig()
      const minDim = Math.min(width, height)
      const baseScale = minDim / 1080
@@ -92,7 +115,14 @@ CRITICAL RULES FOR CODE & RENDERING:
      // Anti-Freeze Continuous Micro-Motions (Frame 0 to End)
      const cameraZoom = interpolate(frame, [0, durationInFrames], [1, 1.04], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
      const floatingY = Math.sin(frame / 15) * (6 * baseScale)
-     const breathingGlow = 0.4 + Math.sin(frame / 20) * 0.2
+     const breathingGlow = (0.4 + Math.sin(frame / 20) * 0.2) * (glowIntensity || 1)
+
+     // ATURAN INTEGRASI PROPS WAJIB:
+     // - Bungkus konten grafis/teks utama dalam div transform:
+     //   transform: \`translate(\${posX}px, \${posY}px) scale(\${scale * cameraZoom})\`
+     // - Tampilkan teks dari props: {titleText}, {subtitleText}, {badgeText}
+     // - Terapkan warna dari props: accentColor, secondaryColor, backgroundColor
+     // - Terapkan glowIntensity ke efek shadow/filter
      ...
    }
    export default VibeGraphic
