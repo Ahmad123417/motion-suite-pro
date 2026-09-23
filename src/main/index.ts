@@ -16,7 +16,7 @@ import { registerRemotionStudioIPC, cleanupStudioOnQuit, startRemotionStudio } f
 import { registerGeminiIPC } from './geminiService'
 import { registerRenderIPC, getRemotionEnvDir } from './renderService'
 import { registerAssetIPC } from './assetService'
-import { registerLicenseIPC } from './licenseService'
+import { registerLicenseIPC, getLicenseStatus } from './licenseService'
 
 // ─── Auto-Updater Configuration ───────────────────────────────────────────────
 autoUpdater.autoDownload = false         // Jangan unduh otomatis; tunggu konfirmasi pengguna
@@ -414,6 +414,17 @@ app.whenReady().then(() => {
         customAssetUrl?: string
       }
     ) => {
+      // Security License Check Guard (Zero-Regression additive protection)
+      const license = getLicenseStatus()
+      if (!license.isValid || license.isClockDesynced || license.statusCode === 'EXPIRED' || license.statusCode === 'CLOCK_DESYNC') {
+        const errorMsg = license.statusMessage || 'Akses Render Ditolak: Lisensi tidak valid atau jam sistem tidak sinkron.'
+        console.warn('[RenderVideo] License guard blocked render:', errorMsg)
+        return {
+          success: false,
+          error: errorMsg
+        }
+      }
+
       const parentWindow = BrowserWindow.fromWebContents(event.sender)
       const isMov = format === 'mov'
       const extension = isMov ? 'mov' : 'mp4'

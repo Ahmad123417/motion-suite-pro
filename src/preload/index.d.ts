@@ -153,11 +153,16 @@ export interface CustomElectronAPI {
     plan?: string
     licenseKey?: string
     expiryDate?: string | null
+    expiresAt?: string | null
     activatedAt?: string
+    isClockDesynced?: boolean
+    statusCode?: 'VALID' | 'EXPIRED' | 'CLOCK_DESYNC' | 'UNLICENSED' | 'TAMPERED'
+    statusMessage?: string
   }>
   validateLicense: (
     key: string
   ) => Promise<{ success: boolean; message: string; data?: any }>
+  syncTime: () => Promise<{ success: boolean; message: string; networkTime?: number }>
   restartAndInstall: () => void
   installAndRestart?: () => void
   startUpdateDownload?: () => Promise<{ success: boolean; error?: string }>

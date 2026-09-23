@@ -75,11 +75,17 @@ Sebaliknya, **Motion Suite Pro adalah Prompt-to-Code Motion Graphics Workstation
 * **MP4 (H.264)** untuk media sosial dan web.
 * **Apple ProRes 4444 (.MOV)** dengan format piksel `yuva444p10le` untuk transparansi 10-bit berkualitas studio.
 
+### 6. 🔐 Tiered Machine-Locked Licensing & Anti-Clock Rollback Guard
+* **Kriptografi RSA-SHA256**: Mengikat lisensi ke perangkat keras fisik (*Hardware Machine ID*) dengan perlindungan tanda tangan digital asimetris 2048-bit.
+* **Anti-Clock Rollback Protection**: Mencegah eksploitasi pemunduran tanggal/jam sistem lokal melalui penyimpanan stempel waktu terenkripsi AES-256-CBC (`clock_sync.dat`) di direktori `userData`.
+* **Auto-Lockout & Pemulihan Internet 1-Klik**: Sistem secara otomatis mengunci fitur render dan generator jika jam lokal dimundurkan melebihi 3 menit, dan menyediakan pemulihan instan satu kali klik via HTTP HEAD ke server waktu publik (Google / Cloudflare).
+* **Multi-Tier Duration Support**: Mendukung masa aktif berdurasi dinamis (1 Hari Trial, 3 Hari, 7 Hari Mingguan, 30 Hari Bulanan, dan Lifetime Access permanen).
+
 ---
 
 ## 📝 Catatan Rilis: Changelog v1.0.5
 
-Pembaruan **v1.0.5** menghadirkan fungsionalitas penuh Visual Tweaker, durasi baru 20 detik, dan pipeline self-healing:
+Pembaruan **v1.0.5** menghadirkan fungsionalitas penuh Visual Tweaker, durasi baru 20 detik, pipeline self-healing, dan proteksi lisensi mutakhir:
 
 ### 🎛️ 1. Fungsionalisasi Penuh Panel Visual Tweaker 4-Kategori
 * Standarisasi kontrak props `VibeGraphicProps` (Teks, Warna, Transform, Efek) di semua template prompt AI.
@@ -94,6 +100,11 @@ Pembaruan **v1.0.5** menghadirkan fungsionalitas penuh Visual Tweaker, durasi ba
 ### ⚡ 3. Automated Error Capture & Self-Healing
 * Penangkapan error runtime compiler Remotion secara otomatis melalui IPC channel `studio:error`.
 * Pemulihan kode instan dengan proteksi jeda buffer untuk menghindari race condition file bundler.
+
+### 🔐 4. Enhanced Licensing & Anti-Clock Rollback Engine
+* Penambahan verifikasi masa aktif dinamis (1 Hari, 3 Hari, 7 Hari, 30 Hari, dan Lifetime Access) berbasis parameter `expiresAt`.
+* Penerapan Anti-Clock Desync Lockout berbasis stempel waktu lokal terenkripsi AES-256-CBC (`clock_sync.dat`) dengan batas toleransi mundur 3 menit (180.000 ms).
+* Tombol pemulihan instan *"🔄 Sinkronkan Waktu via Internet (1-Klik)"* via query HTTP HEAD waktu global (Google / Cloudflare) serta proteksi render IPC main process jika lisensi kedaluwarsa atau jam desinkron.
 
 ---
 

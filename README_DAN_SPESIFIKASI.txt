@@ -67,8 +67,12 @@ F. PHYSICAL EXPORT PIPELINE
    - MP4 (H.264 CRF 18) untuk web/sosial media standar broadcast.
    - MOV ProRes 4444 Alpha Channel (yuva444p10le) untuk Adobe Premiere, After Effects, CapCut, DaVinci Resolve.
 
-G. TIERED MACHINE-LOCKED LICENSING
-   - Perlindungan lisensi offline berbasis Machine ID dengan verifikasi kriptografi.
+G. TIERED MACHINE-LOCKED LICENSING & ANTI-CLOCK ROLLBACK GUARD
+   - Kriptografi Asimetris RSA-SHA256 (2048-bit): Mengikat lisensi ke Hardware Machine ID fisik perangkat.
+   - Proteksi Anti-Clock Rollback: Stempel waktu lokal tersimpan secara terenkripsi AES-256-CBC (clock_sync.dat) di direktori userData.
+   - Deteksi Desync Jam & Toleransi 3 Menit: Pemunduran waktu di atas 180.000 ms otomatis memicu status CLOCK_DESYNC dan memblokir fitur generator & render.
+   - Pemulihan Waktu Internet 1-Klik: Sinkronisasi waktu instan via query HTTP HEAD ke Google / Cloudflare memulihkan akses tanpa mengubah setelan jam Windows.
+   - Multi-Tier Duration: Mendukung masa berlaku dinamis (1 Hari, 3 Hari, 7 Hari, 30 Hari, dan Lifetime Access permanen).
 
 H. IN-APP AUTO-UPDATE SYSTEM
    - Notifikasi pembaruan aplikasi modern model OBS Studio dengan pemantauan unduhan di latar belakang.
@@ -92,6 +96,11 @@ Pembaruan v1.0.5 menghadirkan penyempurnaan menyeluruh pada alur kerja motion gr
 3. Automated Error Capture & Self-Healing Pipeline:
    - Penangkapan error runtime instan dari Remotion Studio IPC tanpa copy-paste manual.
    - Auto-Fix terpandu dengan jeda buffer aman dan pencegahan race condition bundler.
+
+4. Enhanced Licensing & Anti-Clock Rollback Engine:
+   - Penambahan verifikasi masa aktif dinamis (1 Hari, 3 Hari, 7 Hari, 30 Hari, dan Lifetime Access) berbasis parameter expiresAt.
+   - Penerapan Anti-Clock Desync Lockout berbasis stempel waktu lokal terenkripsi AES-256-CBC (clock_sync.dat) dengan batas toleransi mundur 3 menit (180.000 ms).
+   - Tombol pemulihan instan "Sinkronkan Waktu via Internet (1-Klik)" via query HTTP HEAD waktu global (Google / Cloudflare) serta proteksi render IPC main process jika lisensi kedaluwarsa atau jam desinkron.
 
 --------------------------------------------------------------------------------
 3. SPESIFIKASI SISTEM MINIMUM & REKOMENDASI

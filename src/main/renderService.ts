@@ -2,6 +2,7 @@ import { spawn, ChildProcess, execSync } from 'child_process'
 import { dialog, BrowserWindow, ipcMain, app, Notification } from 'electron'
 import { resolve, join } from 'path'
 import { existsSync, mkdirSync, writeFileSync, unlinkSync, readFileSync } from 'fs'
+import { getLicenseStatus } from './licenseService'
 
 export interface StartRenderPayload {
   format: 'mp4' | 'mov' | 'prores422' | 'prores4444'
@@ -165,6 +166,17 @@ export async function startRender(
   payload: StartRenderPayload,
   webContents?: Electron.WebContents
 ): Promise<RenderServiceResult> {
+  // Security License Check Guard (Zero-Regression additive protection)
+  const license = getLicenseStatus()
+  if (!license.isValid || license.isClockDesynced || license.statusCode === 'EXPIRED' || license.statusCode === 'CLOCK_DESYNC') {
+    const errorMsg = license.statusMessage || 'Akses Render Ditolak: Lisensi tidak valid atau jam sistem tidak sinkron.'
+    console.warn('[RenderService] Render blocked by license guard:', errorMsg)
+    return {
+      success: false,
+      error: errorMsg
+    }
+  }
+
   // If a render is already running, cancel it first
   if (activeRenderProcess) {
     await cancelRender()

@@ -1285,6 +1285,10 @@ export function App(): React.JSX.Element {
     plan?: string
     licenseKey?: string
     expiryDate?: string | null
+    expiresAt?: string | null
+    isClockDesynced?: boolean
+    statusCode?: 'VALID' | 'EXPIRED' | 'CLOCK_DESYNC' | 'UNLICENSED' | 'TAMPERED'
+    statusMessage?: string
   }
 
   const [licenseStatus, setLicenseStatus] = useState<LicenseState>({
@@ -1292,6 +1296,7 @@ export function App(): React.JSX.Element {
     machineId: 'Loading...',
     plan: undefined,
     expiryDate: null,
+    expiresAt: null,
     licenseKey: ''
   })
   const [licenseKeyInput, setLicenseKeyInput] = useState<string>('')
@@ -1301,6 +1306,12 @@ export function App(): React.JSX.Element {
     message: string
   } | null>(null)
   const [isLicenseAlertOpen, setIsLicenseAlertOpen] = useState<boolean>(false)
+  const [isSyncingTime, setIsSyncingTime] = useState<boolean>(false)
+  const [timeSyncFeedback, setTimeSyncFeedback] = useState<{
+    type: 'success' | 'error'
+    message: string
+  } | null>(null)
+  const [isWarningDismissed, setIsWarningDismissed] = useState<boolean>(false)
 
   // Fetch license status on startup
   useEffect(() => {
@@ -1374,6 +1385,33 @@ export function App(): React.JSX.Element {
       })
     } finally {
       setIsLicenseValidating(false)
+    }
+  }
+
+  // Handle Online Internet Time Synchronization (Anti-Clock Rollback)
+  const handleSyncTime = async (): Promise<void> => {
+    setIsSyncingTime(true)
+    setTimeSyncFeedback(null)
+    try {
+      const api = getElectronAPI()
+      if (!api?.syncTime) {
+        throw new Error('API syncTime tidak tersedia.')
+      }
+      const res = await api.syncTime()
+      if (res.success) {
+        setTimeSyncFeedback({ type: 'success', message: res.message })
+        const updated = await api.getLicenseStatus()
+        setLicenseStatus(updated)
+      } else {
+        setTimeSyncFeedback({ type: 'error', message: res.message })
+      }
+    } catch (err) {
+      setTimeSyncFeedback({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Gagal melakukan sinkronisasi waktu.'
+      })
+    } finally {
+      setIsSyncingTime(false)
     }
   }
 
@@ -4085,6 +4123,301 @@ export function App(): React.JSX.Element {
           </div>
         </div>
       )}
+
+      {/* ── Critical License Overlay (EXPIRED or CLOCK_DESYNC) ── */}
+      {!isWarningDismissed &&
+        !licenseStatus.isValid &&
+        (licenseStatus.isClockDesynced ||
+          licenseStatus.statusCode === 'CLOCK_DESYNC' ||
+          licenseStatus.statusCode === 'EXPIRED') && (
+          <div
+            className="critical-license-overlay"
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 100005,
+              backgroundColor: 'rgba(5, 7, 15, 0.92)',
+              backdropFilter: 'blur(12px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '20px',
+              animation: 'fadeIn 0.25s ease-out'
+            }}
+            onClick={() => setIsWarningDismissed(true)}
+          >
+            <div
+              className="critical-license-card"
+              style={{
+                width: '100%',
+                maxWidth: '540px',
+                background: '#111827',
+                border:
+                  licenseStatus.isClockDesynced || licenseStatus.statusCode === 'CLOCK_DESYNC'
+                    ? '1px solid rgba(245, 158, 11, 0.4)'
+                    : '1px solid rgba(239, 68, 68, 0.4)',
+                borderRadius: '16px',
+                padding: '24px',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.85)',
+                color: '#f3f4f6',
+                position: 'relative'
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                type="button"
+                onClick={() => setIsWarningDismissed(true)}
+                style={{
+                  position: 'absolute',
+                  top: '16px',
+                  right: '16px',
+                  background: 'none',
+                  border: 'none',
+                  color: '#9ca3af',
+                  fontSize: '18px',
+                  cursor: 'pointer',
+                  padding: '4px 8px'
+                }}
+                title="Tutup"
+              >
+                ✕
+              </button>
+
+              {/* CLOCK_DESYNC VIEW */}
+              {(licenseStatus.isClockDesynced || licenseStatus.statusCode === 'CLOCK_DESYNC') && (
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                    <span style={{ fontSize: '32px' }}>⏰</span>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#fbbf24' }}>
+                        Manipulasi Jam Sistem Terdeteksi
+                      </h3>
+                      <span style={{ fontSize: '12px', color: '#9ca3af' }}>Anti-Clock Rollback Guard Active</span>
+                    </div>
+                  </div>
+
+                  <p style={{ fontSize: '13px', color: '#d1d5db', lineHeight: '1.6', marginBottom: '16px' }}>
+                    {licenseStatus.statusMessage ||
+                      'Sistem mendeteksi bahwa tanggal/jam lokal perangkat Anda dimundurkan dari waktu rekaman sebelumnya. Untuk melindungi integritas lisensi, fitur render dan generator AI dikunci sementara.'}
+                  </p>
+
+                  <div
+                    style={{
+                      background: 'rgba(245, 158, 11, 0.1)',
+                      border: '1px solid rgba(245, 158, 11, 0.25)',
+                      borderRadius: '10px',
+                      padding: '12px 14px',
+                      marginBottom: '18px',
+                      fontSize: '12px',
+                      color: '#fef3c7',
+                      lineHeight: '1.5'
+                    }}
+                  >
+                    💡 <strong>Solusi Mudah:</strong> Klik tombol di bawah untuk menyinkronkan waktu dengan server internet (Google/Cloudflare). Jam sistem Anda akan terverifikasi dan akses fitur akan terbuka kembali seketika.
+                  </div>
+
+                  {timeSyncFeedback && (
+                    <div
+                      style={{
+                        padding: '10px 14px',
+                        borderRadius: '8px',
+                        marginBottom: '14px',
+                        fontSize: '12px',
+                        background:
+                          timeSyncFeedback.type === 'success'
+                            ? 'rgba(34, 197, 94, 0.2)'
+                            : 'rgba(239, 68, 68, 0.2)',
+                        border:
+                          timeSyncFeedback.type === 'success'
+                            ? '1px solid #22c55e'
+                            : '1px solid #ef4444',
+                        color: timeSyncFeedback.type === 'success' ? '#4ade80' : '#f87171'
+                      }}
+                    >
+                      {timeSyncFeedback.message}
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button
+                      type="button"
+                      onClick={handleSyncTime}
+                      disabled={isSyncingTime}
+                      style={{
+                        flex: 1,
+                        background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '10px',
+                        padding: '12px 18px',
+                        fontWeight: 600,
+                        fontSize: '13px',
+                        cursor: isSyncingTime ? 'not-allowed' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px'
+                      }}
+                    >
+                      {isSyncingTime ? (
+                        <>
+                          <span className="ai-status-spinner" />
+                          <span>Menyinkronkan Waktu Internet...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>🔄</span>
+                          <span>Sinkronkan Waktu via Internet (1-Klik)</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* EXPIRED VIEW */}
+              {!licenseStatus.isClockDesynced && licenseStatus.statusCode === 'EXPIRED' && (
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                    <span style={{ fontSize: '32px' }}>⏳</span>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#f87171' }}>
+                        Masa Berlaku Lisensi Telah Berakhir
+                      </h3>
+                      <span style={{ fontSize: '12px', color: '#9ca3af' }}>Subscription Expired</span>
+                    </div>
+                  </div>
+
+                  <p style={{ fontSize: '13px', color: '#d1d5db', lineHeight: '1.6', marginBottom: '16px' }}>
+                    {licenseStatus.statusMessage ||
+                      'Masa aktif lisensi Anda telah habis. Masukkan Kunci Lisensi baru atau perpanjang lisensi Anda untuk melanjutkan ekspor video dan fitur generator AI.'}
+                  </p>
+
+                  <div
+                    style={{
+                      background: 'rgba(0,0,0,0.35)',
+                      border: '1px solid rgba(255,255,255,0.08)',
+                      borderRadius: '8px',
+                      padding: '10px 14px',
+                      marginBottom: '16px',
+                      fontSize: '12px'
+                    }}
+                  >
+                    <div style={{ color: '#9ca3af', marginBottom: '4px' }}>Hardware Machine ID Perangkat Anda:</div>
+                    <code
+                      style={{
+                        display: 'inline-block',
+                        background: '#1e293b',
+                        padding: '4px 8px',
+                        borderRadius: '4px',
+                        color: '#38bdf8',
+                        fontWeight: 600,
+                        cursor: 'pointer'
+                      }}
+                      onClick={() => {
+                        navigator.clipboard.writeText(licenseStatus.machineId)
+                        setLicenseFeedback({ type: 'success', message: 'Machine ID disalin!' })
+                      }}
+                      title="Klik untuk menyalin"
+                    >
+                      {licenseStatus.machineId} 📋
+                    </code>
+                  </div>
+
+                  <div style={{ marginBottom: '14px' }}>
+                    <label
+                      style={{
+                        display: 'block',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        color: '#e5e7eb',
+                        marginBottom: '6px'
+                      }}
+                    >
+                      Masukkan Kunci Lisensi Baru:
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Tempel kunci lisensi baru di sini..."
+                      value={licenseKeyInput}
+                      onChange={(e) => setLicenseKeyInput(e.target.value)}
+                      style={{
+                        width: '100%',
+                        background: '#1f2937',
+                        border: '1px solid #374151',
+                        borderRadius: '8px',
+                        padding: '10px 12px',
+                        fontSize: '12px',
+                        color: '#f9fafb',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                  </div>
+
+                  {licenseFeedback && (
+                    <div
+                      style={{
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        marginBottom: '14px',
+                        fontSize: '12px',
+                        background:
+                          licenseFeedback.type === 'success'
+                            ? 'rgba(34, 197, 94, 0.2)'
+                            : 'rgba(239, 68, 68, 0.2)',
+                        border:
+                          licenseFeedback.type === 'success'
+                            ? '1px solid #22c55e'
+                            : '1px solid #ef4444',
+                        color: licenseFeedback.type === 'success' ? '#4ade80' : '#f87171'
+                      }}
+                    >
+                      {licenseFeedback.message}
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button
+                      type="button"
+                      onClick={handleValidateLicense}
+                      disabled={isLicenseValidating || !licenseKeyInput.trim()}
+                      style={{
+                        flex: 1,
+                        background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '10px',
+                        padding: '12px 18px',
+                        fontWeight: 600,
+                        fontSize: '13px',
+                        cursor: isLicenseValidating || !licenseKeyInput.trim() ? 'not-allowed' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px'
+                      }}
+                    >
+                      {isLicenseValidating ? (
+                        <>
+                          <span className="ai-status-spinner" />
+                          <span>Memvalidasi Lisensi...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>⚡</span>
+                          <span>Aktifkan Lisensi Baru</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
     </div>
   )
 }

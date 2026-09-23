@@ -229,7 +229,11 @@ const customElectronAPI = {
     plan?: string
     licenseKey?: string
     expiryDate?: string | null
+    expiresAt?: string | null
     activatedAt?: string
+    isClockDesynced?: boolean
+    statusCode?: 'VALID' | 'EXPIRED' | 'CLOCK_DESYNC' | 'UNLICENSED' | 'TAMPERED'
+    statusMessage?: string
   }> => {
     return ipcRenderer.invoke('license:get-status')
   },
@@ -237,6 +241,9 @@ const customElectronAPI = {
     key: string
   ): Promise<{ success: boolean; message: string; data?: any }> => {
     return ipcRenderer.invoke('license:validate', key)
+  },
+  syncTime: (): Promise<{ success: boolean; message: string; networkTime?: number }> => {
+    return ipcRenderer.invoke('license:sync-time')
   },
 
   // ── Auto-Updater IPC ──────────────────────────────────────────────────────

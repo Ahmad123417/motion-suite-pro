@@ -782,7 +782,7 @@
             <div class="step-content">
               <div class="step-title">Masukkan Kode Lisensi &amp; Validasi</div>
               <div class="step-desc">
-                Setelah menerima kode lisensi dari admin, tempelkan kodenya ke kolom Lisensi di aplikasi, lalu klik <strong>"Validasi"</strong>. Status otomatis berubah menjadi <strong>"Aktif"</strong> dengan indikator hijau sesuai paket yang Anda beli (1 Hari, 7 Hari, 30 Hari, atau Lifetime).
+                Setelah menerima kode lisensi digital (format: <code>payload.signature</code>), tempelkan seluruh teks ke kolom Lisensi di aplikasi, lalu klik <strong>"Validasi"</strong>. Status otomatis berubah menjadi <strong>"Aktif"</strong> dengan indikator hijau sesuai paket lisensi Anda (1 Hari Trial, 3 Hari, 7 Hari Mingguan, 30 Hari Bulanan, atau Lifetime Access).
               </div>
             </div>
           </div>
@@ -791,16 +791,16 @@
         <!-- Visual Simulator Sukses -->
         <div class="ui-mockup-box">
           <div class="mockup-header">
-            <span>Tampilan Indikator Sukses (Panel Kiri Atas)</span>
-            <span class="badge badge-success">RSA-2048 Cryptography Verified</span>
+            <span>Tampilan Indikator Sukses &amp; Proteksi Waktu</span>
+            <span class="badge badge-success">RSA-SHA256 &bull; Anti-Clock Rollback Active</span>
           </div>
           <div class="mockup-row">
             <div>
               <div class="mockup-label">Status Lisensi:</div>
-              <span style="font-size:11px; color:var(--text-muted);">Durasi &amp; Masa Berlaku Dinamis (Hardware Binding)</span>
+              <span style="font-size:11px; color:var(--text-muted);">Masa Aktif Dinamis &amp; Terikat Hardware ID Perangkat</span>
             </div>
             <span class="badge badge-success" style="font-size:12px; padding:6px 14px;">
-              🟢 Aktif (1 Hari / 7 Hari / 30 Hari / Lifetime)
+              🟢 Aktif (1 Hari / 3 Hari / 7 Hari / 30 Hari / Lifetime)
             </span>
           </div>
         </div>
@@ -1142,6 +1142,19 @@
                 Folder penyimpanan default berada di: <br>
                 <span class="code-pill">C:\Users\&lt;NamaUser&gt;\Downloads\Motion Studio Exports</span><br>
                 Anda dapat mengubah folder penyimpanan kapan saja sebelum memulai render atau mengklik tombol <strong>"Buka Folder"</strong> setelah proses render selesai.
+              </div>
+            </div>
+          </div>
+
+          <!-- Kasus 5 -->
+          <div class="step-item">
+            <div class="step-num" style="background: linear-gradient(135deg, #f59e0b, #d97706);">5</div>
+            <div class="step-content">
+              <div class="step-title">Peringatan "Manipulasi Jam Sistem Terdeteksi" (CLOCK_DESYNC)</div>
+              <div class="step-desc">
+                <strong>Gejala:</strong> Muncul jendela peringatan jam sistem dimundurkan dan fitur render terkunci sementara.<br>
+                <strong>Penyebab:</strong> Jam/tanggal komputer Anda berada di belakang stempel waktu aman terenkripsi lokal aplikasi.<br>
+                <strong>Solusi Cepat 1-Klik:</strong> Klik tombol <strong>"🔄 Sinkronkan Waktu via Internet (1-Klik)"</strong> langsung pada jendela peringatan aplikasi. Sistem akan mencocokkan waktu dengan server waktu resmi (Google / Cloudflare) dan memulihkan akses seketika!
               </div>
             </div>
           </div>
