@@ -1,9 +1,25 @@
+# Dependency and Build Outputs
 node_modules
 dist
 out
+
+# Binaries and Archives (Double Guard)
+*.exe
+*.rar
+*.zip
+*.7z
+*.blockmap
+
+# OS and Cache files
 .DS_Store
+Thumbs.db
 .eslintcache
 *.log*
+
+# Environment and Secrets
+.env
+.env.*
+*.env
 *.pem
 *.key
 scripts/private.pem

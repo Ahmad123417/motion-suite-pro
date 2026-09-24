@@ -5,7 +5,7 @@
 [![Version](https://img.shields.io/badge/version-1.0.5-blue.svg)](https://github.com/Ahmad123417/motion-studio-release)
 [![License](https://img.shields.io/badge/license-Flexible%20Tiered%20%7C%20Lifetime-emerald.svg)](https://lynk.id)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011%20(64--bit)-lightgrey.svg)](#kebutuhan-spesifikasi-sistem)
-[![Engine](https://img.shields.io/badge/engine-Remotion%20%2B%20React%2019-violet.svg)](https://remotion.dev)
+[![Engine](https://img.shields.io/badge/engine-Motion%20Suite%20Core%20Engine-violet.svg)](#)
 
 ---
 
@@ -13,7 +13,7 @@
 
 **Motion Suite Pro** bukanlah generator video berbasis model difusi visual (*generative AI video*) yang sering mengalami halusinasi, teks buram/rusak, distorsi fisik, dan tidak bisa diedit ulang.
 
-Sebaliknya, **Motion Suite Pro adalah Prompt-to-Code Motion Graphics Workstation** yang memadukan kekuatan **Remotion (React 19 + TypeScript)** dengan kecerdasan **Google Gemini AI**:
+Sebaliknya, **Motion Suite Pro adalah Prompt-to-Code Motion Graphics Workstation** yang memadukan kekuatan **Dynamic Code-to-Video Engine (React 19 + TypeScript)** dengan kecerdasan **Google Gemini AI**:
 
 * **Presisi Piksel & Teks Tajam**: Seluruh teks judul, label, dan elemen grafis dirender secara vektor/SVG dan kode CSS murni—bebas artefak kompresi atau teks palsu.
 * **Animasi Matematis Murni**: Pergerakan didasarkan pada fungsi interpolasi matematis (`spring`, `interpolate`, `Easing`), menghasilkan kelancaran absolut pada 30 hingga 60 FPS.
@@ -64,7 +64,7 @@ Sebaliknya, **Motion Suite Pro adalah Prompt-to-Code Motion Graphics Workstation
 * **Continuous Micro-Motions**: Osilasi mengambang (*floating*), *breathing glow*, *camera zoom drift*, dan denyut data terus aktif sepanjang durasi.
 
 ### 3. 🛡️ Automated Error Capture & Self-Healing Pipeline
-* **Zero Manual Copy-Paste**: Error runtime Remotion ditangkap langsung oleh IPC backend.
+* **Zero Manual Copy-Paste**: Error runtime engine ditangkap langsung oleh IPC backend.
 * **Tombol Auto-Fix Interaktif**: Memperbaiki galat kompilasi secara cerdas dengan satu kali klik.
 
 ### 4. 🤖 Prompt-to-Motion AI Generator & Refinement Assistant
@@ -89,16 +89,16 @@ Pembaruan **v1.0.5** menghadirkan fungsionalitas penuh Visual Tweaker, durasi ba
 
 ### 🎛️ 1. Fungsionalisasi Penuh Panel Visual Tweaker 4-Kategori
 * Standarisasi kontrak props `VibeGraphicProps` (Teks, Warna, Transform, Efek) di semua template prompt AI.
-* Integrasi dua arah slider Visual Tweaker ke kanvas preview Remotion (hot-sync 120ms) dan pipeline ekspor fisik.
+* Integrasi dua arah slider Visual Tweaker ke visual canvas internal (hot-sync 120ms) dan pipeline ekspor fisik.
 * Parser cerdas `parseTsxDefaultProps` untuk mendeteksi nilai default prop dari kode TSX secara otomatis.
 
 ### ⏱️ 2. Universal Dynamic Timeline & Anti-Freeze Engine
-* Penambahan opsi durasi **20 Detik (600f @ 30fps / 1200f @ 60fps)** pada panel kontrol dan Remotion Player.
+* Penambahan opsi durasi **20 Detik (600f @ 30fps / 1200f @ 60fps)** pada panel kontrol dan Live Player Motion Suite Core Engine.
 * Aturan AI ketat: Melarang frame statis hardcoded, wajib menggunakan persentase dinamis dari `durationInFrames`.
 * Micro-motion kontinu dari frame 0 hingga akhir untuk menjaga animasi tetap hidup (*never-freeze*).
 
 ### ⚡ 3. Automated Error Capture & Self-Healing
-* Penangkapan error runtime compiler Remotion secara otomatis melalui IPC channel `studio:error`.
+* Penangkapan error runtime compiler dan visual canvas internal secara otomatis melalui IPC channel `studio:error`.
 * Pemulihan kode instan dengan proteksi jeda buffer untuk menghindari race condition file bundler.
 
 ### 🔐 4. Enhanced Licensing & Anti-Clock Rollback Engine
@@ -124,7 +124,7 @@ Pembaruan **v1.0.5** menghadirkan fungsionalitas penuh Visual Tweaker, durasi ba
 ## 🏁 Panduan Singkat Memulai (Quick Start)
 
 1. **Jalankan Installer**: Pasang `Motion-Suite-Pro.Setup.1.0.5.exe` pada sistem Windows Anda.
-2. **Aktivasi Lisensi**: Buka aplikasi, cari panel **Status Lisensi** di pojok kiri atas, masukkan Kunci Lisensi resmi dari nota pembelian Lynk.id, lalu klik **Validasi** hingga status menjadi **"Aktif"** sesuai paket lisensi Anda (Hijau).
+2. **Klaim & Aktivasi Lisensi**: Buka aplikasi, salin **Machine ID** Anda di pojok kiri atas. Kunjungi [Formulir Aktivasi Resmi](https://motionsuite-act.duckdns.org/form/c1dc1a25-386b-4780-9e60-454b6201969e) untuk memasukkan nomor invoice Lynk.id dan Machine ID Anda. Masukkan Kunci Lisensi resmi yang dikirim ke email, lalu klik **Validasi** hingga status menjadi **"Aktif"** (Hijau).
 3. **Masukkan Gemini API Key**: Ambil API Key gratis di [Google AI Studio](https://aistudio.google.com), masukkan ke panel **Gemini API Key** di sidebar kiri, lalu klik **Simpan**.
 4. **Rancang Animasi**: Masukkan prompt konsep Anda, sesuaikan teks/warna/posisi di **Visual Tweaker Drawer**, dan tonton preview seketika.
 5. **Ekspor Video**: Pilih format **Apple ProRes 4444 (.MOV)** untuk Alpha transparan murni atau **MP4** untuk video solid, atur resolusi hingga **4K**, lalu klik **🚀 Ekspor / Render Video**.
@@ -160,4 +160,8 @@ npm run build:win
 
 * **Produk**: Motion Suite Pro (v1.0.5 Production Release)
 * **Distribusi & Lisensi**: Official Lynk.id Store & GitHub Release
+* **Formulir Aktivasi Web**: [https://motionsuite-act.duckdns.org/form/c1dc1a25-386b-4780-9e60-454b6201969e](https://motionsuite-act.duckdns.org/form/c1dc1a25-386b-4780-9e60-454b6201969e)
+* **Bantuan & Layanan Pelanggan**:
+  - Email Resmi: [ahmadmuslihfarhany46@gmail.com](mailto:ahmadmuslihfarhany46@gmail.com)
+  - Telegram Personal: [@ahmadmuslihfarhany](https://t.me/ahmadmuslihfarhany)
 * **Hak Cipta**: &copy; 2026 Motion Suite Pro Team. Seluruh hak cipta dilindungi undang-undang.

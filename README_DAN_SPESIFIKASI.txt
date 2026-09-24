@@ -5,13 +5,13 @@ Versi     : 1.0.5 (Official Production Release)
 Produk    : Motion Suite Pro
 Pengembang: Motion Suite Pro Team
 Platform  : Windows 10 & 11 (64-bit)
-WA Admin  : 085161180423
+Dukungan  : ahmadmuslihfarhany46@gmail.com | Telegram: @ahmadmuslihfarhany
 Repository: https://github.com/Ahmad123417/motion-studio-release
 Lisensi   : Flexible Tiered Licensing (Harian, Mingguan, Bulanan, s/d Lifetime)
 ================================================================================
 
 Terima kasih telah menggunakan Motion Suite Pro! Aplikasi ini adalah Creative Coding 
-& AI Motion Graphics Workstation modern yang memadukan kekuatan Remotion (React 19 
+& AI Motion Graphics Workstation modern yang memadukan kekuatan Dynamic Code-to-Video Engine (React 19 
 + TypeScript) dan Google Gemini AI untuk memproduksi video animasi presisi matematis, 
 aset siaran beresolusi 4K, dan video transparan berkualitas studio.
 
@@ -57,11 +57,11 @@ C. 4-CATEGORY VISUAL TWEAKER LIVE HOT-SYNC
    - Terintegrasi penuh ke kanvas preview dan pipeline ekspor (MP4 H.264 & ProRes 4444).
 
 D. AUTOMATED ERROR CAPTURE & SELF-HEALING RECOVERY
-   - Deteksi runtime error otomatis dari compiler dan canvas Remotion.
+   - Deteksi runtime error otomatis dari compiler dan visual canvas internal.
    - Tombol "Auto-Fix Bug" interaktif untuk pemulihan kode cerdas satu kali klik.
 
 E. STUDIO CANVAS LIVE PREVIEW
-   - Live Player Remotion dengan dukungan Play/Pause, scrubber timeline, hot-reload instan.
+   - Live Player Motion Suite Core Engine dengan dukungan Play/Pause, scrubber timeline, hot-reload instan.
 
 F. PHYSICAL EXPORT PIPELINE
    - MP4 (H.264 CRF 18) untuk web/sosial media standar broadcast.
@@ -94,7 +94,7 @@ Pembaruan v1.0.5 menghadirkan penyempurnaan menyeluruh pada alur kerja motion gr
    - Gerakan mikro kontinu memastikan visual tidak pernah membeku di detik mana pun.
 
 3. Automated Error Capture & Self-Healing Pipeline:
-   - Penangkapan error runtime instan dari Remotion Studio IPC tanpa copy-paste manual.
+   - Penangkapan error runtime instan dari Motion Suite Core Engine IPC tanpa copy-paste manual.
    - Auto-Fix terpandu dengan jeda buffer aman dan pencegahan race condition bundler.
 
 4. Enhanced Licensing & Anti-Clock Rollback Engine:
@@ -131,21 +131,25 @@ Langkah 1: BUKA & PASANG APLIKASI
 - Jika muncul peringatan Windows SmartScreen, klik "More info" lalu pilih "Run anyway".
 
 Langkah 2: SALIN MACHINE ID
-- Di dalam aplikasi, lihat panel kiri atas pada bagian "Status Lisensi".
+- Di dalam aplikasi, periksa panel kiri atas pada bagian "Status Lisensi".
 - Salin deretan kode "Machine ID" perangkat Anda.
 
-Langkah 3: KLAIM KODE LISENSI KE WHATSAPP ADMIN
-- Kirim chat ke WA Admin: 085161180423 dengan format:
-  * Bukti Pembayaran / Invoice Lynk.id
-  * Machine ID laptop Anda
-- Catatan Antrean: Lisensi diproses berurutan dari chat paling bawah (yang masuk lebih awal).
-  Mohon TIDAK melakukan spam atau chat berulang-ulang agar posisi antrean tidak tertunda.
+Langkah 3: KLAIM KODE LISENSI RESMI (OTOMATIS)
+- Buka tautan formulir aktivasi resmi berikut di peramban:
+  https://motionsuite-act.duckdns.org/form/c1dc1a25-386b-4780-9e60-454b6201969e
+- Masukkan rincian pesanan Anda:
+  * Alamat Email Aktif (kunci lisensi akan dikirim ke sini)
+  * Nomor Invoice Pembelian dari Lynk.id
+  * Kode Machine ID perangkat Anda
+  * Unggah bukti pembayaran / tangkapan layar invoice Lynk.id
+- Klik "Submit". Sistem akan otomatis memproses pengiriman kunci lisensi ke email Anda.
+  (PENTING: Periksa kotak masuk/Inbox dan folder Spam/Promotions).
 
 Langkah 4: AKTIVASI LISENSI
-- Setelah menerima kode lisensi dari admin, tempelkan kodenya ke kolom Lisensi di aplikasi, 
-  lalu klik "Validasi".
+- Buka email konfirmasi lisensi, salin seluruh deretan kode Kunci Lisensi (RSA-SHA256).
+- Tempelkan ke kolom Lisensi di dalam aplikasi, lalu klik "Validasi".
 - Status akan berubah menjadi "Aktif" dengan indikator hijau sesuai paket yang dibeli 
-  (misal: 1 Hari, 7 Hari, 30 Hari, atau Lifetime).
+  (1 Hari, 3 Hari, 7 Hari, 30 Hari, atau Lifetime).
 
 Langkah 5: PASANG GEMINI API KEY (GRATIS)
 - Buka browser dan kunjungi: https://aistudio.google.com (login dengan akun Google).
@@ -172,8 +176,8 @@ Langkah 6: SELESAI & MULAI BERKARYA
   C:\Users\<NamaUser>\Downloads\Motion Studio Exports
 - Panduan Lengkap Bergambar (A4 PDF):
   Buka file "user-guide.html" di folder aplikasi untuk panduan visual cetak A4.
-- Kontak Admin WhatsApp Resmi:
-  085161180423
+- Layanan Bantuan Email   : ahmadmuslihfarhany46@gmail.com
+- Layanan Bantuan Telegram: @ahmadmuslihfarhany
 
 ================================================================================
            Selamat Berkarya dengan Motion Suite Pro — Studio in a Box!

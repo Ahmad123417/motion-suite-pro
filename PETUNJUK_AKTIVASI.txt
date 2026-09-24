@@ -9,21 +9,26 @@ PENTING: HARAP BACA SEMUA LANGKAH DI BAWAH INI SEBELUM MEMASANG APLIKASI
    - Jika muncul peringatan Windows SmartScreen, klik "More info" lalu pilih "Run anyway".
 
 2. SALIN MACHINE ID:
-   - Di dalam aplikasi, lihat panel kiri atas pada bagian "Status Lisensi".
+   - Di dalam aplikasi, periksa panel kiri atas pada bagian "Status Lisensi".
    - Salin deretan kode "Machine ID" perangkat Anda (atau klik tombol salin 📋).
 
-3. KLAIM KODE LISENSI KE WHATSAPP ADMIN:
-   - Kirim chat ke WA Admin: 085161180423 dengan format:
-     * Bukti Pembayaran / Invoice Lynk.id
-     * Machine ID laptop Anda
-     * Pilihan Paket: 1 Hari (Trial), 3 Hari, 7 Hari (Mingguan), 30 Hari (Bulanan), atau Lifetime
-   - Catatan Antrean: Lisensi diproses berurutan dari chat paling bawah (yang masuk lebih awal).
-     Mohon TIDAK melakukan spam atau chat berulang-ulang, karena chat baru akan menaikkan posisi Anda ke paling atas dan menunda antrean aktivasi.
+3. KLAIM KODE LISENSI RESMI (OTOMATIS):
+   - Buka tautan formulir aktivasi resmi berikut di peramban:
+     https://motionsuite-act.duckdns.org/form/c1dc1a25-386b-4780-9e60-454b6201969e
+   - Masukkan rincian pesanan Anda:
+     * Alamat Email Aktif (pastikan benar, lisensi akan dikirim ke sini)
+     * Nomor Invoice Pembelian dari Lynk.id
+     * Kode Machine ID perangkat Anda
+     * Unggah bukti pembayaran / tangkapan layar invoice Lynk.id
+   - Klik tombol "Submit".
+   - Kunci lisensi resmi akan otomatis dikirimkan ke email Anda.
+     (PENTING: Periksa kotak masuk/Inbox dan folder Spam/Promotions).
 
 4. AKTIVASI LISENSI:
-   - Setelah menerima kode lisensi dari admin/email, tempelkan kodenya ke kolom Lisensi di aplikasi, lalu klik "Validasi".
-   - Format Kunci Lisensi Baru: Kunci lisensi berbentuk deretan karakter digital terenkripsi RSA-SHA256 (format: payload.signature). Pastikan menyalin SELURUH teks kunci tanpa spasi tambahan.
-   - Status akan langsung berubah menjadi "Aktif" dengan indikator hijau sesuai paket yang Anda beli:
+   - Buka email yang Anda terima, lalu salin seluruh karakter Kunci Lisensi.
+   - Tempelkan ke kolom Lisensi di dalam aplikasi, kemudian klik "Validasi".
+   - Format Kunci Lisensi: Kunci berbentuk deretan karakter digital terenkripsi RSA-SHA256 (format: payload.signature). Pastikan menyalin SELURUH teks tanpa spasi tambahan.
+   - Status akan langsung berubah menjadi "Aktif" dengan indikator hijau sesuai paket lisensi:
      * 1 Hari (Trial 24 Jam)
      * 3 Hari (Trial Ekstensi)
      * 7 Hari (Akses Mingguan)
@@ -31,7 +36,7 @@ PENTING: HARAP BACA SEMUA LANGKAH DI BAWAH INI SEBELUM MEMASANG APLIKASI
      * Lifetime Access (Aktif Selamanya Permanen)
 
 5. PASANG GEMINI API KEY (GRATIS):
-   - Buka aistudio.google.com di browser, login dengan akun Google.
+   - Buka aistudio.google.com di browser, masuk menggunakan akun Google Anda.
    - Klik "Get API key" -> "Create API key in new project" -> Salin kode token AIzaSy...
    - Tempel ke kolom "Gemini API Key" di aplikasi, lalu klik "Simpan".
 
@@ -44,26 +49,29 @@ PANDUAN TROUBLESHOOTING & PENANGANAN KENDALA LISENSI:
 
 A. JIKA MUNCUL PERINGATAN "JAM SISTEM DIMUNDURKAN / CLOCK_DESYNC":
    - Gejala: Fitur render terkunci sementara dan muncul jendela "Manipulasi Jam Sistem Terdeteksi".
-   - Penyebab: Tanggal/jam sistem Windows Anda berada di belakang stempel waktu terakhir aplikasi dijalankan (Anti-Clock Rollback Protection).
+   - Penyebab: Tanggal/jam sistem Windows berada di belakang stempel waktu terakhir aplikasi dijalankan (Anti-Clock Rollback Protection).
    - Solusi 1-Klik (Rekomendasi):
-     1. Klik tombol "🔄 Sinkronkan Waktu via Internet (1-Klik)" yang ada langsung di jendela peringatan aplikasi.
-     2. Sistem akan memverifikasi waktu resmi dari server internet dunia (Google / Cloudflare).
-     3. Akses aplikasi akan terbuka kembali seketika tanpa perlu restart!
+     1. Klik tombol "🔄 Sinkronkan Waktu via Internet (1-Klik)" pada jendela peringatan aplikasi.
+     2. Sistem akan memverifikasi waktu resmi server internet (Google / Cloudflare).
+     3. Akses aplikasi terbuka kembali seketika tanpa perlu restart.
    - Solusi Manual Windows (Jika offline):
      1. Buka Windows Settings -> Time & Language -> Date & Time.
-     2. Pastikan "Set time automatically" aktif.
+     2. Pastikan opsi "Set time automatically" aktif.
      3. Klik tombol "Sync now" pada bagian Synchronize your clock.
      4. Buka kembali aplikasi Motion Suite Pro.
 
 B. JIKA MUNCUL PERINGATAN "MASA BERLAKU TELAH BERAKHIR (EXPIRED)":
    - Gejala: Muncul jendela peringatan "Masa Berlaku Lisensi Telah Berakhir".
    - Solusi:
-     1. Salin kode Machine ID yang tampil pada jendela peringatan.
-     2. Hubungi WA Admin: 085161180423 untuk perpanjangan masa aktif (Top-up).
-     3. Masukkan Kunci Lisensi baru yang Anda terima ke kolom yang tersedia, lalu klik "Aktifkan Lisensi Baru".
+     1. Salin kode Machine ID yang tertera pada jendela peringatan.
+     2. Lakukan pembelian paket perpanjangan melalui Lynk.id resmi.
+     3. Masukkan data invoice baru ke formulir aktivasi resmi:
+        https://motionsuite-act.duckdns.org/form/c1dc1a25-386b-4780-9e60-454b6201969e
+     4. Masukkan Kunci Lisensi baru yang masuk ke email Anda, lalu klik "Aktifkan Lisensi Baru".
 
 ================================================================================
 BANTUAN & PANDUAN LENGKAP:
-- Buka berkas "user-guide.html" di folder ini untuk dokumentasi visual A4, tips ekspor ProRes 4444 Alpha vs MP4, dan penanganan kendala (troubleshooting).
-- Admin WA Resmi: 085161180423
+- Buka berkas "user-guide.html" di folder ini untuk dokumentasi visual, panduan ekspor ProRes 4444 Alpha vs MP4, dan penanganan kendala teknis.
+- Layanan Bantuan Email: ahmadmuslihfarhany46@gmail.com
+- Layanan Bantuan Telegram: @ahmadmuslihfarhany
 ================================================================================
