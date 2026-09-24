@@ -1,7 +1,7 @@
 import { spawn, ChildProcess, execSync } from 'child_process'
 import { existsSync, mkdirSync } from 'fs'
 import fsPromises from 'fs/promises'
-import { resolve, join } from 'path'
+import { resolve, join, delimiter } from 'path'
 import http from 'http'
 import { app, ipcMain, BrowserWindow } from 'electron'
 import { sanitizeInterpolateCode } from './geminiCoder'
@@ -52,11 +52,13 @@ export const getRemotionEnvDir = (): string => {
  */
 export const getNodeBinaryPath = (): string => {
   if (app.isPackaged) {
-    const bundledNode = join(process.resourcesPath, 'bin', 'node.exe')
+    const binaryName = process.platform === 'win32' ? 'node.exe' : 'node'
+    const bundledNode = join(process.resourcesPath, 'bin', binaryName)
     if (existsSync(bundledNode)) return bundledNode
   }
 
-  const devBundledNode = resolve(process.cwd(), 'resources/bin/node.exe')
+  const binaryName = process.platform === 'win32' ? 'node.exe' : 'node'
+  const devBundledNode = resolve(process.cwd(), 'resources/bin', binaryName)
   if (existsSync(devBundledNode)) return devBundledNode
 
   return 'node'
@@ -177,6 +179,12 @@ export async function startRemotionStudio(
       }
       // Toleransi delay 600ms setelah pembersihan port zombie
       await new Promise((r) => setTimeout(r, 600))
+    } else {
+      try {
+        execSync('lsof -ti :10871 | xargs kill -9 2>/dev/null || true', { shell: '/bin/sh', stdio: 'ignore' })
+      } catch {
+        // Abaikan jika port sudah bersih
+      }
     }
 
     const remotionEnvPath = getRemotionEnvDir()
@@ -212,7 +220,7 @@ export async function startRemotionStudio(
       join(process.cwd(), 'node_modules')
     ]
       .filter(Boolean)
-      .join(';')
+      .join(delimiter)
 
     studioProcess = spawn(spawnCmd, spawnArgs, {
       cwd: remotionEnvPath,
@@ -362,8 +370,13 @@ export function cleanupStudioOnQuit(): void {
           execSync(`taskkill /pid ${studioProcess.pid} /f /t`, { stdio: 'ignore' })
         } catch (_) {}
       }
-    } else if (studioProcess) {
-      studioProcess.kill('SIGKILL')
+    } else {
+      try {
+        execSync('lsof -ti :10871 | xargs kill -9 2>/dev/null || true', { shell: '/bin/sh', stdio: 'ignore' })
+      } catch (_) {}
+      if (studioProcess) {
+        studioProcess.kill('SIGKILL')
+      }
     }
   } catch (_) {
   } finally {

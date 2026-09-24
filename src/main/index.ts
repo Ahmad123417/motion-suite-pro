@@ -306,6 +306,10 @@ app.whenReady().then(() => {
         stdio: 'ignore'
       })
     } catch (_) {}
+  } else {
+    try {
+      execSync('lsof -ti :10871 | xargs kill -9 2>/dev/null || true', { shell: '/bin/sh', stdio: 'ignore' })
+    } catch (_) {}
   }
 
   // Set app user model id for windows

@@ -1,6 +1,6 @@
 import { spawn, ChildProcess, execSync } from 'child_process'
 import { dialog, BrowserWindow, ipcMain, app, Notification } from 'electron'
-import { resolve, join } from 'path'
+import { resolve, join, delimiter } from 'path'
 import { existsSync, mkdirSync, writeFileSync, unlinkSync, readFileSync } from 'fs'
 import { getLicenseStatus } from './licenseService'
 
@@ -78,11 +78,13 @@ export const getRemotionEnvDir = (): string => {
  */
 export const getNodeBinaryPath = (): string => {
   if (app.isPackaged) {
-    const bundledNode = join(process.resourcesPath, 'bin', 'node.exe')
+    const binaryName = process.platform === 'win32' ? 'node.exe' : 'node'
+    const bundledNode = join(process.resourcesPath, 'bin', binaryName)
     if (existsSync(bundledNode)) return bundledNode
   }
 
-  const devBundledNode = resolve(process.cwd(), 'resources/bin/node.exe')
+  const binaryName = process.platform === 'win32' ? 'node.exe' : 'node'
+  const devBundledNode = resolve(process.cwd(), 'resources/bin', binaryName)
   if (existsSync(devBundledNode)) return devBundledNode
 
   return 'node'
@@ -345,7 +347,7 @@ export async function startRender(
     join(remotionEnvDir, 'node_modules'),
     join(process.resourcesPath || '', 'app.asar.unpacked', 'node_modules'),
     join(process.cwd(), 'node_modules')
-  ].filter(Boolean).join(';')
+  ].filter(Boolean).join(delimiter)
 
   console.log(`[RenderService] Spawning (shell=${useShell}): "${cmd}" with ${args.length} args in ${remotionEnvDir}`)
 

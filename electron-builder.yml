@@ -27,12 +27,13 @@ extraResources:
   - from: resources/bin
     to: bin
     filter:
-      - 'node.exe'
+      - 'node*'
   - from: resources
     to: .
     filter:
       - 'icon.png'
       - 'icon.ico'
+      - 'icon.icns'
   - from: README_DAN_SPESIFIKASI.txt
     to: README_DAN_SPESIFIKASI.txt
 
@@ -61,6 +62,35 @@ nsis:
   installerIcon: resources/icon.ico
   uninstallerIcon: resources/icon.ico
   installerHeaderIcon: resources/icon.ico
+
+mac:
+  executableName: Motion Suite Pro
+  category: public.app-category.video
+  icon: build/icon.icns
+  target:
+    - target: dmg
+      arch:
+        - arm64
+        - x64
+    - target: zip
+      arch:
+        - arm64
+        - x64
+  artifactName: "${productName}-${version}-mac-${arch}.${ext}"
+  identity: null
+  hardenedRuntime: false
+  gatekeeperAssess: false
+  minimumSystemVersion: "11.0"
+
+dmg:
+  sign: false
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
 
 publish:
   provider: "github"
