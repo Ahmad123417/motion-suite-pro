@@ -4,7 +4,7 @@ import fsPromises from 'fs/promises'
 import { resolve, join, delimiter } from 'path'
 import http from 'http'
 import { app, ipcMain, BrowserWindow } from 'electron'
-import { sanitizeInterpolateCode } from './geminiCoder'
+import { sanitizeInterpolateCode, preFixRemotionCode } from './geminiCoder'
 
 let studioProcess: ChildProcess | null = null
 let currentPort = 10871
@@ -411,18 +411,11 @@ export async function writeComponentCode(
     }
     code = code.replace(/```+\s*$/g, '').trim()
 
-    // Sanitize interpolate input ranges to prevent Remotion crash (e.g. [405, 405] -> [405, 406])
-    code = sanitizeInterpolateCode(code)
+    // Pre-fix Remotion code for props, hook, and fallback safety
+    code = preFixRemotionCode(code)
 
-    // Also write to DynamicMotion.tsx to keep both synchronized
-    try {
-      const devDynamicPath = resolve(process.cwd(), 'src/renderer/src/remotion/DynamicMotion.tsx')
-      if (existsSync(devDynamicPath)) {
-        await fsPromises.writeFile(devDynamicPath, code, 'utf-8')
-      }
-    } catch {
-      // non-critical
-    }
+    // Sanitize interpolate input and output ranges to prevent Remotion crash
+    code = sanitizeInterpolateCode(code)
 
     await fsPromises.writeFile(targetPath, code, 'utf-8')
     console.log(`[RemotionStudio] Successfully wrote code to ${targetPath}`)

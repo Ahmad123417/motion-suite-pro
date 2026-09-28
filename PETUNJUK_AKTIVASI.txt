@@ -1,77 +1,166 @@
 ================================================================================
-           PANDUAN AKTIVASI CEPAT — MOTION SUITE PRO v1.0.5 (OFFICIAL)
+           PANDUAN LENGKAP INSTALASI & AKTIVASI LISENSI RESMI
+                   MOTION SUITE PRO v1.0.5 (CROSS-PLATFORM)
 ================================================================================
-PENTING: HARAP BACA SEMUA LANGKAH DI BAWAH INI SEBELUM MEMASANG APLIKASI
+PENTING: HARAP BACA SEMUA LANGKAH DI BAWAH INI SEBELUM MEMULAI INSTALASI
 ================================================================================
 
-1. BUKA & PASANG APLIKASI:
-   - Jalankan "Motion Suite Pro Setup v1.0.5.exe" sampai aplikasi terbuka.
-   - Jika muncul peringatan Windows SmartScreen, klik "More info" lalu pilih "Run anyway".
+Motion Suite Pro v1.0.5 kini mendukung penuh sistem operasi Windows (10 & 11) 
+serta Apple macOS (Apple Silicon M1/M2/M3/M4 & Mac berbasis Intel 64-bit).
 
-2. SALIN MACHINE ID:
-   - Di dalam aplikasi, periksa panel kiri atas pada bagian "Status Lisensi".
-   - Salin deretan kode "Machine ID" perangkat Anda (atau klik tombol salin 📋).
+Pilih panduan instalasi sesuai sistem operasi komputer yang Anda gunakan:
+[ BAGIAN A ] PANDUAN PENGGUNA WINDOWS (10 / 11 64-bit)
+[ BAGIAN B ] PANDUAN PENGGUNA macOS (Apple Silicon M1-M4 & Intel)
+[ BAGIAN C ] ALUR AKTIVASI LISENSI RESMI & SETUP GEMINI AI (SEMUA PENGGUNA)
+[ BAGIAN D ] PANDUAN TROUBLESHOOTING & PENANGANAN KENDALA TEKNIS
 
-3. KLAIM KODE LISENSI RESMI (OTOMATIS):
-   - Buka tautan formulir aktivasi resmi berikut di peramban:
+--------------------------------------------------------------------------------
+[ BAGIAN A ] PANDUAN PENGGUNA WINDOWS (10 / 11 64-bit)
+--------------------------------------------------------------------------------
+
+1. BUKA FILE INSTALLER WINDOWS:
+   - Pilih berkas installer: "Motion Suite Pro.Setup.1.0.5.exe".
+   - Klik dua kali (double-click) pada file installer untuk memulai instalasi.
+
+2. BYPASS WINDOWS SMARTSCREEN (JIKA MUNCUL):
+   - Karena file diunduh langsung dari web distributor, Windows Defender 
+     SmartScreen mungkin menampilkan jendela "Windows protected your PC".
+   - Langkah Bypass:
+     a. Klik teks "More info" (Informasi selengkapnya) yang bergaris bawah.
+     b. Klik tombol "Run anyway" (Tetap jalankan).
+   - Aplikasi akan otomatis terpasang dan membuka jendela utama Motion Suite Pro.
+
+--------------------------------------------------------------------------------
+[ BAGIAN B ] PANDUAN PENGGUNA macOS (Apple Silicon M1–M4 & Mac Intel)
+--------------------------------------------------------------------------------
+
+1. PILIH INSTALLER SESUAI CHIP MAC ANDA:
+   - Mac Apple Silicon (Chip M1, M2, M3, M4):
+     Gunakan: "Motion Suite Pro-1.0.5-mac-arm64.dmg"
+   - Mac Intel (Processor Intel Core i5/i7/i9 64-bit):
+     Gunakan: "Motion Suite Pro-1.0.5-mac-x64.dmg"
+
+2. PASANG APLIKASI (DRAG & DROP):
+   - Klik dua kali file .dmg yang telah diunduh untuk me-mount installer.
+   - Pada jendela finder yang muncul, klik dan geser (drag) ikon "Motion Suite Pro" 
+     ke pintasan folder "Applications".
+   - Tunggu proses penyalinan selesai, lalu tutup jendela DMG dan unmount (Eject).
+
+3. BYPASS APPLE GATEKEEPER / PERINGATAN PENGEMBANG APPLE:
+   - macOS memiliki fitur keamanan Gatekeeper yang secara default memblokir 
+     aplikasi luar Apple App Store yang didistribusikan secara mandiri ("unidentified developer" 
+     atau "cannot be opened because Apple cannot check it for malicious software").
+   - Pilih salah satu dari 3 opsi mudah di bawah ini untuk membuka aplikasi:
+
+   * OPSI 1: KLIK KANAN DARI FOLDER APPLICATIONS (TERCEPAT & REKOMENDASI)
+     1. Buka Finder -> buka folder "Applications".
+     2. Cari ikon "Motion Suite Pro".
+     3. Tahan tombol Control lalu klik aplikasi (atau Klik Kanan) -> pilih "Open".
+     4. Pada jendela konfirmasi yang muncul, klik tombol "Open".
+     5. Aplikasi akan langsung terbuka normal dan pengaturan ini tersimpan permanen.
+
+   * OPSI 2: VIA SYSTEM SETTINGS (PRIVACY & SECURITY)
+     1. Jika aplikasi dicegah saat dibuka, buka "System Settings" (Pengaturan Sistem) di Mac Anda.
+     2. Pilih menu "Privacy & Security" (Privasi & Keamanan) di panel kiri.
+     3. Gulir ke bawah hingga menemukan bagian "Security".
+     4. Anda akan melihat pesan: '"Motion Suite Pro" was blocked from use because it is not from an identified developer'.
+     5. Klik tombol "Open Anyway" (Tetap Buka), lalu masukkan kata sandi / Touch ID Mac Anda.
+     6. Klik "Open" pada jendela konfirmasi.
+
+   * OPSI 3: VIA TERMINAL (JIKA APLIKASI MASIH TERBLOKIR / CRASH GATEKEEPER)
+     1. Buka aplikasi "Terminal" di Mac Anda (tekan Command + Spasi, ketik Terminal, lalu Enter).
+     2. Salin dan tempel perintah berikut persis seperti di bawah ini, lalu tekan Enter:
+        xattr -cr "/Applications/Motion Suite Pro.app"
+     3. Perintah ini akan menghapus atribut karantina Gatekeeper (quarantine flag).
+     4. Buka kembali aplikasi dari folder Applications atau Launchpad.
+
+--------------------------------------------------------------------------------
+[ BAGIAN C ] ALUR AKTIVASI LISENSI RESMI & GEMINI AI (SEMUA PENGGUNA)
+--------------------------------------------------------------------------------
+
+1. DAPATKAN MACHINE ID PERANGKAT ANDA:
+   - Buka aplikasi Motion Suite Pro di komputer Anda.
+   - Pada panel kiri atas atau pada jendela aktivasi pop-up, temukan deretan kode "Machine ID".
+   - Klik tombol salin (📋) untuk menyalin kode Machine ID unik perangkat Anda.
+   - Catatan: Machine ID diikat secara aman ke identitas perangkat keras fisik (IOPlatformUUID 
+     pada macOS dan Hardware GUID pada Windows) sehingga tidak akan berubah meski berganti jaringan.
+
+2. KLAIM KUNCI LISENSI RESMI (OTOMATIS VIA FORMULIR):
+   - Buka tautan formulir aktivasi resmi di browser internet Anda:
      https://motionsuite-act.duckdns.org/form/c1dc1a25-386b-4780-9e60-454b6201969e
-   - Masukkan rincian pesanan Anda:
-     * Alamat Email Aktif (pastikan benar, lisensi akan dikirim ke sini)
-     * Nomor Invoice Pembelian dari Lynk.id
-     * Kode Machine ID perangkat Anda
-     * Unggah bukti pembayaran / tangkapan layar invoice Lynk.id
+   - Masukkan informasi pembelian Anda:
+     * Alamat Email Aktif (pastikan benar, lisensi akan dikirimkan ke email ini)
+     * Nomor Invoice Pembelian / Transaction ID dari Lynk.id
+     * Kode Machine ID perangkat Anda yang telah disalin di Langkah 1
+     * Pilihan Durasi Lisensi (sesuai paket yang dibeli di Lynk.id)
+     * Unggah bukti invoice / pembayaran Lynk.id
    - Klik tombol "Submit".
-   - Kunci lisensi resmi akan otomatis dikirimkan ke email Anda.
-     (PENTING: Periksa kotak masuk/Inbox dan folder Spam/Promotions).
+   - Sistem aktivasi otomatis akan memverifikasi data dan mengirimkan Kunci Lisensi Digital 
+     resmi ke email Anda dalam hitungan detik.
+     (PENTING: Periksa kotak masuk / Inbox dan folder Spam / Promotions email Anda).
 
-4. AKTIVASI LISENSI:
-   - Buka email yang Anda terima, lalu salin seluruh karakter Kunci Lisensi.
-   - Tempelkan ke kolom Lisensi di dalam aplikasi, kemudian klik "Validasi".
-   - Format Kunci Lisensi: Kunci berbentuk deretan karakter digital terenkripsi RSA-SHA256 (format: payload.signature). Pastikan menyalin SELURUH teks tanpa spasi tambahan.
-   - Status akan langsung berubah menjadi "Aktif" dengan indikator hijau sesuai paket lisensi:
-     * 1 Hari (Trial 24 Jam)
-     * 3 Hari (Trial Ekstensi)
-     * 7 Hari (Akses Mingguan)
-     * 30 Hari (Akses Bulanan)
-     * Lifetime Access (Aktif Selamanya Permanen)
+3. AKTIVASI LISENSI DI DALAM APLIKASI:
+   - Buka email yang Anda terima, lalu salin SELURUH deretan karakter Kunci Lisensi.
+   - Format Kunci Lisensi resmi: Berbentuk deretan teks kriptografi terenkripsi RSA-SHA256 
+     (format standar: payloadBase64.signatureBase64). Pastikan menyalin seluruh teks tanpa spasi.
+   - Tempelkan ke kolom "Kunci Lisensi" di dalam aplikasi Motion Suite Pro.
+   - Klik tombol "Validasi".
+   - Status lisensi Anda akan seketika berubah menjadi "Aktif" dengan lencana hijau 
+     sesuai paket yang dimiliki:
+     * 1 Hari (Akses Uji Coba 24 Jam)
+     * 3 Hari (Paket Ekstensi)
+     * 7 Hari (Paket Mingguan)
+     * 30 Hari (Paket Bulanan)
+     * Lifetime Access (Aktif Permanen Selamanya)
 
-5. PASANG GEMINI API KEY (GRATIS):
-   - Buka aistudio.google.com di browser, masuk menggunakan akun Google Anda.
-   - Klik "Get API key" -> "Create API key in new project" -> Salin kode token AIzaSy...
-   - Tempel ke kolom "Gemini API Key" di aplikasi, lalu klik "Simpan".
+4. PASANG GOOGLE GEMINI API KEY (100% GRATIS):
+   - Kunjungi portal resmi Google: https://aistudio.google.com di peramban Anda.
+   - Masuk (Sign in) menggunakan akun Google pribadi atau kerja.
+   - Klik menu "Get API key" pada panel kiri -> klik tombol "Create API key".
+   - Pilih "Create API key in new project" -> Salin deretan token yang diawali: AIzaSy...
+   - Kembali ke aplikasi Motion Suite Pro -> tempel token ke kolom "Gemini API Key" -> klik "Simpan".
 
-6. SELESAI:
-   - Motion Suite Pro siap digunakan untuk membuat animasi motion graphic 4K!
+5. SELESAI & MULAI MEMBUAT ANIMASI 4K!
+   - Motion Suite Pro siap digunakan untuk menghasilkan motion graphics berbasis kode 4K 60FPS!
 
-================================================================================
-PANDUAN TROUBLESHOOTING & PENANGANAN KENDALA LISENSI:
-================================================================================
+--------------------------------------------------------------------------------
+[ BAGIAN D ] PANDUAN TROUBLESHOOTING & PENANGANAN KENDALA TEKNIS
+--------------------------------------------------------------------------------
 
-A. JIKA MUNCUL PERINGATAN "JAM SISTEM DIMUNDURKAN / CLOCK_DESYNC":
+A. PERINGATAN "JAM SISTEM DIMUNDURKAN / CLOCK_DESYNC":
    - Gejala: Fitur render terkunci sementara dan muncul jendela "Manipulasi Jam Sistem Terdeteksi".
-   - Penyebab: Tanggal/jam sistem Windows berada di belakang stempel waktu terakhir aplikasi dijalankan (Anti-Clock Rollback Protection).
-   - Solusi 1-Klik (Rekomendasi):
+   - Penyebab: Jam lokal komputer berada di belakang stempel waktu aman aplikasi 
+     (Anti-Clock Rollback Guard).
+   - Solusi 1-Klik Instan (Rekomendasi):
      1. Klik tombol "🔄 Sinkronkan Waktu via Internet (1-Klik)" pada jendela peringatan aplikasi.
-     2. Sistem akan memverifikasi waktu resmi server internet (Google / Cloudflare).
-     3. Akses aplikasi terbuka kembali seketika tanpa perlu restart.
-   - Solusi Manual Windows (Jika offline):
-     1. Buka Windows Settings -> Time & Language -> Date & Time.
-     2. Pastikan opsi "Set time automatically" aktif.
-     3. Klik tombol "Sync now" pada bagian Synchronize your clock.
-     4. Buka kembali aplikasi Motion Suite Pro.
+     2. Sistem akan memverifikasi waktu aktual via server resmi (Google / Cloudflare).
+     3. Akses fitur langsung dipulihkan secara instan tanpa perlu restart.
+   - Solusi Manual Sistem:
+     * Windows: Buka Settings -> Time & Language -> Date & Time -> klik "Sync now".
+     * macOS: Buka System Settings -> General -> Date & Time -> aktifkan "Set time and date automatically".
 
-B. JIKA MUNCUL PERINGATAN "MASA BERLAKU TELAH BERAKHIR (EXPIRED)":
-   - Gejala: Muncul jendela peringatan "Masa Berlaku Lisensi Telah Berakhir".
-   - Solusi:
-     1. Salin kode Machine ID yang tertera pada jendela peringatan.
-     2. Lakukan pembelian paket perpanjangan melalui Lynk.id resmi.
-     3. Masukkan data invoice baru ke formulir aktivasi resmi:
+B. PERINGATAN "MASA BERLAKU TELAH BERAKHIR (EXPIRED)":
+   - Gejala: Masa aktif paket lisensi berjangka (1 Hari, 3 Hari, 7 Hari, 30 Hari) telah habis.
+   - Solusi Perpanjangan:
+     1. Salin kode Machine ID Anda.
+     2. Lakukan perpanjangan paket lisensi melalui halaman resmi Lynk.id.
+     3. Masukkan nomor transaksi baru ke formulir aktivasi resmi:
         https://motionsuite-act.duckdns.org/form/c1dc1a25-386b-4780-9e60-454b6201969e
-     4. Masukkan Kunci Lisensi baru yang masuk ke email Anda, lalu klik "Aktifkan Lisensi Baru".
+     4. Masukkan kode lisensi baru yang dikirimkan ke email untuk memperbarui masa aktif.
+
+C. APLIKASI macOS MENAMPILKAN "APP IS DAMAGED AND CAN'T BE OPENED":
+   - Ini adalah proteksi Gatekeeper macOS untuk file yang diunduh dari internet tanpa notarized certificate.
+   - Solusi: Buka Terminal, jalankan perintah berikut, lalu buka kembali aplikasi:
+     xattr -cr "/Applications/Motion Suite Pro.app"
+
+D. KUOTA GOOGLE GEMINI API HABIS (ERROR HTTP 429):
+   - Tunggu 30–60 detik hingga Google mereset batas limit per menit (RPM).
+   - Atau buat API Key baru secara gratis di akun / project Google AI Studio lain.
 
 ================================================================================
-BANTUAN & PANDUAN LENGKAP:
-- Buka berkas "user-guide.html" di folder ini untuk dokumentasi visual, panduan ekspor ProRes 4444 Alpha vs MP4, dan penanganan kendala teknis.
-- Layanan Bantuan Email: ahmadmuslihfarhany46@gmail.com
+BANTUAN & PANDUAN RESMI LENGKAP:
+- Buka berkas "user-guide.html" di folder ini untuk dokumentasi visual interaktif,
+  panduan ekspor video ProRes 4444 Alpha transparan vs MP4, dan panduan lengkap Visual Tweaker.
+- Layanan Bantuan Email   : ahmadmuslihfarhany46@gmail.com
 - Layanan Bantuan Telegram: @ahmadmuslihfarhany
 ================================================================================

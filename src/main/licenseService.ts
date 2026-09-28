@@ -1,7 +1,8 @@
 import { createHash, createVerify } from 'crypto'
 import { app, ipcMain } from 'electron'
-import { join } from 'path'
-import { existsSync, readFileSync, writeFileSync } from 'fs'
+import { join, dirname } from 'path'
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs'
+import { execSync } from 'child_process'
 import os from 'os'
 import { PUBLIC_KEY } from './publicKey'
 import { checkClockDesync, syncInternetTime } from './timeSyncService'
@@ -55,13 +56,48 @@ export interface LicenseStatusResult {
 let cachedMachineId: string | null = null
 
 /**
- * Generate a unique 16-character hardware machine identifier based on system specs
+ * Safely retrieve persistent hardware UUID on macOS using IOPlatformExpertDevice.
+ * Prevents machineId shifts caused by dynamic DHCP/Wi-Fi hostname changes.
+ */
+function getMacPlatformUUID(): string | null {
+  if (process.platform !== 'darwin') return null
+  try {
+    const stdout = execSync('ioreg -rd1 -c IOPlatformExpertDevice', {
+      encoding: 'utf-8',
+      timeout: 3000,
+      stdio: ['ignore', 'pipe', 'ignore']
+    })
+    const match = stdout.match(/"IOPlatformUUID"\s*=\s*"([^"]+)"/i)
+    if (match && match[1]) {
+      return match[1].trim()
+    }
+  } catch (err) {
+    console.warn('[LicenseService] Failed to query IOPlatformUUID via ioreg:', err)
+  }
+  return null
+}
+
+/**
+ * Generate a unique 16-character hardware machine identifier based on system specs:
+ * - On macOS: Uses persistent IOPlatformUUID from IOKit with safe fallback.
+ * - On Windows & others: Uses hostname + username + cpu model (preserving backwards compatibility with active keys).
  */
 export function getHardwareMachineId(): string {
   if (cachedMachineId) return cachedMachineId
 
   try {
-    const raw = os.hostname() + os.userInfo().username + (os.cpus()[0]?.model || 'generic')
+    let raw: string
+    if (process.platform === 'darwin') {
+      const macUUID = getMacPlatformUUID()
+      if (macUUID) {
+        raw = macUUID
+      } else {
+        raw = os.hostname() + os.userInfo().username + (os.cpus()[0]?.model || 'apple-silicon')
+      }
+    } else {
+      raw = os.hostname() + os.userInfo().username + (os.cpus()[0]?.model || 'generic')
+    }
+
     cachedMachineId = createHash('sha256').update(raw).digest('hex').slice(0, 16).toUpperCase()
     return cachedMachineId
   } catch (err) {
@@ -426,7 +462,12 @@ export async function validateLicense(key: string): Promise<{
       }
 
       try {
-        writeFileSync(getLicenseFilePath(), JSON.stringify(legacyLicense, null, 2), 'utf-8')
+        const filePath = getLicenseFilePath()
+        const dir = dirname(filePath)
+        if (!existsSync(dir)) {
+          mkdirSync(dir, { recursive: true })
+        }
+        writeFileSync(filePath, JSON.stringify(legacyLicense, null, 2), 'utf-8')
       } catch (err) {
         return { success: false, message: 'Gagal menyimpan lisensi legacy ke sistem lokal.' }
       }
@@ -458,7 +499,12 @@ export async function validateLicense(key: string): Promise<{
       }
 
       try {
-        writeFileSync(getLicenseFilePath(), JSON.stringify(legacyLicense, null, 2), 'utf-8')
+        const filePath = getLicenseFilePath()
+        const dir = dirname(filePath)
+        if (!existsSync(dir)) {
+          mkdirSync(dir, { recursive: true })
+        }
+        writeFileSync(filePath, JSON.stringify(legacyLicense, null, 2), 'utf-8')
       } catch (err) {
         return { success: false, message: 'Gagal menyimpan lisensi legacy ke sistem lokal.' }
       }
@@ -543,6 +589,10 @@ export async function validateLicense(key: string): Promise<{
 
   try {
     const licensePath = getLicenseFilePath()
+    const dir = dirname(licensePath)
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true })
+    }
     writeFileSync(licensePath, JSON.stringify(newLicense, null, 2), 'utf-8')
     console.log('[LicenseService] License successfully verified and saved to:', licensePath)
   } catch (err) {

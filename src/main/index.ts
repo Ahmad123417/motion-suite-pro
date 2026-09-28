@@ -60,6 +60,10 @@ function setupAutoUpdater(win: BrowserWindow): void {
     ipcMain.removeHandler('updater:start-download')
   } catch (_) {}
   ipcMain.handle('updater:start-download', async () => {
+    if (process.platform === 'darwin') {
+      console.log('[AutoUpdater] macOS detected: downloadUpdate blocked (manual download via Google Drive)')
+      return { success: false, error: 'macOS updates are distributed via official Google Drive installer' }
+    }
     try {
       await autoUpdater.downloadUpdate()
       return { success: true }
@@ -73,6 +77,10 @@ function setupAutoUpdater(win: BrowserWindow): void {
     ipcMain.removeHandler('start-download-update')
   } catch (_) {}
   ipcMain.handle('start-download-update', async () => {
+    if (process.platform === 'darwin') {
+      console.log('[AutoUpdater] macOS detected: downloadUpdate blocked (manual download via Google Drive)')
+      return { success: false, error: 'macOS updates are distributed via official Google Drive installer' }
+    }
     try {
       await autoUpdater.downloadUpdate()
       return { success: true }
@@ -87,6 +95,10 @@ function setupAutoUpdater(win: BrowserWindow): void {
     ipcMain.removeHandler('restart-app-for-update')
   } catch (_) {}
   ipcMain.handle('restart-app-for-update', () => {
+    if (process.platform === 'darwin') {
+      console.log('[AutoUpdater] macOS detected: quitAndInstall blocked')
+      return
+    }
     autoUpdater.quitAndInstall()
   })
 
@@ -94,6 +106,10 @@ function setupAutoUpdater(win: BrowserWindow): void {
     ipcMain.removeHandler('updater:install-restart')
   } catch (_) {}
   ipcMain.handle('updater:install-restart', () => {
+    if (process.platform === 'darwin') {
+      console.log('[AutoUpdater] macOS detected: quitAndInstall blocked')
+      return
+    }
     autoUpdater.quitAndInstall()
   })
 

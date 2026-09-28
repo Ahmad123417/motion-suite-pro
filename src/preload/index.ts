@@ -64,6 +64,9 @@ const customElectronAPI = {
   openPath: (path: string): Promise<{ success: boolean; error?: string }> => {
     return ipcRenderer.invoke('open-export-folder', path)
   },
+  openExternal: (url: string): Promise<{ success: boolean; error?: string }> => {
+    return ipcRenderer.invoke('open-external-url', url)
+  },
   openExportFolder: (folderPath?: string): Promise<{ success: boolean; error?: string }> => {
     return ipcRenderer.invoke('open-export-folder', folderPath)
   },
@@ -154,6 +157,12 @@ const customElectronAPI = {
   },
   getStudioStatus: (): Promise<{ isRunning: boolean; port: number; url: string; error?: string }> => {
     return ipcRenderer.invoke('remotion:get-status')
+  },
+  verifyRemotionRender: (payload?: {
+    frame?: number
+    timeoutMs?: number
+  }): Promise<{ isValid: boolean; errorMessage?: string }> => {
+    return ipcRenderer.invoke('verify-remotion-render', payload)
   },
   generateVideo: (payload: {
     prompt: string
@@ -291,7 +300,8 @@ const customElectronAPI = {
     const handler = (_e: Electron.IpcRendererEvent, err: { message: string }): void => callback(err)
     ipcRenderer.on('update:error', handler)
     return () => ipcRenderer.removeListener('update:error', handler)
-  }
+  },
+  platform: process.platform
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

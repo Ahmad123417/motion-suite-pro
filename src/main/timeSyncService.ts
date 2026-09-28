@@ -1,7 +1,7 @@
 import { createHash, createCipheriv, createDecipheriv, randomBytes } from 'crypto'
 import { app } from 'electron'
-import { join } from 'path'
-import { existsSync, readFileSync, writeFileSync } from 'fs'
+import { join, dirname } from 'path'
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs'
 import https from 'https'
 
 const CLOCK_SALT = 'MOTION_CLOCK_GUARD_SALT_2026_SECURE'
@@ -51,7 +51,12 @@ export function recordLocalTime(machineId: string, timestamp: number = Date.now(
     const encrypted = Buffer.concat([cipher.update(payloadBuf), cipher.final()])
     const fileContent = Buffer.concat([iv, encrypted])
 
-    writeFileSync(getClockSyncFilePath(), fileContent)
+    const filePath = getClockSyncFilePath()
+    const dir = dirname(filePath)
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true })
+    }
+    writeFileSync(filePath, fileContent)
   } catch (err) {
     console.error('[TimeSyncService] Failed to record encrypted local time:', err)
   }

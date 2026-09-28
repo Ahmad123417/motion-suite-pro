@@ -15,164 +15,39 @@ export type ResolutionQualityType = '1080p' | '2k' | '4k'
 export type DurationSecondsType = 5 | 10 | 15 | 20
 export type FpsType = 24 | 30 | 60
 
-export const MASTER_PROMPT_TEMPLATE = `Kamu adalah Creative Director & Motion Prompt Architect khusus untuk Remotion (React + TypeScript).
+export const MASTER_PROMPT_TEMPLATE = `Kamu adalah Creative Director & Senior Remotion Motion Engineer.
 
-Tugas utamamu adalah memandu user berdiskusi untuk merancang motion graphic apa pun (countdown, lower third, logo stinger, telemetry/HUD, broadcast card, dll.), lalu menghasilkan SATU PROMPT EKSEKUSI KODE yang sangat ketat berdasarkan Blueprint Kode Remotion resmi yang sudah dikunci.
-
-==================================================
-ATURAN MUTLAK PERILAKU (STRICT RULES)
-==================================================
-1. JANGAN PERNAH MEMBUAT KODE SECARA LANGSUNG (NO DIRECT CODE).
-2. JANGAN LANGSUNG MEMBUAT PROMPT DI AWAL. Buka dengan sesi wawancara singkat untuk membedah ide user terlebih dahulu.
-3. OUTPUT AKHIR (setelah diskusi disepakati) adalah SATU MASTER PROMPT LENGKAP di dalam blok Markdown yang siap di-copy user ke AI pembuat kode (seperti Gemini/Claude/GPT).
-4. Prompt akhir WAJIB menyertakan contoh referensi kode arsitektur template agar AI pembuat kode tidak menyimpang dari struktur yang ditentukan.
+Tugasmu adalah membantu user merancang motion graphic kelas komersial (standar Adobe After Effects / Motion Array) dengan interaksi yang sangat cepat dan praktis, lalu menghasilkan SATU MASTER PROMPT EKSEKUSI KODE yang sangat presisi dan bebas error.
 
 ==================================================
-FASE 1: WAWANCARA & DISKUSI INTERAKTIF (MULAI DARI SINI)
+ATURAN INTERAKSI CEPAT (LOW FRICTION)
 ==================================================
-Sapa user secara singkat dan ajukan 5 pertanyaan terarah berikut:
+1. JANGAN PERNAH membuat kode secara langsung pada tahap awal.
+2. Buka diskusi dengan ramah dan tawarkan 4 Preset Gaya Motion:
 
-1. Jenis Motion & Konsep:
-   Mau buat apa? (Contoh: Countdown turnamen, Lower Third podcast, Lap timer racing, Stinger title, Tech HUD card, dll.)
-2. Gaya Visual (Vibe):
-   Nuansa visual seperti apa? (Contoh: Esports tajam & agresif, minimalis elegan, cyber tech futuristik, sports broadcast, dll.)
-3. Hierarki Teks & Konten:
-   - Teks atas / badge / kategori (badgeText): ...
-   - Judul utama / konten utama (titleText): ...
-   - Sub-judul / teks sekunder (subtitleText): ...
-   - Teks akhir / penutup (jika ada): ...
-4. Signature Ornamen & Aksen:
-   Elemen visual apa yang membingkai atau bergerak? (Contoh: Panah chevron SVG, framing brackets, speed lines, corner cuts, glow, dll.)
-5. Skema Warna & Durasi:
-   - Warna aksen utama, sekunder, dan background.
-   - Durasi video (Default: 15 detik / 450 frames, 30 FPS, 4K).
+   "Halo! Mau buat animasi apa hari ini dan apa pesan/teks utamanya?
+   Silakan pilih salah satu Gaya Visual di bawah (atau jelaskan konsep unik Anda):
+   
+   [A] Chunky Cartoon & Pop Art (Ceria, garis tebal kartun, warna cerah, membal elastis, bayangan solid)
+   [B] Clean Modern SaaS (Elegan, minimalis, profesional, tipografi presisi ala Apple/Stripe)
+   [C] Bold Broadcast & Sports (Tajam, dinamis, miring agresif, aksen kecepatan ala Nike/ESPN)
+   [D] High-Tech & Dynamic (Modern data HUD, perspektif kinetik, partikel geometri)"
 
-Tunggu jawaban user. Jika jawaban user masih terlalu umum, berikan 1–2 rekomendasi kreatif.
+3. Begitu user menjawab konsep dan memilih gayanya, LANGSUNG hasilkan SATU MASTER PROMPT EKSEKUSI LENGKAP di dalam blok Markdown (\`\`\`markdown ... \`\`\`) yang siap di-copy ke ChatGPT, Claude, atau Gemini.
 
 ==================================================
-FASE 2: KONFIRMASI RANCANGAN
+STANDAR MASTER PROMPT EKSEKUSI KODE YANG DIHASILKAN
 ==================================================
-Setelah user memberikan detail, sajikan rangkuman konsep visual singkat beserta pembagian timeline per detiknya. Tanyakan:
-"Apakah alur visual dan spesifikasi ini sudah sesuai, atau ada bagian yang ingin disesuaikan sebelum prompt eksekusi kodenya dibuat?"
-
-==================================================
-FASE 3: GENERASI MASTER PROMPT EKSEKUSI KODE
-==================================================
-Setelah user setuju, buatlah SATU PROMPT EKSEKUSI KODE LENGKAP di dalam blok markdown (\`\`\`markdown ... \`\`\`) dengan struktur berikut:
-
-1. IDENTITAS & BRIEF LENGKAP:
-   - Judul Video & Component Alias.
-   - On-screen label, teks utama, teks final.
-   - Durasi, FPS, resolusi (3840 × 2160), alpha channel / transparent background.
-   - Breakdown timeline per frame dari Frame 0 hingga akhir.
-
-2. ATURAN WAJIB STRUKTUR KODE:
-   - Universal Dynamic Timeline (Semua Durasi: 5s, 10s, 15s, 20s): DILARANG MENGGUNAKAN ANGKA FRAME STATIS / HARDCODED (seperti [0, 60] atau [0, 150]). SEMUA fase timeline WAJIB dihitung dari persentase 'durationInFrames' (useVideoConfig()): Intro [0, Math.floor(durationInFrames * 0.2)], Main Action [Math.floor(durationInFrames * 0.2), Math.floor(durationInFrames * 0.8)], Ending [Math.floor(durationInFrames * 0.8), durationInFrames].
-   - Never-Freeze Engine (Micro-Motion Berkelanjutan): Elemen visual TIDAK BOLEH berhenti bergerak total di detik mana pun. Wajib ada gerakan matematis berkelanjutan (floating Math.sin(frame / 15), breathing glow, camera zoom 1.0 -> 1.04).
-   - Frame 0 Visibility: Artwork awal SUDAH TERLIHAT (opacity 0.88–0.95 -> 1.0, dilarang blank/hitam).
-   - Scaling Dinamis: Wajib \`baseScale = Math.min(width, height) / 1080\` pada semua font, margin, padding, SVG dimensions, dan coordinate offsets.
-   - Readability: Teks wajib memiliki text-shadow / outline kontras tinggi agar terbaca di footage terang maupun gelap.
-   - Anti-overlap: Elemen samping/ornamen membuka ruang jika teks membesar atau berganti.
-   - Standar Parameter Visual: Komponen wajib menerapkan props scale, textOffsetX, textOffsetY, dan glowIntensity ke style wrapper utama atau elemen terkait secara proporsional.
-
-3. BLUEPRINT KODE ACUAN (WAJIB DISEDIAKAN DI DALAM PROMPT):
-   AI pembuat kode WAJIB mengikuti struktur file, arsitektur props, helper math, dan pola export persis seperti referensi berikut:
-
-\`\`\`tsx
-import React from 'react'
-import { useCurrentFrame, interpolate, useVideoConfig, Img } from 'remotion'
-
-export interface VibeGraphicProps {
-  // Teks
-  titleText?: string    // Judul Utama
-  subtitleText?: string // Sub-judul / Informasi Sekunder
-  badgeText?: string    // Label Atas / Kategori
-  // Warna & Latar
-  accentColor?: string
-  secondaryColor?: string
-  backgroundColor?: string
-  isTransparent?: boolean
-  // Transformasi Dinamis
-  scale?: number           // Rentang: 0.5 - 2.0 (Default: 1)
-  textOffsetX?: number     // Rentang: -500 - 500 px (Default: 0)
-  textOffsetY?: number     // Rentang: -500 - 500 px (Default: 0)
-  // FX & Aksen
-  glowIntensity?: number   // Rentang: 0 - 40 px (Default: 15)
-  speedMultiplier?: number // Rentang: 0.5 - 2.0 (Default: 1)
-}
-
-export const VibeGraphic: React.FC<VibeGraphicProps> = ({
-  titleText = 'LABEL TEXT',
-  subtitleText = 'SUBTITLE / SECONDARY INFO',
-  badgeText = 'BADGE',
-  accentColor = '#00f2fe',
-  secondaryColor = '#ff0055',
-  backgroundColor = '#060913',
-  isTransparent = true,
-  scale = 1,
-  textOffsetX = 0,
-  textOffsetY = 0,
-  glowIntensity = 15,
-  speedMultiplier = 1
-}) => {
-  const rawFrame = useCurrentFrame()
-  const frame = rawFrame * speedMultiplier
-  const { width, height, durationInFrames = 150 } = useVideoConfig()
-  const minDim = Math.min(width, height)
-  const baseScale = minDim / 1080
-
-  // Universal Dynamic Timeline (All Durations 5s, 10s, 15s, 20s)
-  const introEnd = Math.floor(durationInFrames * 0.2)
-  const actionEnd = Math.floor(durationInFrames * 0.8)
-
-  // Anti-Freeze Continuous Micro-Motions (Frame 0 to End)
-  const cameraZoom = interpolate(frame, [0, durationInFrames], [1, 1.04], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
-  const floatY = Math.sin(frame / 15) * (6 * baseScale)
-  const breathingGlow = 0.4 + Math.sin(frame / 20) * 0.2
-
-  // Frame 0 Safe
-  const introOpacity = interpolate(frame, [0, 15], [0.88, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
-  const introScale = interpolate(frame, [0, 15], [0.96, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
-
-  return (
-    <div
-      style={{
-        width: '100%',
-        height: '100%',
-        backgroundColor: isTransparent ? 'transparent' : backgroundColor,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        position: 'relative',
-        overflow: 'hidden',
-        fontFamily: 'Orbitron, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-        userSelect: 'none'
-      }}
-    >
-      <div
-        style={{
-          position: 'relative',
-          width: '100%',
-          height: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          opacity: introOpacity,
-          transform: \`scale(\${introScale * scale}) translate(\${textOffsetX}px, \${textOffsetY}px)\`,
-          filter: \`drop-shadow(0 0 \${glowIntensity * baseScale}px \${accentColor}44)\`
-        }}
-      >
-        {/* Konten teks, SVG ornamen, dan grafis dinamis diletakkan di sini */}
-      </div>
-    </div>
-  )
-}
-
-export const [ComponentAlias] = VibeGraphic
-export default VibeGraphic
-export const DynamicMotion = VibeGraphic
-export type DynamicMotionProps = VibeGraphicProps
-\`\`\``
+Prompt eksekusi yang kamu buatkan untuk user WAJIB memuat kontrak kode baku Remotion v1.0.6 berikut:
+1. HANYA impor dari 'react' dan 'remotion' (AbsoluteFill, useCurrentFrame, useVideoConfig, interpolate, spring).
+2. Dimensi WAJIB via hook: \`const { width, height, fps, durationInFrames } = useVideoConfig();\` (DILARANG destructuring width/height dari props).
+3. Scaling wajib: \`baseScale = Math.min(width, height) / 1080\` diterapkan ke semua ukuran font, stroke, dan padding.
+4. PURE VECTOR: Seluruh ornamen dan ilustrasi digambar dengan elemen SVG murni (<svg>, <path>, <rect>, <circle>). Dilarang aset eksternal.
+5. NEVER-FREEZE: Layar tidak boleh membeku diam. Wajib ada ambient micro-motion halus hingga akhir.
+6. KONTRAK EKSPOR WAJIB DI AKHIR FILE:
+   export default VibeGraphic;
+   export const DynamicMotion = VibeGraphic;
+   export type DynamicMotionProps = VibeGraphicProps;`
 
 // ──────────────────────────────────────────────────────────────────────────────
 // TSX Default Props Parser — extracts default prop values from component
@@ -974,6 +849,25 @@ export function App(): React.JSX.Element {
       api.installAndRestart()
     } else if ((window as any).electron?.ipcRenderer?.invoke) {
       ;(window as any).electron.ipcRenderer.invoke('restart-app-for-update')
+    }
+  }
+
+  const GOOGLE_DRIVE_MAC_URL =
+    'https://drive.google.com/drive/folders/1hWySL1-pSUiXX6VJbwi1UAREi_Jfo_5e?usp=sharing'
+
+  const isMacPlatform =
+    (window as any).api?.platform === 'darwin' ||
+    (window as any).electron?.process?.platform === 'darwin' ||
+    (typeof navigator !== 'undefined' && /macintosh|mac os x/i.test(navigator.userAgent))
+
+  const handleOpenMacDownload = (): void => {
+    const api = (window as any).api || (window as any).electronAPI
+    if (api?.openExternal) {
+      api.openExternal(GOOGLE_DRIVE_MAC_URL)
+    } else if ((window as any).electron?.ipcRenderer?.invoke) {
+      ;(window as any).electron.ipcRenderer.invoke('open-external-url', GOOGLE_DRIVE_MAC_URL)
+    } else {
+      window.open(GOOGLE_DRIVE_MAC_URL, '_blank')
     }
   }
 
@@ -2339,6 +2233,19 @@ export function App(): React.JSX.Element {
         setUndoStack((prev) => [...prev.slice(-19), getCurrentParametricValues()])
       }
 
+      // Extract crash frame from error message if available, default to 0
+      let targetFrame = 0
+      const frameMatch =
+        (errorMsg || capturedError || '').match(/\bframe[:\s]+(\d+)/i) ||
+        (errorMsg || capturedError || '').match(/\bat frame (\d+)/i) ||
+        (errorMsg || capturedError || '').match(/\bframe\b[^\d]*(\d+)/i)
+      if (frameMatch && frameMatch[1]) {
+        const parsed = parseInt(frameMatch[1], 10)
+        if (!isNaN(parsed) && parsed >= 0) {
+          targetFrame = parsed
+        }
+      }
+
       const res = api.autoFixVideo
         ? await api.autoFixVideo({
             errorMessage: errorMsg,
@@ -2361,33 +2268,98 @@ export function App(): React.JSX.Element {
           })
 
       if (res.success && res.code) {
+        // Langkah A: Tulis kode hasil perbaikan AI ke disk melalui pipeline sanitizer
         const cleanCode = cleanAndStripMarkdownCode(res.code)
         setManualCode(cleanCode)
-
-        // Asynchronous write to disk
         await api.writeCode(cleanCode)
 
-        // 300ms buffer delay to avoid race condition with Remotion bundler file watcher
-        await new Promise((resolve) => setTimeout(resolve, 300))
+        // Langkah B: Panggil IPC verify-remotion-render dengan parameter frame crash
+        setRollbackToast('🔍 Memverifikasi render engine Remotion...')
+        const verifyRes = api.verifyRemotionRender
+          ? await api.verifyRemotionRender({ frame: targetFrame, timeoutMs: 8000 })
+          : { isValid: true }
 
-        // Force-remount preview player programmatically
-        remountPlayer()
+        if (verifyRes.isValid) {
+          // Langkah C (Jika Valid):
+          await new Promise((resolve) => setTimeout(resolve, 300))
+          remountPlayer()
+          const parsed = parseTsxDefaultProps(cleanCode)
+          syncParsedPropsToState(parsed)
+          setHasGeneratedContent(true)
 
-        // Sync parsed props to Visual Tweaker
-        const parsed = parseTsxDefaultProps(cleanCode)
-        syncParsedPropsToState(parsed)
-        setHasGeneratedContent(true)
+          setCapturedError('')
+          setAutoFixErrorInput('')
+          setIsAutoFixModalOpen(false)
 
-        setCapturedError('')
-        setAutoFixErrorInput('')
-        setIsAutoFixModalOpen(false)
+          setRollbackToast('⚡ Auto-Fix Berhasil! Kode terverifikasi aman dan kanvas dimuat ulang.')
+          setTimeout(() => setRollbackToast(''), 4500)
+          return
+        }
 
-        const successToast =
-          activeMode === 'visual_recovery'
-            ? '✨ Pemulihan Visual Berhasil! Tampilan kanvas telah dipulihkan dan preview dimuat ulang.'
-            : '⚡ Auto-Fix Berhasil! Bug berhasil diperbaiki dan preview dimuat ulang.'
-        setRollbackToast(successToast)
-        setTimeout(() => setRollbackToast(''), 4500)
+        // Langkah D (Jika Masih Gagal Render):
+        // Kirimkan 1x perbaikan otomatis lanjutan (auto-refine) ke Gemini dengan menyertakan error stderr verifikasi
+        console.warn('[AutoFix] Verifikasi pertama gagal, menjalankan auto-refine:', verifyRes.errorMessage)
+        setRollbackToast('🔄 Percobaan 1 belum lolos render. Menjalankan auto-refine dengan error engine...')
+
+        const refineErrMsg = `Percobaan perbaikan pertama masih gagal dirender oleh Remotion pada frame ${targetFrame} dengan error stderr:\n"""\n${verifyRes.errorMessage || 'Unknown render error'}\n"""\nHarap perbaiki kode TSX berikut secara tuntas agar bebas dari error kompilasi/runtime dan dapat dirender sempurna.`
+
+        const refineRes = api.autoFixVideo
+          ? await api.autoFixVideo({
+              errorMessage: refineErrMsg,
+              apiKey: geminiApiKey.trim(),
+              currentCode: cleanCode,
+              mode: 'runtime_error',
+              width,
+              height,
+              fps,
+              durationInFrames,
+              aspectRatio
+            })
+          : await api.refineVideo({
+              instruction: refineErrMsg,
+              apiKey: geminiApiKey.trim(),
+              currentCode: cleanCode
+            })
+
+        if (refineRes.success && refineRes.code) {
+          const cleanCode2 = cleanAndStripMarkdownCode(refineRes.code)
+          setManualCode(cleanCode2)
+          await api.writeCode(cleanCode2)
+
+          const verifyRes2 = api.verifyRemotionRender
+            ? await api.verifyRemotionRender({ frame: targetFrame, timeoutMs: 8000 })
+            : { isValid: true }
+
+          if (verifyRes2.isValid) {
+            // Langkah C (Sukses pada auto-refine kedua)
+            await new Promise((resolve) => setTimeout(resolve, 300))
+            remountPlayer()
+            const parsed2 = parseTsxDefaultProps(cleanCode2)
+            syncParsedPropsToState(parsed2)
+            setHasGeneratedContent(true)
+
+            setCapturedError('')
+            setAutoFixErrorInput('')
+            setIsAutoFixModalOpen(false)
+
+            setRollbackToast('⚡ Auto-Fix Berhasil! Kode terverifikasi aman dan kanvas dimuat ulang.')
+            setTimeout(() => setRollbackToast(''), 4500)
+            return
+          } else {
+            // Jika percobaan kedua tetap gagal render: JANGAN bersihkan error!
+            console.error('[AutoFix] Verifikasi kedua tetap gagal render:', verifyRes2.errorMessage)
+            setCapturedError(verifyRes2.errorMessage || 'Remotion render crash pada verifikasi lanjutan.')
+            setRollbackToast(
+              '⚠️ Auto-Fix belum berhasil memperbaiki error ini secara otomatis. Silakan gunakan tombol \'Kembalikan ke Versi Sebelumnya\' atau generate ulang.'
+            )
+            setTimeout(() => setRollbackToast(''), 7000)
+          }
+        } else {
+          setRollbackToast(
+            '⚠️ Auto-Fix belum berhasil memperbaiki error ini secara otomatis. Silakan gunakan tombol \'Kembalikan ke Versi Sebelumnya\' atau generate ulang.'
+          )
+          setTimeout(() => setRollbackToast(''), 7000)
+        }
       } else {
         setRollbackToast(`❌ Auto-Fix Gagal: ${res.error || 'Tidak dapat memperbaiki kode'}`)
         setTimeout(() => setRollbackToast(''), 5000)
@@ -3975,7 +3947,7 @@ export function App(): React.JSX.Element {
                     Pembaruan Tersedia
                   </h3>
                   <p className="update-modal-version-tag">
-                    Motion Suite Pro <strong>v{updateVersion || '1.0.5'}</strong>
+                    Motion Suite Pro <strong>v{updateVersion || '1.0.6'}</strong>
                   </p>
                 </div>
               </div>
@@ -3992,22 +3964,82 @@ export function App(): React.JSX.Element {
             {/* Modal Body */}
             <div className="update-modal-body">
               <p className="update-modal-description">
-                Versi baru Motion Suite Pro telah tersedia untuk dipasang. Pembaruan ini mencakup optimasi performa rendering, perbaikan stabilitas engine, dan pembaruan fitur.
+                Versi baru Motion Suite Pro v{updateVersion || '1.0.6'} telah tersedia. Pembaruan ini mencakup peningkatan engine rendering, pembaruan fitur visual, dan peningkatan stabilitas.
               </p>
 
-              {/* Release Notes Area */}
-              <div className="update-modal-notes-section">
-                <div className="update-modal-notes-label">
-                  <span>Catatan Rilis (Release Notes):</span>
-                  <span className="update-modal-tag">v{updateVersion || '1.0.5'}</span>
+              {/* Rincian Fitur Pembaruan v1.0.6 */}
+              <div
+                style={{
+                  background: 'rgba(15, 23, 42, 0.75)',
+                  border: '1px solid rgba(56, 189, 248, 0.25)',
+                  borderRadius: '10px',
+                  padding: '12px 14px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px'
+                }}
+              >
+                <div style={{ fontSize: '12px', fontWeight: 700, color: '#38bdf8', letterSpacing: '0.5px' }}>
+                  HIGHLIGHT FITUR PEMBARUAN v1.0.6:
                 </div>
-                <div className="update-release-notes-box">
-                  {updateReleaseNotes}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12px', color: '#e2e8f0', lineHeight: 1.45 }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                    <span style={{ fontSize: '14px', flexShrink: 0 }}>⚡</span>
+                    <span><strong>Engine Prompt-to-Code v1.0.6:</strong> Vektor masif berdimensi &amp; layout split-stage 16:9.</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                    <span style={{ fontSize: '14px', flexShrink: 0 }}>🛡️</span>
+                    <span><strong>Silent Dry-Run Verification:</strong> Pengujian render 1-frame di latar belakang sebelum konfirmasi.</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                    <span style={{ fontSize: '14px', flexShrink: 0 }}>🔧</span>
+                    <span><strong>Auto-Fix Cerdas:</strong> Perlindungan anti-crash NaN, pembagian nol, dan finite range check.</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                    <span style={{ fontSize: '14px', flexShrink: 0 }}>🎨</span>
+                    <span><strong>Multi-Style Adaptation:</strong> Bebas gaya visual (Pop Art, Modern SaaS, Bold Sports, Editorial).</span>
+                  </div>
                 </div>
               </div>
 
-              {/* Real-time Progress Bar */}
-              {updatePhase === 'downloading' && (
+              {/* Catatan Keamanan Resmi macOS (Khusus macOS) */}
+              {isMacPlatform && (
+                <div
+                  style={{
+                    background: 'rgba(16, 185, 129, 0.1)',
+                    border: '1px solid rgba(16, 185, 129, 0.35)',
+                    borderRadius: '10px',
+                    padding: '12px 14px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '6px'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, color: '#34d399' }}>
+                    <span>🍏</span>
+                    <span>Pemberitahuan Resmi macOS:</span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: '12px', color: '#d1fae5', lineHeight: '1.55' }}>
+                    Pembaruan versi 1.0.6 disediakan melalui Google Drive resmi Motion Suite Pro untuk instalasi manual yang aman dan stabil. File installer (.dmg) 100% bersih dan terverifikasi oleh pengembang.
+                  </p>
+                </div>
+              )}
+
+              {/* Release Notes Area */}
+              {updateReleaseNotes && updateReleaseNotes !== 'Pembaruan stabilitas dan peningkatan performa sistem.' && (
+                <div className="update-modal-notes-section">
+                  <div className="update-modal-notes-label">
+                    <span>Catatan Rilis (Release Notes):</span>
+                    <span className="update-modal-tag">v{updateVersion || '1.0.6'}</span>
+                  </div>
+                  <div className="update-release-notes-box">
+                    {updateReleaseNotes}
+                  </div>
+                </div>
+              )}
+
+              {/* Real-time Progress Bar (Windows / Default) */}
+              {!isMacPlatform && updatePhase === 'downloading' && (
                 <div className="update-modal-progress-wrap">
                   <div className="update-progress-info">
                     <span className="update-progress-label">
@@ -4026,14 +4058,14 @@ export function App(): React.JSX.Element {
                 </div>
               )}
 
-              {/* Download Completed Notification */}
-              {updatePhase === 'downloaded' && (
+              {/* Download Completed Notification (Windows / Default) */}
+              {!isMacPlatform && updatePhase === 'downloaded' && (
                 <div className="update-modal-downloaded-banner">
                   <span style={{ fontSize: '18px' }}>🎉</span>
                   <div className="downloaded-text">
                     <strong>Pembaruan Siap Dipasang!</strong>
                     <span>
-                      Paket instalasi v{updateVersion || '1.0.5'} telah selesai diunduh dan diverifikasi. Klik tombol di bawah untuk memasang dan me-restart aplikasi.
+                      Paket instalasi v{updateVersion || '1.0.6'} telah selesai diunduh dan diverifikasi. Klik tombol di bawah untuk memasang dan me-restart aplikasi.
                     </span>
                   </div>
                 </div>
@@ -4050,7 +4082,7 @@ export function App(): React.JSX.Element {
 
             {/* Modal Actions / Footer */}
             <div className="update-modal-footer">
-              {updatePhase === 'available' && (
+              {isMacPlatform ? (
                 <>
                   <button
                     type="button"
@@ -4062,61 +4094,87 @@ export function App(): React.JSX.Element {
                   <button
                     type="button"
                     className="update-modal-btn primary"
-                    onClick={handleStartUpdateDownload}
+                    onClick={handleOpenMacDownload}
+                    style={{
+                      background: 'linear-gradient(135deg, #059669, #10b981)',
+                      borderColor: '#10b981'
+                    }}
                   >
-                    <span>⚡</span>
-                    <span>Perbarui Sekarang</span>
+                    <span>📥</span>
+                    <span>Unduh via Google Drive Resmi</span>
                   </button>
                 </>
-              )}
-
-              {updatePhase === 'downloading' && (
+              ) : (
                 <>
-                  <button
-                    type="button"
-                    className="update-modal-btn secondary"
-                    onClick={() => setIsUpdateDismissed(true)}
-                  >
-                    Sembunyikan (Unduh di Latar)
-                  </button>
-                  {updateErrorMsg ? (
-                    <button
-                      type="button"
-                      className="update-modal-btn primary retry"
-                      onClick={handleStartUpdateDownload}
-                    >
-                      <span>🔄</span>
-                      <span>Coba Lagi</span>
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      className="update-modal-btn primary disabled"
-                      disabled
-                    >
-                      <span>Mengunduh ({updatePercent}%)...</span>
-                    </button>
+                  {updatePhase === 'available' && (
+                    <>
+                      <button
+                        type="button"
+                        className="update-modal-btn secondary"
+                        onClick={() => setIsUpdateDismissed(true)}
+                      >
+                        Nanti Saja
+                      </button>
+                      <button
+                        type="button"
+                        className="update-modal-btn primary"
+                        onClick={handleStartUpdateDownload}
+                      >
+                        <span>⚡</span>
+                        <span>Update Sekarang</span>
+                      </button>
+                    </>
                   )}
-                </>
-              )}
 
-              {updatePhase === 'downloaded' && (
-                <>
-                  <button
-                    type="button"
-                    className="update-modal-btn secondary"
-                    onClick={() => setIsUpdateDismissed(true)}
-                  >
-                    Nanti Saja
-                  </button>
-                  <button
-                    type="button"
-                    className="update-modal-btn primary install"
-                    onClick={handleRestartAndInstall}
-                  >
-                    <span>🚀</span>
-                    <span>Restart &amp; Pasang Sekarang</span>
-                  </button>
+                  {updatePhase === 'downloading' && (
+                    <>
+                      <button
+                        type="button"
+                        className="update-modal-btn secondary"
+                        onClick={() => setIsUpdateDismissed(true)}
+                      >
+                        Sembunyikan (Unduh di Latar)
+                      </button>
+                      {updateErrorMsg ? (
+                        <button
+                          type="button"
+                          className="update-modal-btn primary retry"
+                          onClick={handleStartUpdateDownload}
+                        >
+                          <span>🔄</span>
+                          <span>Coba Lagi</span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="update-modal-btn primary disabled"
+                          disabled
+                        >
+                          <span>Mengunduh ({updatePercent}%)...</span>
+                        </button>
+                      )}
+                    </>
+                  )}
+
+                  {updatePhase === 'downloaded' && (
+                    <>
+                      <button
+                        type="button"
+                        className="update-modal-btn secondary"
+                        onClick={() => setIsUpdateDismissed(true)}
+                      >
+                        Nanti Saja
+                      </button>
+                      <button
+                        type="button"
+                        className="update-modal-btn primary install"
+                        onClick={handleRestartAndInstall}
+                      >
+                        <span>🚀</span>
+                        <span>Pasang &amp; Restart</span>
+                      </button>
+                    </>
+                  )}
                 </>
               )}
             </div>

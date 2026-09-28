@@ -36,10 +36,18 @@ extraResources:
       - 'icon.icns'
   - from: README_DAN_SPESIFIKASI.txt
     to: README_DAN_SPESIFIKASI.txt
+  - from: PETUNJUK_AKTIVASI.txt
+    to: PETUNJUK_AKTIVASI.txt
+  - from: user-guide.html
+    to: user-guide.html
 
 extraFiles:
   - from: README_DAN_SPESIFIKASI.txt
     to: README_DAN_SPESIFIKASI.txt
+  - from: PETUNJUK_AKTIVASI.txt
+    to: PETUNJUK_AKTIVASI.txt
+  - from: user-guide.html
+    to: user-guide.html
 
 win:
   executableName: Motion Suite Pro

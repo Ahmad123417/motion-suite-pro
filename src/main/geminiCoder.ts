@@ -1,8 +1,7 @@
-import { existsSync, mkdirSync } from 'fs'
+import { existsSync } from 'fs'
 import fsPromises from 'node:fs/promises'
-import { resolve, join } from 'path'
-import { app } from 'electron'
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import { getVibeGraphicPath } from './remotionStudio'
 
 export const REMOTION_CODER_SYSTEM_PROMPT = `You are an expert Remotion animation and Creative Coding engineer for Motion Suite Pro.
 
@@ -231,39 +230,211 @@ export interface ApplyManualCodeResult {
 }
 
 /**
- * Post-processing sanitizer for Remotion interpolate:
- * Detects patterns like interpolate(..., [405, 405], ...) or [x, x] where identical numbers are supplied
- * in the inputRange array, and automatically increments the second number (e.g. [405, 406])
- * to ensure inputRange is strictly monotonically increasing and prevent Remotion runtime crash.
+ * Pre-fix Remotion TSX code to prevent runtime NaN and undefined props crashes:
+ * 1. Removes incorrect width and height destructuring from component props.
+ * 2. Guarantees useVideoConfig() hook is present inside component body.
+ * 3. Adds safe fallback (props.offsetX ?? 0) for transformation props.
  */
-export function sanitizeInterpolateCode(code: string): string {
-  // 1. Detect [(\d+),\s*\1] inside interpolate or arrays
-  let sanitized = code.replace(/\[\s*(\d+)\s*,\s*\1\s*\]/g, (_match, numStr) => {
-    const nextNum = parseInt(numStr, 10) + 1
-    return `[${numStr}, ${nextNum}]`
-  })
+export function preFixRemotionCode(code: string): string {
+  let fixed = code
 
-  // 2. Handle float numbers with identical values [10.5, 10.5]
-  sanitized = sanitized.replace(/\[\s*(\d+\.\d+)\s*,\s*\1\s*\]/g, (_match, numStr) => {
-    const nextNum = parseFloat(numStr) + 1
-    return `[${numStr}, ${nextNum}]`
-  })
-
-  // 3. Handle identical consecutive elements in multi-element arrays: [0, 30, 30, 60] -> [0, 30, 31, 60]
-  sanitized = sanitized.replace(
-    /(\[\s*(?:\d+(?:\.\d+)?\s*,\s*)*)(\d+)\s*,\s*\2(\s*(?:,\s*\d+(?:\.\d+)?)*\s*\])/g,
-    (_match, prefix, numStr, suffix) => {
-      const nextNum = parseInt(numStr, 10) + 1
-      return `${prefix}${numStr}, ${nextNum}${suffix}`
+  // 1. Detect and remove incorrect { width, height } destructuring from component props parameter
+  fixed = fixed.replace(
+    /((?:export\s+)?(?:const|function)\s+(?:VibeGraphic|DynamicMotion)[^{]*?\(\s*\{)([\s\S]*?)(\}\s*(?::\s*[^=)]+)?\s*\)\s*(?::\s*[^=>]+)?\s*=>)/g,
+    (_full, prefix, propsBody, suffix) => {
+      const cleanProps = propsBody
+        .replace(/\bwidth(?:\s*:\s*[^,}\n]+|\s*=\s*[^,}\n]+)?\s*,?\s*/g, '')
+        .replace(/\bheight(?:\s*:\s*[^,}\n]+|\s*=\s*[^,}\n]+)?\s*,?\s*/g, '')
+        .replace(/,\s*,/g, ',')
+        .replace(/^\s*,/, '')
+        .replace(/,\s*$/, '')
+      return `${prefix}${cleanProps}${suffix}`
     }
   )
 
-  // 4. Handle identical variables [start, start]
-  sanitized = sanitized.replace(/\[\s*([a-zA-Z_$][a-zA-Z0-9_$]*)\s*,\s*\1\s*\]/g, (_match, varName) => {
-    return `[${varName}, Math.max(${varName} + 1, ${varName} + 1)]`
+  // Also replace any standalone props.width or props.height usage with width and height
+  fixed = fixed.replace(/\bprops\.width\b/g, 'width')
+  fixed = fixed.replace(/\bprops\.height\b/g, 'height')
+
+  // 2. Ensure useVideoConfig is imported from 'remotion'
+  if (!fixed.includes('useVideoConfig')) {
+    fixed = fixed.replace(/import\s*\{([^}]+)\}\s*from\s*['"]remotion['"]/, (_m, imports) => {
+      return `import { useVideoConfig, ${imports.trim()} } from 'remotion'`
+    })
+  }
+
+  // Ensure const { width, height } = useVideoConfig() is present in component body
+  const hasVideoConfigWidthHeight =
+    /useVideoConfig\(\)/.test(fixed) && /\bwidth\b/.test(fixed) && /\bheight\b/.test(fixed)
+  if (!hasVideoConfigWidthHeight) {
+    if (/useVideoConfig\(\)/.test(fixed)) {
+      // It calls useVideoConfig but didn't destructure width/height
+      fixed = fixed.replace(/const\s*\{([^}]+)\}\s*=\s*useVideoConfig\(\)/, (_m, existing) => {
+        const parts = existing.split(',').map((s: string) => s.trim()).filter(Boolean)
+        if (!parts.includes('width')) parts.unshift('width')
+        if (!parts.includes('height')) parts.unshift('height')
+        return `const { ${parts.join(', ')} } = useVideoConfig()`
+      })
+    } else {
+      // Insert right after useCurrentFrame()
+      fixed = fixed.replace(
+        /(const\s+[a-zA-Z0-9_$]+\s*=\s*useCurrentFrame\(\)[;\s]*)/,
+        `$1\n  const { width, height } = useVideoConfig();\n`
+      )
+    }
+  }
+
+  // 3. Fallback safe for transformation props prone to undefined
+  fixed = fixed.replace(/\bprops\.offsetX(?!\s*\?\?)/g, '(props.offsetX ?? 0)')
+  fixed = fixed.replace(/\bprops\.offsetY(?!\s*\?\?)/g, '(props.offsetY ?? 0)')
+  fixed = fixed.replace(/\bprops\.textOffsetX(?!\s*\?\?)/g, '(props.textOffsetX ?? 0)')
+  fixed = fixed.replace(/\bprops\.textOffsetY(?!\s*\?\?)/g, '(props.textOffsetY ?? 0)')
+  fixed = fixed.replace(/\bprops\.scale(?!\s*\?\?)/g, '(props.scale ?? 1)')
+  fixed = fixed.replace(/\bprops\.glowIntensity(?!\s*\?\?)/g, '(props.glowIntensity ?? 1)')
+  fixed = fixed.replace(/\bprops\.speedMultiplier(?!\s*\?\?)/g, '(props.speedMultiplier ?? 1)')
+
+  return fixed
+}
+
+/**
+ * Post-processing sanitizer for Remotion interpolate:
+ * 1. Ensures inputRange is strictly monotonically increasing (incrementing identical values [405, 405] -> [405, 406]).
+ * 2. Sanitizes outputRange: detects NaN, Infinity, division by zero, and guards dynamic expressions with
+ *    (Number.isFinite(Number(val)) ? Number(val) : 0).
+ */
+export function sanitizeInterpolateCode(code: string): string {
+  // Parse interpolate calls specifically to target inputRange and outputRange accurately
+  const regex = /\binterpolate\s*\(/g
+  let match: RegExpExecArray | null
+  let result = ''
+  let lastIdx = 0
+
+  while ((match = regex.exec(code)) !== null) {
+    result += code.slice(lastIdx, match.index)
+    const startParen = match.index + match[0].length - 1
+    let depth = 1
+    let i = startParen + 1
+    while (i < code.length && depth > 0) {
+      if (code[i] === '(') depth++
+      else if (code[i] === ')') depth--
+      i++
+    }
+
+    if (depth !== 0) {
+      result += code.slice(match.index, i)
+      lastIdx = i
+      continue
+    }
+
+    const inner = code.slice(startParen + 1, i - 1)
+    const args: string[] = []
+    let argStart = 0
+    let pDepth = 0, bDepth = 0, brDepth = 0
+
+    for (let j = 0; j < inner.length; j++) {
+      const c = inner[j]
+      if (c === '(') pDepth++
+      else if (c === ')') pDepth--
+      else if (c === '[') bDepth++
+      else if (c === ']') bDepth--
+      else if (c === '{') brDepth++
+      else if (c === '}') brDepth--
+      else if (c === ',' && pDepth === 0 && bDepth === 0 && brDepth === 0) {
+        args.push(inner.slice(argStart, j))
+        argStart = j + 1
+      }
+    }
+    args.push(inner.slice(argStart))
+
+    if (args.length >= 3) {
+      // 1. Sanitize inputRange (args[1])
+      let inRangeStr = args[1].trim()
+      if (inRangeStr.startsWith('[') && inRangeStr.endsWith(']')) {
+        // Detect [num, num]
+        inRangeStr = inRangeStr.replace(/\[\s*(\d+)\s*,\s*\1\s*\]/g, (_m, numStr) => {
+          const nextNum = parseInt(numStr, 10) + 1
+          return `[${numStr}, ${nextNum}]`
+        })
+        // Detect [float, float]
+        inRangeStr = inRangeStr.replace(/\[\s*(\d+\.\d+)\s*,\s*\1\s*\]/g, (_m, numStr) => {
+          const nextNum = parseFloat(numStr) + 1
+          return `[${numStr}, ${nextNum}]`
+        })
+        // Multi-element consecutive identicals: [0, 30, 30, 60] -> [0, 30, 31, 60]
+        inRangeStr = inRangeStr.replace(
+          /(\[\s*(?:\d+(?:\.\d+)?\s*,\s*)*)(\d+)\s*,\s*\2(\s*(?:,\s*\d+(?:\.\d+)?)*\s*\])/g,
+          (_m, prefix, numStr, suffix) => {
+            const nextNum = parseInt(numStr, 10) + 1
+            return `${prefix}${numStr}, ${nextNum}${suffix}`
+          }
+        )
+        // Identical variables [start, start]
+        inRangeStr = inRangeStr.replace(
+          /\[\s*([a-zA-Z_$][a-zA-Z0-9_$]*)\s*,\s*\1\s*\]/g,
+          (_m, varName) => {
+            if (varName === 'NaN') return '[0, 1]'
+            return `[${varName}, Math.max(${varName} + 1, ${varName} + 1)]`
+          }
+        )
+        args[1] = inRangeStr
+      }
+
+      // 2. Sanitize outputRange (args[2])
+      let outRangeStr = args[2].trim()
+      if (outRangeStr.startsWith('[') && outRangeStr.endsWith(']')) {
+        const arrayContent = outRangeStr.slice(1, -1)
+        const items: string[] = []
+        let itemStart = 0
+        let pD = 0, bD = 0, brD = 0
+
+        for (let j = 0; j < arrayContent.length; j++) {
+          const c = arrayContent[j]
+          if (c === '(') pD++
+          else if (c === ')') pD--
+          else if (c === '[') bD++
+          else if (c === ']') bD--
+          else if (c === '{') brD++
+          else if (c === '}') brD--
+          else if (c === ',' && pD === 0 && bD === 0 && brD === 0) {
+            items.push(arrayContent.slice(itemStart, j))
+            itemStart = j + 1
+          }
+        }
+        items.push(arrayContent.slice(itemStart))
+
+        const sanitizedItems = items.map((rawItem) => {
+          let item = rawItem.trim()
+          if (!item) return item
+          // Detect literal NaN, Infinity, -Infinity
+          if (item === 'NaN' || item === 'Infinity' || item === '-Infinity') return '0'
+          // Detect division by zero like expr / 0
+          if (/\/\s*0(?:\.0*)?(?!\d)/.test(item)) return '0'
+          // Static number literal: 0, 100, -25.5
+          if (/^-?\d+(?:\.\d+)?$/.test(item)) return item
+          // Already guarded
+          if (item.includes('Number.isFinite')) return item
+          // Dynamic expression - wrap with guard
+          return `(Number.isFinite(Number(${item})) ? Number(${item}) : 0)`
+        })
+
+        args[2] = ` [${sanitizedItems.join(', ')}]`
+      }
+
+      result += `interpolate(${args.join(',')})`
+    } else {
+      result += code.slice(match.index, i)
+    }
+    lastIdx = i
+  }
+
+  result += code.slice(lastIdx)
+
+  // Fallback for any standalone inputRange arrays that might have been outside interpolate()
+  result = result.replace(/\[\s*(\d+)\s*,\s*\1\s*\]/g, (_m, numStr) => {
+    return `[${numStr}, ${parseInt(numStr, 10) + 1}]`
   })
 
-  return sanitized
+  return result
 }
 
 // Clean any markdown backticks or preamble conversational text from user pasted code
@@ -281,37 +452,18 @@ export const cleanGeneratedCode = (rawCode: string): string => {
     code = code.slice(importIndex)
   }
 
-  // Sanitize interpolate input ranges
+  // Pre-fix Remotion code for props, hook, and fallback safety
+  code = preFixRemotionCode(code)
+
+  // Sanitize interpolate input and output ranges
   code = sanitizeInterpolateCode(code)
 
   return code.trim()
 }
 
-// Resolve target file path (dev vs production packaged app)
+// Resolve target file path (single source of truth: remotion_env/src/VibeGraphic.tsx)
 export const getDynamicMotionFilePath = (): string => {
-  // If app is packaged, write to userData so it is writable and can be bundled
-  if (app.isPackaged) {
-    const userDir = join(app.getPath('userData'), 'remotion')
-    if (!existsSync(userDir)) {
-      mkdirSync(userDir, { recursive: true })
-    }
-    return join(userDir, 'DynamicMotion.tsx')
-  }
-
-  // Development: save to source folder to trigger Vite HMR
-  const candidates = [
-    resolve(process.cwd(), 'src/renderer/src/remotion/DynamicMotion.tsx'),
-    resolve(app.getAppPath(), 'src/renderer/src/remotion/DynamicMotion.tsx'),
-    resolve(__dirname, '../../src/renderer/src/remotion/DynamicMotion.tsx')
-  ]
-
-  for (const candidate of candidates) {
-    if (existsSync(candidate)) {
-      return candidate
-    }
-  }
-
-  return candidates[0]
+  return getVibeGraphicPath()
 }
 
 // Local Procedural Boilerplate / Starter Template (guaranteed 100% compile and never crash)

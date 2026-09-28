@@ -584,6 +584,92 @@
       letter-spacing: 0.5px;
     }
 
+    /* ─── OS PLATFORM TABS ───────────────────────────────────────────────── */
+    .os-tabs-nav {
+      display: flex;
+      gap: 8px;
+      margin: 8px 0 10px 0;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 8px;
+    }
+
+    .os-tab-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .os-tab-btn:hover {
+      color: var(--text-main);
+      border-color: var(--border-accent);
+      background: rgba(56, 189, 248, 0.08);
+    }
+
+    .os-tab-btn.active {
+      color: #fff;
+      background: linear-gradient(135deg, rgba(2, 132, 199, 0.5), rgba(6, 182, 212, 0.35));
+      border-color: var(--border-accent);
+      box-shadow: 0 2px 8px rgba(6, 182, 212, 0.25);
+    }
+
+    .os-tab-pane {
+      display: none;
+    }
+
+    .os-tab-pane.active {
+      display: block;
+      animation: tabFadeIn 0.2s ease-in-out;
+    }
+
+    .os-pane-header {
+      display: none;
+    }
+
+    @keyframes tabFadeIn {
+      from { opacity: 0; transform: translateY(3px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .gatekeeper-options {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .gatekeeper-opt-card {
+      background: #0b1120;
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 7px 10px;
+    }
+
+    .gatekeeper-opt-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent-blue);
+      margin-bottom: 2px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .gatekeeper-opt-desc {
+      font-size: 10.5px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
     /* ─── PRINT OPTIMIZATIONS (A4 EXACT) ────────────────────────────────── */
     @page {
       size: A4 portrait;
@@ -667,6 +753,27 @@
         color: #38bdf8 !important;
         text-decoration: underline !important;
       }
+
+      .os-tabs-nav {
+        display: none !important;
+      }
+
+      .os-tab-pane {
+        display: block !important;
+        margin-bottom: 12px !important;
+      }
+
+      .os-pane-header {
+        display: flex !important;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px !important;
+        font-weight: 700 !important;
+        color: var(--accent-blue) !important;
+        margin: 10px 0 6px 0 !important;
+        padding-bottom: 3px !important;
+        border-bottom: 1px solid var(--border-subtle) !important;
+      }
     }
   </style>
 </head>
@@ -713,6 +820,11 @@
           </div>
           <h1 class="cover-title">Motion Suite Pro</h1>
           <div class="cover-subtitle">Prompt-to-Code Motion Studio</div>
+          <div style="margin: 6px 0 10px 0;">
+            <span class="badge badge-info" style="font-size:11px; padding:3px 10px;">
+              🪟 Windows 10/11 (64-bit) &bull; 🍎 macOS 11+ (Apple Silicon M1–M4 &amp; Intel)
+            </span>
+          </div>
           <p class="cover-desc">
             Workstation kreatif desktop modern berbasis Motion Suite Core Engine (React + TypeScript) &amp; Google Gemini AI untuk memproduksi motion graphic presisi matematis, aset microstock bernilai tinggi, dan animasi siaran berkualitas 4K.
           </p>
@@ -776,64 +888,147 @@
 
 
     <!-- ══════════════════════════════════════════════════════════════════════
-         HALAMAN 2: INSTALASI & AKTIVASI LISENSI
+         HALAMAN 2: INSTALASI & AKTIVASI LISENSI (CROSS-PLATFORM)
     ══════════════════════════════════════════════════════════════════════ -->
     <article class="page" id="page-2">
       <div class="page-header">
         <div class="header-logo-group">
           <div class="header-logo-icon">M</div>
-          <span class="header-doc-label">Bagian 1 &bull; Instalasi &amp; Lisensi</span>
+          <span class="header-doc-label">Bagian 1 &bull; Instalasi &amp; Lisensi Cross-Platform</span>
         </div>
         <span class="header-page-tag">Halaman 2 dari 5</span>
       </div>
 
       <div>
         <h2 class="section-title">
-          <span>Instalasi &amp; Alur Aktivasi Lisensi</span>
+          <span>Instalasi &amp; Alur Aktivasi Lisensi (Windows &amp; macOS)</span>
         </h2>
         <p class="section-subtitle">
-          Petunjuk lengkap pemasangan installer, penyalinan Machine ID, dan formulir aktivasi lisensi otomatis via web.
+          Petunjuk lengkap pemasangan installer untuk Windows 10/11 dan Apple macOS (Apple Silicon M1-M4 &amp; Intel), penyalinan Machine ID, dan aktivasi lisensi digital otomatis.
         </p>
 
-        <!-- Langkah Instalasi & Aktivasi -->
-        <div class="steps-list">
-          <div class="step-item">
-            <div class="step-num">1</div>
-            <div class="step-content">
-              <div class="step-title">Buka &amp; Pasang Aplikasi</div>
-              <div class="step-desc">
-                Jalankan <span class="code-pill">Motion Suite Pro Setup v1.0.5.exe</span> sampai aplikasi terbuka. Jika muncul peringatan <em>Windows SmartScreen</em>, klik teks <strong>"More info"</strong> lalu pilih <strong>"Run anyway"</strong>.
+        <!-- OS Tab Switcher (Screen interactive) -->
+        <div class="os-tabs-nav no-print">
+          <button type="button" class="os-tab-btn active" data-os="windows" onclick="switchOsTab('windows')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.901-1.799"/>
+            </svg>
+            Panduan Windows (10 &amp; 11 64-bit)
+          </button>
+          <button type="button" class="os-tab-btn" data-os="macos" onclick="switchOsTab('macos')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 4.88c.66-.82 1.11-1.96.99-3.1-.96.04-2.13.65-2.81 1.45-.6.69-1.13 1.83-1 2.97 1.08.08 2.17-.55 2.82-1.32Z"/>
+            </svg>
+            Panduan macOS (Apple Silicon M1–M4 &amp; Intel)
+          </button>
+        </div>
+
+        <!-- PANE WINDOWS -->
+        <div class="os-tab-pane active" id="tab-windows">
+          <div class="os-pane-header">
+            <span>🪟 Panduan Instalasi &amp; Aktivasi — Pengguna Windows</span>
+          </div>
+          <div class="steps-list">
+            <div class="step-item">
+              <div class="step-num">1</div>
+              <div class="step-content">
+                <div class="step-title">Buka &amp; Pasang Installer Windows</div>
+                <div class="step-desc">
+                  Jalankan file installer <span class="code-pill">Motion Suite Pro.Setup.1.0.5.exe</span>. Wizard instalasi akan memandu Anda memasang aplikasi ke sistem komputer Anda.
+                </div>
+              </div>
+            </div>
+
+            <div class="step-item">
+              <div class="step-num">2</div>
+              <div class="step-content">
+                <div class="step-title">Bypass Windows SmartScreen (Jika Muncul)</div>
+                <div class="step-desc">
+                  Jika muncul dialog keamanan <em>"Windows protected your PC"</em>, klik teks bergaris bawah <strong>"More info"</strong> lalu klik tombol <strong>"Run anyway"</strong> (Tetap jalankan).
+                </div>
+              </div>
+            </div>
+
+            <div class="step-item">
+              <div class="step-num">3</div>
+              <div class="step-content">
+                <div class="step-title">Salin Machine ID Komputer Anda</div>
+                <div class="step-desc">
+                  Di dalam aplikasi Motion Suite Pro, perhatikan panel <strong>"Status Lisensi"</strong> pada bilah kiri atas. Klik tombol salin (📋) untuk menyalin deretan 16-karakter <strong>Machine ID</strong> unik perangkat Anda.
+                </div>
+              </div>
+            </div>
+
+            <div class="step-item">
+              <div class="step-num">4</div>
+              <div class="step-content">
+                <div class="step-title">Isi Formulir Aktivasi &amp; Validasi Kunci Lisensi</div>
+                <div class="step-desc">
+                  Buka formulir aktivasi resmi: <a href="https://motionsuite-act.duckdns.org/form/c1dc1a25-386b-4780-9e60-454b6201969e" target="_blank" style="font-weight:600;">https://motionsuite-act.duckdns.org/form/c1dc1a25-386b-4780-9e60-454b6201969e</a>. Masukkan nomor invoice Lynk.id &amp; Machine ID. Buka email Anda, salin kode kunci lisensi digital <strong>RSA-SHA256</strong> (format: <code>payload.signature</code>), tempelkan ke kolom Lisensi di aplikasi, lalu klik <strong>"Validasi"</strong>.
+                </div>
               </div>
             </div>
           </div>
+        </div>
 
-          <div class="step-item">
-            <div class="step-num">2</div>
-            <div class="step-content">
-              <div class="step-title">Salin Machine ID Laptop Anda</div>
-              <div class="step-desc">
-                Di dalam aplikasi, perhatikan panel <strong>"Status Lisensi"</strong> pada bilah kiri atas. Salin deretan kode unik <strong>Machine ID</strong> perangkat Anda.
+        <!-- PANE macOS -->
+        <div class="os-tab-pane" id="tab-macos">
+          <div class="os-pane-header">
+            <span>🍎 Panduan Instalasi &amp; Aktivasi — Pengguna Apple macOS</span>
+          </div>
+          <div class="steps-list">
+            <div class="step-item">
+              <div class="step-num">1</div>
+              <div class="step-content">
+                <div class="step-title">Step 1: Mount DMG (Buka File Installer .dmg)</div>
+                <div class="step-desc">
+                  Pilih file installer sesuai arsitektur processor Mac Anda:
+                  <strong>Apple Silicon (M1, M2, M3, M4):</strong> <span class="code-pill">Motion Suite Pro-1.0.5-mac-arm64.dmg</span> atau <strong>Mac Intel 64-bit:</strong> <span class="code-pill">Motion Suite Pro-1.0.5-mac-x64.dmg</span>. Klik dua kali berkas .dmg hingga jendela installer Finder terbuka.
+                </div>
               </div>
             </div>
-          </div>
 
-          <div class="step-item">
-            <div class="step-num">3</div>
-            <div class="step-content">
-              <div class="step-title">Isi Formulir Aktivasi Lisensi Web</div>
-              <div class="step-desc">
-                Buka formulir aktivasi resmi di browser: <a href="https://motionsuite-act.duckdns.org/form/c1dc1a25-386b-4780-9e60-454b6201969e" target="_blank" style="font-weight:600;">https://motionsuite-act.duckdns.org/form/c1dc1a25-386b-4780-9e60-454b6201969e</a>. Masukkan <strong>Nomor Invoice Lynk.id</strong> dan <strong>Machine ID</strong> perangkat Anda.<br>
-                <em style="color:#38bdf8; font-size:11.5px;">* Catatan Pengiriman: Lisensi resmi otomatis dikirimkan ke email pembeli setelah formulir dikirim. Harap periksa folder <strong>Inbox</strong> maupun folder <strong>Spam / Junk</strong> email Anda.</em>
+            <div class="step-item">
+              <div class="step-num">2</div>
+              <div class="step-content">
+                <div class="step-title">Step 2: Drag to Applications (Geser ke Folder Aplikasi)</div>
+                <div class="step-desc">
+                  Pada jendela Finder DMG yang terbuka, klik dan geser (drag) ikon <strong>Motion Suite Pro</strong> ke pintasan folder <strong>Applications</strong>. Tunggu penyalinan selesai, lalu tutup dan Eject installer DMG.
+                </div>
               </div>
             </div>
-          </div>
 
-          <div class="step-item">
-            <div class="step-num">4</div>
-            <div class="step-content">
-              <div class="step-title">Validasi Kode Lisensi RSA-SHA256 di Aplikasi</div>
-              <div class="step-desc">
-                Buka email Anda dan salin kode lisensi resmi yang diterima (format tanda tangan digital <strong>RSA-SHA256</strong>: <code>payload.signature</code>). Tempelkan seluruh teks ke kolom Lisensi di aplikasi, lalu klik <strong>"Validasi"</strong>. Status aplikasi otomatis berubah menjadi <strong>"Aktif"</strong> dengan indikator hijau sesuai paket lisensi Anda (1 Hari Trial, 3 Hari, 7 Hari Mingguan, 30 Hari Bulanan, atau Lifetime Access).
+            <div class="step-item">
+              <div class="step-num">3</div>
+              <div class="step-content">
+                <div class="step-title">Step 3: Bypass Gatekeeper (Peringatan Pengembang Apple)</div>
+                <div class="step-desc">
+                  macOS memproteksi aplikasi luar App Store ("unidentified developer"). Gunakan salah satu dari 3 opsi berikut:
+                  <div class="gatekeeper-options">
+                    <div class="gatekeeper-opt-card">
+                      <div class="gatekeeper-opt-title"><span>Opsi 1 (Rekomendasi Cepat):</span> Klik Kanan di Applications</div>
+                      <div class="gatekeeper-opt-desc">Buka Finder &gt; Applications &gt; Klik Kanan (atau Control+Klik) pada <strong>Motion Suite Pro</strong> &gt; pilih <strong>"Open"</strong> &gt; klik <strong>"Open"</strong> pada dialog konfirmasi Apple.</div>
+                    </div>
+                    <div class="gatekeeper-opt-card">
+                      <div class="gatekeeper-opt-title"><span>Opsi 2:</span> Lewat System Settings (Privacy &amp; Security)</div>
+                      <div class="gatekeeper-opt-desc">Buka <strong>System Settings</strong> Mac &gt; menu <strong>Privacy &amp; Security</strong> &gt; scroll ke bawah &gt; klik tombol <strong>"Open Anyway"</strong> &gt; konfirmasi kata sandi / Touch ID.</div>
+                    </div>
+                    <div class="gatekeeper-opt-card">
+                      <div class="gatekeeper-opt-title"><span>Opsi 3:</span> Perintah Terminal (Jika Aplikasi Terblokir / Rusak)</div>
+                      <div class="gatekeeper-opt-desc">Buka aplikasi Terminal di Mac Anda, lalu jalankan perintah: <span class="code-pill">xattr -cr "/Applications/Motion Suite Pro.app"</span> untuk menghapus quarantine flag seketika.</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="step-item">
+              <div class="step-num">4</div>
+              <div class="step-content">
+                <div class="step-title">Step 4: Salin Machine ID &amp; Input Lisensi Lynk.id</div>
+                <div class="step-desc">
+                  Buka aplikasi dari Applications. Salin 16-karakter <strong>Machine ID</strong> (terikat stabil ke hardware IOPlatformUUID). Masukkan Transaction ID Lynk.id ke formulir aktivasi web (<a href="https://motionsuite-act.duckdns.org/form/c1dc1a25-386b-4780-9e60-454b6201969e" target="_blank">tautan web resmi</a>), lalu salin kunci lisensi resmi dari email ke aplikasi dan klik <strong>"Validasi"</strong>.
+                </div>
               </div>
             </div>
           </div>
@@ -856,15 +1051,16 @@
           </div>
         </div>
 
-        <!-- Spesifikasi Sistem Minimum -->
+        <!-- Spesifikasi Sistem & Panduan Installer -->
         <div class="card" style="margin-top: 8px; padding: 9px 12px;">
           <div class="card-header">
-            <span class="card-title">Kebutuhan Sistem Singkat</span>
-            <span class="badge badge-info">Windows 10 / 11 64-bit</span>
+            <span class="card-title">Kebutuhan Sistem &amp; Panduan Pemilihan Installer</span>
+            <span class="badge badge-info">Windows 10/11 &bull; macOS 11+ (Apple Silicon &amp; Intel)</span>
           </div>
           <p style="font-size: 10.5px; line-height: 1.45; color: var(--text-muted); margin: 0;">
-            <strong>Minimum:</strong> 4 Core CPU &bull; 8 GB RAM DDR4 &bull; Intel UHD 620 / AMD Vega &bull; 5 GB SSD.<br>
-            <strong>Rekomendasi (4K 60FPS):</strong> 6+ Core CPU (Intel i7/Ryzen 5+) &bull; 16-32 GB RAM &bull; Dedicated GPU NVIDIA GTX/RTX &bull; NVMe SSD.
+            <strong>Pemilihan Installer:</strong> Windows &rarr; <span class="code-pill">.exe</span> &bull; Mac Apple Silicon (M1–M4) &rarr; <span class="code-pill">.dmg (arm64)</span> &bull; Mac Intel &rarr; <span class="code-pill">.dmg (x64)</span><br>
+            <strong>Spesifikasi Minimum:</strong> Windows 10/11 (64-bit) atau macOS 11 Big Sur+ &bull; 8 GB RAM &bull; Intel UHD 620 / Apple GPU &bull; 5 GB SSD.<br>
+            <strong>Rekomendasi (4K 60FPS):</strong> Apple Silicon M-Series (M1/M2/M3/M4) atau 6+ Core PC CPU (Intel i7/Ryzen 5+) &bull; 16–32 GB RAM &bull; Dedicated GPU &bull; NVMe SSD.
           </p>
         </div>
       </div>
@@ -1187,11 +1383,12 @@
           <div class="step-item" style="padding: 8px 10px; margin: 0;">
             <div class="step-num" style="background: linear-gradient(135deg, #64748b, #334155); width:22px; height:22px; font-size:10.5px;">4</div>
             <div class="step-content">
-              <div class="step-title" style="font-size:12px;">Lokasi File Hasil Render</div>
+              <div class="step-title" style="font-size:12px;">Lokasi File Hasil Render (Windows &amp; macOS)</div>
               <div class="step-desc" style="font-size:10.5px; line-height:1.4;">
                 <strong>Folder Default:</strong><br>
-                <span class="code-pill">C:\Users\&lt;NamaUser&gt;\Downloads\Motion Studio Exports</span><br>
-                Folder dapat diubah sebelum render atau klik <strong>"Buka Folder"</strong> selesai render.
+                <span class="code-pill">Windows: C:\Users\&lt;NamaUser&gt;\Downloads\Motion Studio Exports</span><br>
+                <span class="code-pill" style="margin-top:2px; display:inline-block;">macOS: /Users/&lt;NamaUser&gt;/Downloads/Motion Studio Exports</span><br>
+                Folder penyimpanan dapat diubah sebelum render atau klik <strong>"Buka Folder"</strong> selesai render.
               </div>
             </div>
           </div>
@@ -1204,7 +1401,8 @@
             <div class="step-title" style="font-size:12px;">Peringatan "Manipulasi Jam Sistem Terdeteksi" (CLOCK_DESYNC)</div>
             <div class="step-desc" style="font-size:10.5px; line-height:1.4;">
               <strong>Gejala:</strong> Jendela peringatan jam sistem dimundurkan dan fitur render terkunci sementara karena jam komputer berada di belakang stempel waktu aman aplikasi.<br>
-              <strong>Solusi Cepat 1-Klik:</strong> Klik tombol <strong>"🔄 Sinkronkan Waktu via Internet (1-Klik)"</strong> langsung pada jendela peringatan aplikasi. Sistem mencocokkan waktu dengan server resmi (Google / Cloudflare) dan memulihkan akses seketika!
+              <strong>Solusi Cepat 1-Klik:</strong> Klik tombol <strong>"🔄 Sinkronkan Waktu via Internet (1-Klik)"</strong> langsung pada jendela peringatan aplikasi. Sistem mencocokkan waktu dengan server resmi (Google / Cloudflare) dan memulihkan akses seketika!<br>
+              <em>* Catatan macOS Gatekeeper: Jika macOS menampilkan "App is damaged / unidentified developer", jalankan Terminal: <span class="code-pill">xattr -cr "/Applications/Motion Suite Pro.app"</span></em>
             </div>
           </div>
         </div>
@@ -1248,6 +1446,19 @@
     </article>
 
   </main>
+
+  <script>
+    function switchOsTab(platform) {
+      var buttons = document.querySelectorAll('.os-tab-btn');
+      var panes = document.querySelectorAll('.os-tab-pane');
+      for (var i = 0; i < buttons.length; i++) {
+        buttons[i].classList.toggle('active', buttons[i].getAttribute('data-os') === platform);
+      }
+      for (var j = 0; j < panes.length; j++) {
+        panes[j].classList.toggle('active', panes[j].id === 'tab-' + platform);
+      }
+    }
+  </script>
 
 </body>
 </html>

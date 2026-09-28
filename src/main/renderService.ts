@@ -516,6 +516,153 @@ export async function startRender(
   })
 }
 
+export interface VerifyRenderPayload {
+  frame?: number
+  timeoutMs?: number
+}
+
+export interface VerifyRenderResult {
+  isValid: boolean
+  errorMessage?: string
+}
+
+/**
+ * Headless test render of 1 frame using built-in Remotion CLI to verify code integrity
+ */
+export async function verifyRemotionRender(
+  payload: VerifyRenderPayload = {}
+): Promise<VerifyRenderResult> {
+  const { frame = 0, timeoutMs = 8000 } = payload
+  const remotionEnvDir = getRemotionEnvDir()
+  const nodeBin = getNodeBinaryPath()
+  const cliScript = getRemotionCliScript()
+
+  const tempFileName = `verify_render_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.png`
+  const tempDir = app?.getPath ? app.getPath('temp') : (process.env.TEMP || process.env.TMP || '/tmp')
+  const tempOutputPath = join(tempDir, tempFileName)
+
+  const remotionSubArgs = [
+    'still',
+    'src/index.ts',
+    'VibeGraphic',
+    `--frame=${frame}`,
+    `--output=${tempOutputPath}`,
+    '--image-format=png'
+  ]
+
+  let cmd = nodeBin
+  let args: string[] = []
+  let useShell = false
+
+  if (existsSync(cliScript)) {
+    cmd = nodeBin
+    args = [cliScript, ...remotionSubArgs]
+  } else {
+    cmd = process.platform === 'win32' ? 'npx.cmd' : 'npx'
+    args = ['remotion', ...remotionSubArgs]
+    useShell = process.platform === 'win32'
+  }
+
+  const extraNodePaths = [
+    join(remotionEnvDir, 'node_modules'),
+    join(process.resourcesPath || '', 'app.asar.unpacked', 'node_modules'),
+    join(process.cwd(), 'node_modules')
+  ]
+    .filter(Boolean)
+    .join(delimiter)
+
+  return new Promise<VerifyRenderResult>((resolveResult) => {
+    let child: ChildProcess | null = null
+    let stdoutBuffer = ''
+    let stderrBuffer = ''
+    let isSettled = false
+
+    const cleanupTempFile = (): void => {
+      try {
+        if (existsSync(tempOutputPath)) {
+          unlinkSync(tempOutputPath)
+        }
+      } catch (_) {}
+    }
+
+    const timer = setTimeout(() => {
+      if (!isSettled) {
+        isSettled = true
+        if (child?.pid) {
+          try {
+            if (process.platform === 'win32') {
+              execSync(`taskkill /pid ${child.pid} /T /F`, { stdio: 'ignore' })
+            } else {
+              child.kill('SIGKILL')
+            }
+          } catch (_) {}
+        }
+        cleanupTempFile()
+        resolveResult({
+          isValid: false,
+          errorMessage: `Verifikasi render Remotion melebihi batas waktu (${timeoutMs}ms).`
+        })
+      }
+    }, timeoutMs)
+
+    try {
+      child = spawn(cmd, args, {
+        cwd: remotionEnvDir,
+        shell: useShell,
+        stdio: 'pipe',
+        windowsHide: true,
+        env: {
+          ...process.env,
+          NODE_PATH: extraNodePaths
+        }
+      })
+
+      child.stdout?.on('data', (data) => {
+        stdoutBuffer += data.toString()
+      })
+
+      child.stderr?.on('data', (data) => {
+        stderrBuffer += data.toString()
+      })
+
+      child.on('close', (code) => {
+        clearTimeout(timer)
+        if (isSettled) return
+        isSettled = true
+        cleanupTempFile()
+
+        if (code === 0) {
+          resolveResult({ isValid: true })
+        } else {
+          const rawErr = (stderrBuffer || stdoutBuffer).replace(/\x1b\[[0-9;]*m/g, '').trim()
+          resolveResult({
+            isValid: false,
+            errorMessage: rawErr || `Proses verifikasi gagal dengan return code ${code}`
+          })
+        }
+      })
+
+      child.on('error', (err) => {
+        clearTimeout(timer)
+        if (isSettled) return
+        isSettled = true
+        cleanupTempFile()
+        resolveResult({
+          isValid: false,
+          errorMessage: err instanceof Error ? err.message : String(err)
+        })
+      })
+    } catch (err) {
+      clearTimeout(timer)
+      cleanupTempFile()
+      resolveResult({
+        isValid: false,
+        errorMessage: err instanceof Error ? err.message : String(err)
+      })
+    }
+  })
+}
+
 /**
  * Register Render IPC handlers in Main Process
  */
@@ -526,6 +673,10 @@ export function registerRenderIPC(): void {
 
   ipcMain.handle('render:cancel', async () => {
     return await cancelRender()
+  })
+
+  ipcMain.handle('verify-remotion-render', async (_, payload: VerifyRenderPayload = {}) => {
+    return await verifyRemotionRender(payload)
   })
 
   // Cleanup on app quit

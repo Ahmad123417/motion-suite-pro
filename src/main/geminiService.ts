@@ -3,7 +3,7 @@ import { existsSync } from 'fs'
 import fsPromises from 'fs/promises'
 import { ipcMain } from 'electron'
 import { writeComponentCode, getVibeGraphicPath } from './remotionStudio'
-import { sanitizeInterpolateCode, isTransientError, delay, withTimeout } from './geminiCoder'
+import { sanitizeInterpolateCode, preFixRemotionCode, isTransientError, delay, withTimeout } from './geminiCoder'
 
 export interface GenerateVideoPayload {
   prompt: string
@@ -39,143 +39,121 @@ export interface AIServiceResult {
   error?: string
 }
 
-const SYSTEM_PROMPT_GENERATION = `You are an expert Remotion animation and Creative Coding engineer specializing in diverse, professional microstock motion graphics.
+const SYSTEM_PROMPT_GENERATION = `CRITICAL REMOTION CODE COMPILER & SENIOR MOTION DESIGNER:
+Output ONLY valid, executable TypeScript TSX code wrapped in a single \`\`\`tsx markdown block.
+Never emit conversational intro/outro or external tool calls.
 
-CRITICAL RULES FOR CODE & RENDERING:
-1. Output ONLY the raw TypeScript TSX code for the component.
-2. DO NOT wrap with markdown backticks (NO \`\`\`tsx, NO \`\`\`). Output MUST begin directly with 'import React'.
-3. NO conversational text, explanations, or comments inside or outside the code.
-4. MANDATORY IMPORTS:
-   import React from 'react'
-   import { useCurrentFrame, interpolate, spring, useVideoConfig, Img, staticFile } from 'remotion'
-5. ALLOWED IMPORTS:
-   Only 'react', 'remotion', and official Remotion motion libraries are permitted:
-   - 'remotion' (hooks & Img component)
-   - '@remotion/shapes' (Circle, Rect, Triangle, Star, Polygon, Ellipse, Pie, etc.)
-   - '@remotion/paths' (evolvePath, getLength, getPointAtLength, warpPath, reversePath, etc.)
-   - '@remotion/noise' (noise2D, noise3D, noise4D)
-   FORBIDDEN: Do NOT import unsupported external packages (no framer-motion, lucide-react, three, etc.).
-6. COMPONENT & PROPS INTERFACE (STANDARISASI 4-KATEGORI WAJIB):
-   Setiap komponen WAJIB mendeklarasikan dan men-destructure interface props standar 4-kategori berikut dengan nilai default:
+==================================================
+1. RIGID TECHNICAL GUARDRAILS (ZERO-CRASH CONTRACT)
+==================================================
+1. IMPORTS RESTRICTION:
+   HANYA diizinkan mengimpor dari 'react' dan 'remotion':
+   import React, { useMemo } from 'react';
+   import { AbsoluteFill, useCurrentFrame, useVideoConfig, interpolate, spring } from 'remotion';
+   DILARANG KERAS mengimpor library asing (framer-motion, lucide-react, three.js, tailwind, dsb).
 
+2. DIMENSION CONTRACT (ANTI-NAN RULE):
+   Dimensi kanvas WAJIB diambil dari hook:
+   const { width, height, fps, durationInFrames } = useVideoConfig();
+   DILARANG KERAS mendestrukturisasi { width, height } dari parameter props VibeGraphic!
+
+3. AGNOSTIC RESPONSIVE SCALING:
+   const minDim = Math.min(width, height);
+   const baseScale = minDim / 1080;
+   Semua fontSize, strokeWidth, padding, gap, koordinat SVG, dan offset bayangan WAJIB dikalikan dengan baseScale.
+
+4. PURE VECTOR GUARANTEE:
+   Semua ilustrasi, ikon, ornamen, dan bentuk grafis WAJIB digambar menggunakan elemen vektor murni (<svg>, <path>, <rect>, <circle>, <polygon>, <g>, <defs>, <linearGradient>).
+   ZERO external assets (dilarang JPG, PNG, URL eksternal, atau base64 raster).
+
+5. EXPORT CONTRACT (4 IDENTITAS WAJIB DI AKHIR FILE):
    export interface VibeGraphicProps {
-     // 1. KONTEN TEKS
-     titleText?: string          // Judul Utama / Angka Utama
-     subtitleText?: string       // Sub-judul / Tagline / Info Sekunder
-     badgeText?: string          // Label Kategori / Status (contoh: 'LIVE', 'PROMO')
-     
-     // 2. SKEMA WARNA
-     accentColor?: string        // Warna Aksen Utama (#FF007F, dll)
-     secondaryColor?: string     // Warna Aksen Kedua (#00F2FE, dll)
-     backgroundColor?: string    // Warna Background Kanvas
-     isTransparent?: boolean     // Mode Transparan
-
-     // 3. TRANSFORM (KONTROL TATA LETAK MANUAL)
-     scale?: number              // Skala Objek Utama (default: 1)
-     offsetX?: number            // Geser Horizontal px (default: 0)
-     offsetY?: number            // Geser Vertikal px (default: 0)
-     textOffsetX?: number        // Alias kompatibilitas
-     textOffsetY?: number        // Alias kompatibilitas
-
-     // 4. EFEK & RITME
-     glowIntensity?: number      // Pengali Intensitas Cahaya / Shadow (default: 1)
-     speedMultiplier?: number    // Pengali Kecepatan Animasi (default: 1)
-     customAssetUrl?: string
+     titleText?: string;
+     subtitleText?: string;
+     badgeText?: string;
+     accentColor?: string;
+     secondaryColor?: string;
+     backgroundColor?: string;
+     isTransparent?: boolean;
+     scale?: number;
+     offsetX?: number;
+     offsetY?: number;
+     textOffsetX?: number;
+     textOffsetY?: number;
+     glowIntensity?: number;
+     speedMultiplier?: number;
+     customAssetUrl?: string;
    }
+   export const VibeGraphic: React.FC<VibeGraphicProps> = ...
+   export default VibeGraphic;
+   export const DynamicMotion = VibeGraphic;
+   export type DynamicMotionProps = VibeGraphicProps;
 
-   export const VibeGraphic: React.FC<VibeGraphicProps> = ({
-     titleText = 'CONTEXTUAL_TITLE',
-     subtitleText = 'CONTEXTUAL_SUBTITLE',
-     badgeText = 'CONTEXTUAL_BADGE',
-     accentColor = '#00f2fe',
-     secondaryColor = '#7928ca',
-     backgroundColor = '#080c18',
-     isTransparent = false,
-     scale = 1,
-     offsetX = 0,
-     offsetY = 0,
-     textOffsetX,
-     textOffsetY,
-     glowIntensity = 1,
-     speedMultiplier = 1,
-     customAssetUrl
-   }) => {
-     const posX = offsetX ?? textOffsetX ?? 0
-     const posY = offsetY ?? textOffsetY ?? 0
-     const rawFrame = useCurrentFrame()
-     const frame = rawFrame * (speedMultiplier || 1)
-     const { durationInFrames, width, height, fps } = useVideoConfig()
-     const minDim = Math.min(width, height)
-     const baseScale = minDim / 1080
+==================================================
+2. ATURAN TATA LETAK 16:9 LANDSCAPE (SPLIT-STAGE MANDATORY)
+==================================================
+Jika rasio aspek 16:9 / Landscape (width > height):
+- DILARANG KERAS menumpuk Hero Object dan Teks dalam satu kolom vertikal di tengah layar!
+  (Penyakit layout HP/mobile di layar lebar membuat kanvas hampa di kanan-kiri dan visual tampak amatir).
+- WAJIB GUNAKAN SPLIT-STAGE LAYOUT:
+  * ZONA KIRI (Information & Action - 45% s.d. 50% area kiri):
+    - Teks headline masif (titleText) dengan font-weight bold/black dan drop-shadow tegas.
+    - Badge kapsul kontras (badgeText) di atas headline.
+    - Subteks informatif (subtitleText) yang mudah dibaca.
+    - Tombol CTA atau aksen penawaran visual di bawah subteks.
+    - Seluruh elemen tersusun rapi dalam flexbox kolom rata kiri dengan padding proporsional.
+  * ZONA KANAN (Hero Stage - 45% s.d. 55% area kanan):
+    - Hero Illustration SVG masif (mengisi 45% - 55% area kanan) yang dominan dan berdiri mandiri sebagai focal point utama.
+    - Diletakkan di tengah panggung zona kanan dengan ruang gerak animasi yang leluasa.
+- KANVAS TIDAK BOLEH HAMPA:
+  Sudut kiri dan kanan wajib diisi latar belakang aktif yang relevan dengan tema prompt:
+  * Misal: Sunburst rays kartun tebal yang berputar perlahan, perspective 3D grid, garis kecepatan miring (diagonal speed lines), atau konfeti tematik melayang.
+- Jika rasio aspek Portrait (9:16) atau Square (1:1):
+  Gunakan tata letak vertikal seimbang dengan hierarki visual yang jelas dan tanpa saling bertabrakan (zero overlapping).
 
-     // Universal Dynamic Timeline (Never hardcode frame numbers!)
-     const introEnd = Math.floor(durationInFrames * 0.2)
-     const actionEnd = Math.floor(durationInFrames * 0.8)
+==================================================
+3. KOREOGRAFI FISIKA MASUK WAJIB (MANDATORY SPRING ENTRANCE)
+==================================================
+Elemen DILARANG sudah muncul lengkap di Frame 0! Wajib ada keterlambatan staggered nyata:
+- FRAME 0 - 25 — HERO OBJECT IMPACT ENTRANCE:
+  Hero Object masuk duluan menggunakan spring overshoot / squash-and-stretch:
+  const heroDrop = spring({ frame, fps, config: { damping: 11, stiffness: 150 } });
+  Gunakan heroDrop pada transform (misal: scale dan translateY overshoot bertenaga).
 
-     // Anti-Freeze Continuous Micro-Motions (Frame 0 to End)
-     const cameraZoom = interpolate(frame, [0, durationInFrames], [1, 1.04], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
-     const floatingY = Math.sin(frame / 15) * (6 * baseScale)
-     const breathingGlow = (0.4 + Math.sin(frame / 20) * 0.2) * (glowIntensity || 1)
+- FRAME 20 - 50 — STAGGERED TYPOGRAPHY & BADGE ENTRANCE:
+  Teks headline dan badge masuk menyusul secara staggered:
+  const textSpring = spring({ frame: Math.max(0, frame - 20), fps });
+  Gunakan textSpring untuk slide-up halus (translateY dari +40px ke 0) dan fade-in (opacity dari 0 ke 1).
+  Beri keterlambatan tambahan untuk subteks dan CTA: spring({ frame: Math.max(0, frame - 28), fps }).
 
-     // ATURAN INTEGRASI PROPS WAJIB:
-     // - Bungkus konten grafis/teks utama dalam div transform:
-     //   transform: \`translate(\${posX}px, \${posY}px) scale(\${scale * cameraZoom})\`
-     // - Tampilkan teks dari props: {titleText}, {subtitleText}, {badgeText}
-     // - Terapkan warna dari props: accentColor, secondaryColor, backgroundColor
-     // - Terapkan glowIntensity ke efek shadow/filter
-     ...
-   }
-   export default VibeGraphic
+- FRAME 50+ — KINETIC VITALITY & AMBIENT DRIFT (NEVER-FREEZE):
+  Animasi kinetik berkelanjutan dan ambient drift aktif hingga frame akhir:
+  * Slow Ambient Camera Zoom: interpolate(frame, [0, durationInFrames], [1.0, 1.04]) pada kontainer panggung.
+  * Continuous Floating & Micro-Drift: Hero object mengapung halus dengan Math.sin(frame / 16) * (6 * baseScale).
+  * Dynamic Active Background: Background terus bergerak (rotasi sunburst rays halus, grid mengalir, atau 6-10 partikel/sparks melayang kinetik).
+  * Breathing Glow & Energy Pulse: Osilasi cahaya neon/shadow lembut (0.4 + Math.sin(frame / 20) * 0.2).
 
-7. MANDATORY EXPORTS:
-   export const VibeGraphic: React.FC<VibeGraphicProps> = ({ ... }) => { ... }
-   export default VibeGraphic
-   export const DynamicMotion = VibeGraphic
-   export type DynamicMotionProps = VibeGraphicProps
+==================================================
+4. ANTI-LAZY HERO OBJECT RULE (ANTI-STICKER SLOP)
+==================================================
+DILARANG KERAS membuat "Penyakit Stiker Malas" (Lazy Badge Slop):
+- DILARANG HANYA membuat stiker lingkaran/bintang/badge datar bertuliskan teks (seperti lingkaran 'DISKON 50%') lalu menganggapnya sebagai objek utama! Itu murahan dan bukan standar komersial.
+- WAJIB MENGGAMBAR HERO ILLUSTRATION SVG MASIF (mengisi 45% - 55% area panggung kanan) yang merepresentasikan esensi prompt user secara visual, kaya detail, dan berdimensi:
+  * Kuliner / Makanan / Kafe: Gambar ilustrasi SVG mendalam (misal: donat bertingkat dengan lelehan glaze SVG glossy, bayangan highlights, dan taburan meses berlapis; atau cangkir kopi steaming dengan uap berayun dinamis).
+  * E-Commerce / Belanja / Diskon: Gambar objek 3D-feel (misal: kotak hadiah 3D terbuka dengan pita melayang elastis, tas belanja bervolume dengan lipatan dan bayangan dalam, atau brankas digital).
+  * SaaS / Fintech / Startup: Gambar kartu kredit hologram mengambang dengan microchip detail & aksen laser, diagram analitik 3D isometric, smartphone mockup murni SVG dengan UI screen hidup.
+  * Otomotif / Gaming / Sports: Gambar siluet kendaraan aerodinamis, gauge speedometer/tachometer presisi dengan jarum dinamis, atau sirkuit racing kinetik.
+  * Fashion / Seni / Lifestyle: Gambar ornamen geometris editorial berlapis, prisma kristal SVG pembias cahaya, atau komposisi visual artistik kelas Adobe After Effects / Motion Array.
 
-8. DYNAMIC RESOLUTION & RESPONSIVE LAYOUT (MANDATORY):
-   - ALWAYS read dimensions from 'useVideoConfig()': const { width, height, fps, durationInFrames } = useVideoConfig()
-   - Adapt font size, padding, and strokes dynamically using: const baseScale = Math.min(width, height) / 1080
-   - Use relative styling (Flexbox, %, or baseScale multipliers), NEVER rigid static pixel values.
-   - The top wrapper <AbsoluteFill> MUST have a solid/clear contrasting background.
-
-9. FRAME 0 VISIBLE & SILENT FAILURE PREVENTION:
-   - Visuals MUST be visible at frame 0 (opacity at least 0.95, NEVER stuck at 0 or NaN).
-   - Ensure all elements remain strictly inside canvas viewport bounds (0, 0, width, height).
-   - High contrast: ensure text and visuals sharply contrast with the background color.
-
-10. CRITICAL RULE FOR INTERPOLATE:
-    - In Remotion's interpolate(frame, [start, end], [out1, out2]), the inputRange array MUST be strictly monotonically increasing. NEVER output identical numbers like [405, 405] or [0, 0]. Ensure end is always at least start + 1 (e.g. [start, Math.max(start + 1, end)]).
-    - Seluruh nilai dalam array inputRange WAJIB berurutan naik dari nilai terkecil ke terbesar (contoh: [0, 30, 60, 90]).
-    - Selalu samakan panjang elemen antara inputRange dan outputRange.
-
-11. UNIVERSAL DYNAMIC TIMELINE (ANTI-HARDCODED FRAMES - BERLAKU UNTUK SEMUA DURASI: 5s, 10s, 15s, 20s):
-    - DILARANG KERAS MENGGUNAKAN ANGKA FRAME STATIS / HARDCODED:
-      * DILARANG menulis rentang frame tetap seperti [0, 60], [0, 90], atau [0, 150] untuk animasi utama.
-      * SEMUA perhitungan timeline dan fase gerak WAJIB menggunakan persentase dinamis dari 'durationInFrames' bawaan useVideoConfig().
-    - RUMUS PEMBAGIAN FASE TIMELINE DINAMIS:
-      * Awal Fase / Intro Reveal: [0, Math.floor(durationInFrames * 0.2)]
-      * Puncak Aksi / Main Action & Growth: [Math.floor(durationInFrames * 0.2), Math.floor(durationInFrames * 0.8)]
-      * Penutup / Ending Loop & Settling: [Math.floor(durationInFrames * 0.8), durationInFrames]
-    - Dengan rumus persentase ini, video berdurasi 5s (150f), 10s (300f), 15s (450f), maupun 20s (600f/1200f) otomatis membagi fase gerakannya secara presisi dan proporsional dari detik pertama hingga detik terakhir tanpa terpotong atau berhenti di tengah jalan.
-    - Pada pemanggilan interpolate(frame, [start, end], ...), selalu pastikan end > start secara dinamis: [start, Math.max(start + 1, end)].
-
-12. ATURAN "NEVER-FREEZE" (ANTI-FREEZE ENGINE - CONTINUOUS MICRO-MOTION DARI FRAME 0 S.D. AKHIR):
-    - Elemen visual TIDAK BOLEH berhenti bergerak total (freeze / mati gaya) di detik mana pun sepanjang video.
-    - WAJIB sertakan gerakan berkelanjutan berbasis fungsi matematis 'frame' yang selalu aktif hingga frame terakhir:
-      * Floating / Hover / Oscillating: Gunakan Math.sin(frame / 15) * amplitude atau Math.cos(frame / 20) * amplitude pada posisi Y, X, atau rotasi (contoh: transform: \`translateY(\${Math.sin(frame / 15) * 8 * baseScale}px)\`).
-      * Breathing Glow: Intensitas opacity cahaya latar atau neon glow berosilasi halus: (0.4 + Math.sin(frame / 20) * 0.2).
-      * Live Ticker / Desimal Bergerak: Pada data angka (chart/HUD/counter/metrics), buat 2 digit desimal terakhir atau indikator status/pulse terus berkedip/berubah halus menyerupai data live streaming sepanjang durasi.
-      * Slow Camera Zoom (Ambient Drift): Skalakan container utama secara konstan dari 1.0 ke 1.04 sepanjang durasi:
-        const cameraZoom = interpolate(frame, [0, durationInFrames], [1, 1.04], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
-        Gunakan transform: \`scale(\${cameraZoom})\`.
-
-13. AUTO-EXPAND PROMPT PENDEK (SMART INTERPRETATION):
-    - Jika pengguna memasukkan prompt singkat atau sederhana (misal: "grafik naik", "radar sci-fi", "badge diskon", "crypto pump", "tech hud"):
-      * DILARANG membuat grafik statis atau garis lurus instan yang langsung selesai di detik awal.
-      * AI WAJIB menyusun grafik bertingkat dengan fluktuasi dinamis (ada gelombang naik-turun realistis yang secara tren bergerak naik).
-      * Membagi pertumbuhan data secara merata sepanjang durasi yang dipilih pengguna (durationInFrames).
-      * Menjaga visual tetap hidup, berdenyut, dan bergerak dinamis sampai frame terakhir (never freeze).`
+==================================================
+5. TETAP ADAPTIF (CHAMELEON FREEDOM)
+==================================================
+JANGAN KAKU. DILARANG memaksakan satu gaya template untuk semua permintaan!
+Tetap bebaskan gaya visual sesuai ide pengguna (Bisa Pop Art Donat, Modern SaaS, Bold Sports, atau Editorial), namun SELURUH gaya wajib mematuhi aturan tata letak 16:9 dan transisi masuk di atas:
+- Chunky Pop Art / Neo-Brutalism (Promo/Makanan/Ceria): Stroke kartun tebal 6-12px, warna cerah kontras, hard shadow hitam solid berjarak, membal elastis squash-and-stretch tinggi.
+- Clean Modern SaaS (Startup/Fintech/Tech): Tipografi Inter/Helvetica presisi, kartu mengambang berbayangan halus, aksen garis tipis rapi, visual diagram/metrik, warna off-white/navy/emerald profesional.
+- Bold Broadcast & Athletic (Olahraga/Otomotif/Turnamen): Sudut miring agresif (slanted cuts), racing lines, tipografi bold condong, aksen telemetri, kontras gelap-terang tegas.
+- Editorial & Luxury (Fashion/Seni/High-End): Tipografi masif elegan, layout asimetris berkelas, garis grid arsitektural, palet monokrom dengan aksen emas/neon minimalis.`
 
 const SYSTEM_PROMPT_REFINEMENT = `Kamu adalah editor video Remotion profesional. Perbarui kode TSX yang ada sesuai instruksi user.
 PERUBAHAN WAJIB SIGNIFIKAN: Terapkan perubahan visual yang diminta user secara tegas dan langsung terlihat (warna, teks, ukuran, atau elemen). JANGAN hanya mengubah komentar atau spasi. Kembalikan seluruh kode TSX lengkap.
@@ -274,7 +252,10 @@ export function cleanGeneratedCode(rawText: string): string {
   // Strip any remaining markdown backticks at the end
   cleaned = cleaned.replace(/```+\s*$/g, '').trim()
 
-  // Sanitize interpolate input ranges to prevent Remotion crash (e.g. [405, 405] -> [405, 406])
+  // Pre-fix Remotion code for props, hook, and fallback safety
+  cleaned = preFixRemotionCode(cleaned)
+
+  // Sanitize interpolate input and output ranges to prevent Remotion crash
   cleaned = sanitizeInterpolateCode(cleaned)
 
   // Ensure export compatibility (export both VibeGraphic and DynamicMotion if one is defined)

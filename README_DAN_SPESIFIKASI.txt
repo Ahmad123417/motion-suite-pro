@@ -1,184 +1,184 @@
 ================================================================================
-                 MOTION SUITE PRO — SPESIFIKASI & PANDUAN SISTEM
+             MOTION SUITE PRO — SPESIFIKASI, ARSITEKTUR & PANDUAN SISTEM
 ================================================================================
-Versi     : 1.0.5 (Official Production Release)
+Versi     : 1.0.5 (Official Cross-Platform Production Release)
 Produk    : Motion Suite Pro
 Pengembang: Motion Suite Pro Team
-Platform  : Windows 10 & 11 (64-bit)
+Platform  : Windows 10 & 11 (64-bit) & Apple macOS 11+ (Apple Silicon & Intel)
 Dukungan  : ahmadmuslihfarhany46@gmail.com | Telegram: @ahmadmuslihfarhany
-Repository: https://github.com/Ahmad123417/motion-studio-release
+Repository: https://github.com/Ahmad123417/motion-suite-pro
 Lisensi   : Flexible Tiered Licensing (Harian, Mingguan, Bulanan, s/d Lifetime)
 ================================================================================
 
-Terima kasih telah menggunakan Motion Suite Pro! Aplikasi ini adalah Creative Coding 
-& AI Motion Graphics Workstation modern yang memadukan kekuatan Dynamic Code-to-Video Engine (React 19 
-+ TypeScript) dan Google Gemini AI untuk memproduksi video animasi presisi matematis, 
-aset siaran beresolusi 4K, dan video transparan berkualitas studio.
+Terima kasih telah menggunakan Motion Suite Pro! Motion Suite Pro adalah workstation 
+kreatif desktop modern berbasis "Creative Coding & AI Motion Graphics" yang memadukan 
+kekuatan Dynamic Code-to-Video Engine (React 19 + TypeScript) dan Google Gemini AI 
+untuk memproduksi video animasi berkecepatan tinggi dengan presisi matematis, 
+aset siaran resolusi 4K 60FPS, dan video transparan berkualitas studio broadcast.
 
 --------------------------------------------------------------------------------
-💡 POSISI PRODUK: BUKAN VIDEO AI GENERATIF BIASA
+💡 POSISI PRODUK: MENGAPA BUKAN VIDEO AI DIFUSI BIASA?
 --------------------------------------------------------------------------------
 
 Motion Suite Pro BUKAN generator video berbasis model difusi visual (generative AI 
-video) yang sering mengalami halusinasi visual, teks buram/rusak tak terbaca, 
-distorsi bentuk yang tidak terkendali, serta tidak bisa diedit ulang.
+video seperti Runway, Kling, atau Sora) yang sering mengalami halusinasi visual, 
+teks buram/rusak tak terbaca, distorsi bentuk yang tidak terkendali, serta tidak bisa diedit ulang.
 
 Sebaliknya, Motion Suite Pro adalah "Prompt-to-Code Motion Graphics Workstation":
-1. Presisi Piksel & Teks Tajam: Seluruh tipografi dan elemen grafis dirender 
-   secara programatis (vektor/SVG dan CSS murni), menghasilkan teks yang 100% 
-   tajam tanpa artefak kompresi atau teks palsu.
-2. Animasi Matematis Murni: Pergerakan didasarkan pada rumus interpolasi dan 
-   spring physics, menjamin gerakan ultra-mulus pada 30 hingga 60 FPS.
+1. Presisi Piksel & Tipografi Tajam: Seluruh tipografi dan elemen grafis dirender 
+   secara programatis (vektor SVG murni dan CSS teroptimasi), menghasilkan teks yang 100% 
+   tajam pada resolusi apa pun tanpa artefak kompresi atau teks acak palsu.
+2. Animasi Matematis Murni: Pergerakan didasarkan pada rumus interpolasi dinamis dan 
+   spring physics, menjamin gerakan ultra-mulus pada 30 hingga 60 FPS tanpa jeda patah-patah.
 3. Kontrol Parametrik Penuh: Seluruh warna, teks, posisi, skala, dan kecepatan 
-   dapat disesuaikan kapan saja lewat Visual Tweaker tanpa perlu generate ulang.
-4. Transparansi Asli (True Alpha Channel): Menghasilkan video berlatar transparan 
-   murni (tanpa background hitam) yang siap ditumpuk (compositing) di software 
-   editing video profesional mana pun.
+   dapat disesuaikan secara instan lewat Visual Tweaker 4-Kategori tanpa perlu memanggil ulang AI.
+4. Transparansi Murni (True Alpha Channel): Menghasilkan video berlatar transparan 
+   murni (tanpa latar belakang hitam pekat) yang siap langsung ditumpuk (compositing) 
+   di software editing video profesional apa pun.
 
 --------------------------------------------------------------------------------
-1. FITUR UTAMA & SISTEM LISENSI FLEKSIBEL (V1.0.5)
+1. PANDUAN PEMILIHAN INSTALLER (WINDOWS & macOS)
 --------------------------------------------------------------------------------
 
-A. DUAL-ENGINE AI PRODUCER & REFINEMENT
-   - Prompt-to-Motion Generator bertenaga Gemini 2.5 Flash / Pro.
-   - Smart Refinement Chat Assistant: Revisi spesifik tanpa merusak struktur visual lainnya.
+Untuk memastikan performa optimal dan kompatibilitas hardware penuh, pilih file installer 
+yang sesuai dengan sistem operasi dan arsitektur prosesor komputer Anda:
 
-B. UNIVERSAL DYNAMIC TIMELINE & NEVER-FREEZE ENGINE
-   - Dukungan penuh opsi durasi fleksibel: 5 Detik, 10 Detik, 15 Detik, dan 20 Detik (600f/1200f).
-   - Animasi dihitung secara dinamis (% of durationInFrames) sehingga bebas dari freeze di durasi berapa pun.
-   - Micro-motion kontinu: Oscillating floating, breathing glow, camera zoom drift, dan data ticks.
+A. PENGGUNA WINDOWS:
+   * Pilih berkas: "Motion Suite Pro.Setup.1.0.5.exe" (atau format .exe lainnya)
+   * Kompatibilitas: Windows 10 & Windows 11 (64-bit)
 
-C. 4-CATEGORY VISUAL TWEAKER LIVE HOT-SYNC
-   - Kontrol parametrik manual instan tanpa perlu memanggil AI:
-     * Konten Teks: titleText, subtitleText, badgeText
-     * Skema Warna: accentColor, secondaryColor, backgroundColor, isTransparent (Alpha)
-     * Transform: Posisi X, Posisi Y, Scale (50% - 200%), Reset Transform
-     * Efek & Ritme: Neon Glow Intensity, Speed Multiplier
-   - Terintegrasi penuh ke kanvas preview dan pipeline ekspor (MP4 H.264 & ProRes 4444).
+B. PENGGUNA MAC APPLE SILICON (CHIP M1, M2, M3, M4):
+   * Pilih berkas: "Motion Suite Pro-1.0.5-mac-arm64.dmg"
+   * Kompatibilitas: MacBook Air, MacBook Pro, Mac mini, Mac Studio, iMac dengan chip Apple Silicon M-Series
+   * Arsitektur: Native ARM64 (Performa rendering maksimal, hemat daya, tanpa emulasi Rosetta)
 
-D. AUTOMATED ERROR CAPTURE & SELF-HEALING RECOVERY
-   - Deteksi runtime error otomatis dari compiler dan visual canvas internal.
-   - Tombol "Auto-Fix Bug" interaktif untuk pemulihan kode cerdas satu kali klik.
-
-E. STUDIO CANVAS LIVE PREVIEW
-   - Live Player Motion Suite Core Engine dengan dukungan Play/Pause, scrubber timeline, hot-reload instan.
-
-F. PHYSICAL EXPORT PIPELINE
-   - MP4 (H.264 CRF 18) untuk web/sosial media standar broadcast.
-   - MOV ProRes 4444 Alpha Channel (yuva444p10le) untuk Adobe Premiere, After Effects, CapCut, DaVinci Resolve.
-
-G. TIERED MACHINE-LOCKED LICENSING & ANTI-CLOCK ROLLBACK GUARD
-   - Kriptografi Asimetris RSA-SHA256 (2048-bit): Mengikat lisensi ke Hardware Machine ID fisik perangkat.
-   - Proteksi Anti-Clock Rollback: Stempel waktu lokal tersimpan secara terenkripsi AES-256-CBC (clock_sync.dat) di direktori userData.
-   - Deteksi Desync Jam & Toleransi 3 Menit: Pemunduran waktu di atas 180.000 ms otomatis memicu status CLOCK_DESYNC dan memblokir fitur generator & render.
-   - Pemulihan Waktu Internet 1-Klik: Sinkronisasi waktu instan via query HTTP HEAD ke Google / Cloudflare memulihkan akses tanpa mengubah setelan jam Windows.
-   - Multi-Tier Duration: Mendukung masa berlaku dinamis (1 Hari, 3 Hari, 7 Hari, 30 Hari, dan Lifetime Access permanen).
-
-H. IN-APP AUTO-UPDATE SYSTEM
-   - Notifikasi pembaruan aplikasi modern model OBS Studio dengan pemantauan unduhan di latar belakang.
+C. PENGGUNA MAC INTEL:
+   * Pilih berkas: "Motion Suite Pro-1.0.5-mac-x64.dmg"
+   * Kompatibilitas: Seluruh lini komputer Mac berbasis prosesor Intel 64-bit
 
 --------------------------------------------------------------------------------
-2. CATATAN RILIS (CHANGELOG V1.0.5)
---------------------------------------------------------------------------------
-
-Pembaruan v1.0.5 menghadirkan penyempurnaan menyeluruh pada alur kerja motion graphics:
-
-1. Fungsionalisasi Penuh Visual Tweaker 4-Kategori:
-   - Standarisasi kontrak props VibeGraphicProps pada semua prompt AI.
-   - Kontrol manual real-time untuk Teks, Warna, Transformasi (Offset X/Y, Scale), dan Efek (Glow, Speed).
-   - Dukungan Undo history, Revert to Original, dan sinkronisasi otomatis ke pipeline render.
-
-2. Universal Dynamic Timeline & Anti-Freeze Engine:
-   - Penambahan opsi durasi 20 Detik (600 frames @ 30fps / 1200 frames @ 60fps).
-   - Seluruh logika animasi menggunakan formula persentase durasi dinamis tanpa hardcoded frames.
-   - Gerakan mikro kontinu memastikan visual tidak pernah membeku di detik mana pun.
-
-3. Automated Error Capture & Self-Healing Pipeline:
-   - Penangkapan error runtime instan dari Motion Suite Core Engine IPC tanpa copy-paste manual.
-   - Auto-Fix terpandu dengan jeda buffer aman dan pencegahan race condition bundler.
-
-4. Enhanced Licensing & Anti-Clock Rollback Engine:
-   - Penambahan verifikasi masa aktif dinamis (1 Hari, 3 Hari, 7 Hari, 30 Hari, dan Lifetime Access) berbasis parameter expiresAt.
-   - Penerapan Anti-Clock Desync Lockout berbasis stempel waktu lokal terenkripsi AES-256-CBC (clock_sync.dat) dengan batas toleransi mundur 3 menit (180.000 ms).
-   - Tombol pemulihan instan "Sinkronkan Waktu via Internet (1-Klik)" via query HTTP HEAD waktu global (Google / Cloudflare) serta proteksi render IPC main process jika lisensi kedaluwarsa atau jam desinkron.
-
---------------------------------------------------------------------------------
-3. SPESIFIKASI SISTEM MINIMUM & REKOMENDASI
+2. SPESIFIKASI SISTEM MINIMUM & REKOMENDASI
 --------------------------------------------------------------------------------
 
 [ SPESIFIKASI MINIMUM ]
-- Sistem Operasi : Windows 10 / Windows 11 (64-bit, Build 1909+)
-- Processor (CPU): Multi-core x64 Processor (Minimal 4 Core / 8 Thread, e.g. Intel i5 Gen 8+ / AMD Ryzen 3+)
-- Memori (RAM)   : 8 GB RAM DDR4
-- Grafis (GPU)   : Intel UHD Graphics 620 / AMD Radeon Vega terintegrasi (Mendukung OpenGL & DirectX 11)
-- Ruang Harddisk : 5 GB ruang kosong (SSD disarankan)
-- Resolusi Layar : 1280 x 720 (Mendukung scaling Windows 125% dan 150%)
+- Sistem Operasi : 
+  * Windows: Windows 10 / Windows 11 (64-bit, Build 1909+)
+  * macOS  : macOS 11 (Big Sur) atau versi lebih baru (Monterey, Ventura, Sonoma, Sequoia)
+- Processor (CPU):
+  * Mac    : Chip Apple Silicon M1 (atau Intel Core i5 Dual-Core 64-bit ke atas)
+  * Windows: Multi-core x64 Processor (Minimal 4 Core / 8 Thread, e.g. Intel Core i5 Gen 8+ / AMD Ryzen 3+)
+- Memori (RAM)   : 8 GB RAM (Unified Memory pada Mac / DDR4 pada PC)
+- Kartu Grafis   : 
+  * Mac    : Integrated Apple GPU / Intel Iris Plus Graphics
+  * Windows: Intel UHD Graphics 620 / AMD Radeon Vega terintegrasi (Mendukung OpenGL & DirectX 11)
+- Ruang Penyimpanan: 5 GB ruang kosong (SSD disarankan)
+- Resolusi Layar : 1280 x 720 (Mendukung Retina Display Mac & display scaling Windows)
 
-[ SPESIFIKASI REKOMENDASI (PERFORMA 4K MAKSIMAL) ]
-- Sistem Operasi : Windows 11 64-bit (Update Terbaru)
-- Processor (CPU): 6 Core / 12 Thread atau lebih tinggi (Intel Core i7/i9 Gen 10+, AMD Ryzen 5/7/9 3000 Series+)
-- Memori (RAM)   : 16 GB - 32 GB RAM DDR4/DDR5
-- Grafis (GPU)   : Dedicated GPU NVIDIA GeForce GTX 1650 / RTX 2060 / 3060 / 4000 series atau AMD RX 6000+
-- Ruang Harddisk : NVMe SSD M.2 dengan sisa ruang 20 GB+
-- Resolusi Layar : 1920 x 1080 (Full HD) atau resolusi 2K/4K
+[ SPESIFIKASI REKOMENDASI (PERFORMA 4K 60FPS MAKSIMAL) ]
+- Sistem Operasi :
+  * Windows: Windows 11 64-bit (Update Terbaru)
+  * macOS  : macOS 13 (Ventura) / macOS 14 (Sonoma) / macOS 15 (Sequoia)
+- Processor (CPU):
+  * Mac    : Apple Silicon M1 Pro/Max, M2 Pro/Max, M3 Pro/Max, M4 Pro/Max (atau M-Series standar)
+  * Windows: 6 Core / 12 Thread atau lebih tinggi (Intel Core i7/i9 Gen 10+, AMD Ryzen 5/7/9 3000 Series+)
+- Memori (RAM)   : 16 GB - 32 GB RAM (Unified Memory pada Mac / DDR4/DDR5 pada PC)
+- Kartu Grafis (GPU):
+  * Mac    : 10-Core GPU Apple Silicon atau lebih tinggi
+  * Windows: Dedicated GPU NVIDIA GeForce GTX 1650 / RTX 2060 / 3060 / 4000 series atau AMD Radeon RX 6000+
+- Ruang Penyimpanan: NVMe SSD dengan sisa ruang 20 GB+
+- Resolusi Layar : 1920 x 1080 (Full HD), 2K, atau 4K Ultra HD
+
+--------------------------------------------------------------------------------
+3. INFORMASI FITUR UTAMA & OUTPUT RENDER
+--------------------------------------------------------------------------------
+
+A. DUAL FORMAT OUTPUT RENDER:
+   1. MP4 Video (H.264 / CRF 18):
+      - Format standar internasional dengan rasio kompresi tinggi dan kompatibilitas universal.
+      - Sangat cocok untuk upload langsung ke YouTube, Instagram Reels, TikTok, LinkedIn, dan website.
+      - Render cepat dengan pemanfaatan hardware acceleration (NVENC pada Windows & VideoToolbox pada Mac).
+   
+   2. Apple ProRes 4444 (.MOV) dengan Alpha Channel (yuva444p10le):
+      - Format standar broadcast video profesional yang mempertahankan latar belakang transparan (True Alpha).
+      - Menghasilkan aset motion graphics transparan tanpa background hitam, siap langsung ditumpuk 
+        (drag & drop compositing) di Adobe Premiere Pro, After Effects, DaVinci Resolve, Final Cut Pro, CapCut.
+      - Bernilai komersial tinggi untuk penjualan aset stok grafis di marketplace (Envato, Motion Array, Pond5).
+
+B. 4-CATEGORY VISUAL TWEAKER LIVE HOT-SYNC:
+   - Panel kontrol parametrik instan tanpa perlu memanggil ulang AI:
+     * Teks Konten : Judul (titleText), Subjudul (subtitleText), Badge (badgeText)
+     * Warna       : Warna Utama (accentColor), Warna Sekunder, Background Color, Transparent Toggle
+     * Transformasi: Offset X, Offset Y, Scale Slider (50% hingga 200%), Reset Position
+     * Efek & Ritme: Neon Glow Intensity, Speed Multiplier
+   - Live Hot-Sync: Mengubah slider langsung memperbarui kanvas preview dan terhubung ke render pipeline.
+
+C. UNIVERSAL DYNAMIC TIMELINE & NEVER-FREEZE ENGINE:
+   - Pilihan durasi fleksibel: 5 Detik, 10 Detik, 15 Detik, dan 20 Detik (600f/1200f).
+   - Seluruh animasi dihitung secara proporsional (% dari total durasi frame), bebas freeze di detik berapa pun.
+   - Micro-motion kontinu: Floating loop, breathing glow, camera zoom drift, dan dynamic indicators.
+
+D. AUTOMATED ERROR CAPTURE & SELF-HEALING RECOVERY:
+   - Menangkap galat kompilasi atau runtime visual secara otomatis tanpa copy-paste manual.
+   - Tombol "Auto-Fix Bug" satu-klik menginstruksikan AI untuk memperbaiki galat dalam hitungan detik.
+
+E. CROSS-PLATFORM RSA-SHA256 LICENSING & ANTI-CLOCK ROLLBACK GUARD:
+   - Hardware-Locked Machine ID: Mengikat lisensi ke Hardware ID fisik perangkat 
+     (IOPlatformUUID pada macOS & Hardware GUID pada Windows) yang tersimpan aman di direktori 
+     userData ('~/Library/Application Support/Motion Suite Pro' di macOS dan '%APPDATA%' di Windows).
+   - Sistem Lisensi Bersih: 100% TIDAK menggunakan Windows Registry (Bebas reg.exe / HKCU), menjamin 
+     stabilitas lintas platform dan bebas crash pada macOS.
+   - Proteksi Anti-Clock Rollback: Enkripsi AES-256-CBC stempel waktu lokal untuk mencegah pemunduran jam.
+   - Pemulihan Waktu Internet 1-Klik: Sinkronisasi waktu instan via query HTTP HEAD ke Google / Cloudflare.
+   - Multi-Tier Duration: Mendukung masa aktif fleksibel (1 Hari Trial, 3 Hari, 7 Hari, 30 Hari, hingga Lifetime).
+
+F. IN-APP AUTO-UPDATE SYSTEM:
+   - Pembaruan aplikasi modern dengan deteksi rilis GitHub dan unduhan di latar belakang.
 
 --------------------------------------------------------------------------------
 4. PANDUAN RINGKAS MEMULAI (QUICK START)
 --------------------------------------------------------------------------------
 
-Langkah 1: BUKA & PASANG APLIKASI
-- Jalankan "Motion Suite Pro Setup v1.0.5.exe" sampai aplikasi terbuka.
-- Jika muncul peringatan Windows SmartScreen, klik "More info" lalu pilih "Run anyway".
+Langkah 1: PASANG APLIKASI
+- Windows: Jalankan installer .exe. Jika muncul SmartScreen, klik "More info" -> "Run anyway".
+- macOS  : Buka file .dmg, seret "Motion Suite Pro" ke folder Applications. 
+           Jika terhalang Gatekeeper, klik kanan file aplikasi di Applications -> pilih "Open", 
+           atau izinkan lewat System Settings > Privacy & Security, atau jalankan perintah Terminal:
+           xattr -cr "/Applications/Motion Suite Pro.app"
 
 Langkah 2: SALIN MACHINE ID
-- Di dalam aplikasi, periksa panel kiri atas pada bagian "Status Lisensi".
-- Salin deretan kode "Machine ID" perangkat Anda.
+- Buka aplikasi Motion Suite Pro.
+- Pada panel kiri atas atau dialog aktivasi, salin 16-karakter Machine ID unik perangkat Anda.
 
-Langkah 3: KLAIM KODE LISENSI RESMI (OTOMATIS)
-- Buka tautan formulir aktivasi resmi berikut di peramban:
+Langkah 3: KLAIM KUNCI LISENSI RESMI
+- Buka browser dan akses formulir aktivasi resmi:
   https://motionsuite-act.duckdns.org/form/c1dc1a25-386b-4780-9e60-454b6201969e
-- Masukkan rincian pesanan Anda:
-  * Alamat Email Aktif (kunci lisensi akan dikirim ke sini)
-  * Nomor Invoice Pembelian dari Lynk.id
-  * Kode Machine ID perangkat Anda
-  * Unggah bukti pembayaran / tangkapan layar invoice Lynk.id
-- Klik "Submit". Sistem akan otomatis memproses pengiriman kunci lisensi ke email Anda.
-  (PENTING: Periksa kotak masuk/Inbox dan folder Spam/Promotions).
+- Isi data pembelian Anda (Email, Nomor Invoice Lynk.id, Machine ID, dan Bukti Transaksi).
+- Kunci lisensi resmi RSA-SHA256 akan otomatis terkirim ke email Anda.
 
-Langkah 4: AKTIVASI LISENSI
-- Buka email konfirmasi lisensi, salin seluruh deretan kode Kunci Lisensi (RSA-SHA256).
-- Tempelkan ke kolom Lisensi di dalam aplikasi, lalu klik "Validasi".
-- Status akan berubah menjadi "Aktif" dengan indikator hijau sesuai paket yang dibeli 
-  (1 Hari, 3 Hari, 7 Hari, 30 Hari, atau Lifetime).
+Langkah 4: AKTIVASI DI APLIKASI
+- Salin seluruh teks Kunci Lisensi dari email, tempelkan ke kolom Lisensi di aplikasi, lalu klik "Validasi".
+- Status lisensi berubah menjadi aktif hijau.
 
-Langkah 5: PASANG GEMINI API KEY (GRATIS)
-- Buka browser dan kunjungi: https://aistudio.google.com (login dengan akun Google).
-- Klik "Get API key" -> "Create API key in new project" -> Salin kode token AIzaSy...
-- Tempel ke kolom "Gemini API Key" di aplikasi, lalu klik "Simpan".
+Langkah 5: HUBUNGKAN GOOGLE GEMINI API KEY (GRATIS)
+- Buka https://aistudio.google.com -> klik "Get API key" -> "Create API key in new project".
+- Salin token (diawali AIzaSy...) dan tempelkan ke kolom Gemini API Key di aplikasi -> klik "Simpan".
 
-Langkah 6: SELESAI & MULAI BERKARYA
-- Motion Suite Pro siap digunakan untuk membuat animasi motion graphic 4K!
-- Rancang teks dan warna di panel [ 🎛️ Visual Tweaker ], tonton live preview, 
-  lalu klik tombol "🚀 Ekspor / Render Video".
+Langkah 6: SELESAI & MULAI MERANCANG MOTION GRAPHIC
+- Masukkan ide animasi pada prompt AI atau sesuaikan langsung via Visual Tweaker.
+- Tonton preview langsung di Studio Canvas, lalu klik "🚀 Ekspor / Render Video".
 
 --------------------------------------------------------------------------------
-5. TROUBLESHOOTING & DUKUNGAN TEKNIS
+5. LOKASI FOLDER EKSPOR DEFAULT
 --------------------------------------------------------------------------------
-- Jika kanvas menampilkan "Port 10871 Offline / Initializing":
-  Tunggu 3-5 detik saat compiler TypeScript memuat di latar belakang. Jika belum 
-  tersinkronisasi, klik tombol "Sync Canvas" pada bilah atas kanvas.
-- Jika kuota API habis (HTTP 429 Resource Exhausted):
-  Tunggu 30-60 detik hingga Google mereset jendela per-menit, atau buat API Key baru 
-  di Google AI Studio dengan membuat project baru.
-- Jika terjadi galat kode saat utak-atik manual:
-  Gunakan tombol "⚡ Auto-Fix Error" untuk perbaikan otomatis seketika oleh AI.
-- Folder ekspor bawaan (default):
-  C:\Users\<NamaUser>\Downloads\Motion Studio Exports
-- Panduan Lengkap Bergambar (A4 PDF):
-  Buka file "user-guide.html" di folder aplikasi untuk panduan visual cetak A4.
-- Layanan Bantuan Email   : ahmadmuslihfarhany46@gmail.com
-- Layanan Bantuan Telegram: @ahmadmuslihfarhany
+- Windows: C:\Users\<NamaUser>\Downloads\Motion Studio Exports
+- macOS  : /Users/<NamaUser>/Downloads/Motion Studio Exports
+(Lokasi folder dapat diubah kapan saja melalui dialog pemilih folder sebelum proses render).
 
+================================================================================
+LAYANAN BANTUAN & KONTAK DUKUNGAN TEKNIS:
+- Panduan Visual & Cetak A4: Buka file "user-guide.html" di folder aplikasi.
+- Email Dukungan   : ahmadmuslihfarhany46@gmail.com
+- Telegram Resmi   : @ahmadmuslihfarhany
 ================================================================================
            Selamat Berkarya dengan Motion Suite Pro — Studio in a Box!
 ================================================================================

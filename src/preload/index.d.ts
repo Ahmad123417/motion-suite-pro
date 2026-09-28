@@ -57,6 +57,7 @@ export interface CustomElectronAPI {
   renderVideo: (config: RenderVideoConfig) => Promise<RenderResult>
   selectDirectory: () => Promise<{ canceled: boolean; folderPath?: string }>
   openPath: (path: string) => Promise<{ success: boolean; error?: string }>
+  openExternal?: (url: string) => Promise<{ success: boolean; error?: string }>
   openExportFolder: (folderPath?: string) => Promise<{ success: boolean; error?: string }>
   openFileLocation: (filePath: string) => Promise<{ success: boolean; error?: string }>
   applyManualCode: (code: string) => Promise<ApplyManualCodeResult>
@@ -95,6 +96,10 @@ export interface CustomElectronAPI {
   restartStudioServer: (port?: number) => Promise<{ success: boolean; port: number; url: string; error?: string }>
   writeCode: (code: string) => Promise<{ success: boolean; filePath?: string; error?: string }>
   getStudioStatus: () => Promise<{ isRunning: boolean; port: number; url: string; error?: string }>
+  verifyRemotionRender: (payload?: {
+    frame?: number
+    timeoutMs?: number
+  }) => Promise<{ isValid: boolean; errorMessage?: string }>
   generateVideo: (payload: {
     prompt: string
     imageBase64?: string
@@ -171,6 +176,7 @@ export interface CustomElectronAPI {
   onUpdateDownloaded: (callback: (info?: { version: string }) => void) => () => void
   onUpdateProgress?: (callback: (data: { percent: number }) => void) => () => void
   onUpdateError?: (callback: (err: { message: string }) => void) => () => void
+  platform?: string
 }
 
 declare global {
