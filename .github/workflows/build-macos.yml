@@ -57,8 +57,8 @@ jobs:
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Contents/Info.plist")" = '1.0.7'
           EXPECTED=$TARGET_ARCH
           if [ "$EXPECTED" = x64 ]; then EXPECTED=x86_64; fi
-          lipo -verify_arch "$EXPECTED" "$APP/Contents/MacOS/Motion Suite Pro"
-          lipo -verify_arch "$EXPECTED" "$APP/Contents/Resources/bin/node"
+          lipo "$APP/Contents/MacOS/Motion Suite Pro" -verify_arch "$EXPECTED"
+          lipo "$APP/Contents/Resources/bin/node" -verify_arch "$EXPECTED"
           test "$("$APP/Contents/Resources/bin/node" -p 'process.arch')" = "$TARGET_ARCH"
           test ! -e "$APP/Contents/Resources/bin/node.exe"
           test -f "$APP/Contents/Resources/typescript/lib/lib.esnext.full.d.ts"
@@ -66,7 +66,7 @@ jobs:
           test -f "$APP/Contents/Resources/remotion_env/src/primitives/SvgStrokeReveal.tsx"
           while IFS= read -r -d '' BINARY; do
             case "$(file -b "$BINARY")" in
-              *Mach-O*) lipo -verify_arch "$EXPECTED" "$BINARY" ;;
+              *Mach-O*) lipo "$BINARY" -verify_arch "$EXPECTED" ;;
             esac
           done < <(find "$APP/Contents" -type f -print0)
           "$APP/Contents/Resources/bin/node" - "$APP/Contents/Resources" <<'NODE'
