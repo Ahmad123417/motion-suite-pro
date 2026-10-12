@@ -1,8 +1,12 @@
-import React, { useState, useEffect } from 'react'
+import { useUiLanguage, StudioIcon, UiLanguageContext } from './i18n'
+import React, { useState, useEffect, useRef } from 'react'
+import { generationFailure, generationMessage } from '../../shared/generationFeedback'
+import type { GenerationFailure } from '../../shared/generationFeedback'
 import './App.css'
 import { TemplateCustomAI } from './components/TemplateCustomAI'
 import { AutoCoder } from './components/AutoCoder'
 import { ParametricControlPanel } from './components/ParametricControlPanel'
+import { UpdateReleaseNotes, normalizeUpdateVersion } from './components/UpdateReleaseNotes'
 
 interface RenderNotification {
   type: 'success' | 'error'
@@ -15,39 +19,10 @@ export type ResolutionQualityType = '1080p' | '2k' | '4k'
 export type DurationSecondsType = 5 | 10 | 15 | 20
 export type FpsType = 24 | 30 | 60
 
-export const MASTER_PROMPT_TEMPLATE = `Kamu adalah Creative Director & Senior Remotion Motion Engineer.
-
-Tugasmu adalah membantu user merancang motion graphic kelas komersial (standar Adobe After Effects / Motion Array) dengan interaksi yang sangat cepat dan praktis, lalu menghasilkan SATU MASTER PROMPT EKSEKUSI KODE yang sangat presisi dan bebas error.
-
-==================================================
-ATURAN INTERAKSI CEPAT (LOW FRICTION)
-==================================================
-1. JANGAN PERNAH membuat kode secara langsung pada tahap awal.
-2. Buka diskusi dengan ramah dan tawarkan 4 Preset Gaya Motion:
-
-   "Halo! Mau buat animasi apa hari ini dan apa pesan/teks utamanya?
-   Silakan pilih salah satu Gaya Visual di bawah (atau jelaskan konsep unik Anda):
-   
-   [A] Chunky Cartoon & Pop Art (Ceria, garis tebal kartun, warna cerah, membal elastis, bayangan solid)
-   [B] Clean Modern SaaS (Elegan, minimalis, profesional, tipografi presisi ala Apple/Stripe)
-   [C] Bold Broadcast & Sports (Tajam, dinamis, miring agresif, aksen kecepatan ala Nike/ESPN)
-   [D] High-Tech & Dynamic (Modern data HUD, perspektif kinetik, partikel geometri)"
-
-3. Begitu user menjawab konsep dan memilih gayanya, LANGSUNG hasilkan SATU MASTER PROMPT EKSEKUSI LENGKAP di dalam blok Markdown (\`\`\`markdown ... \`\`\`) yang siap di-copy ke ChatGPT, Claude, atau Gemini.
-
-==================================================
-STANDAR MASTER PROMPT EKSEKUSI KODE YANG DIHASILKAN
-==================================================
-Prompt eksekusi yang kamu buatkan untuk user WAJIB memuat kontrak kode baku Remotion v1.0.6 berikut:
-1. HANYA impor dari 'react' dan 'remotion' (AbsoluteFill, useCurrentFrame, useVideoConfig, interpolate, spring).
-2. Dimensi WAJIB via hook: \`const { width, height, fps, durationInFrames } = useVideoConfig();\` (DILARANG destructuring width/height dari props).
-3. Scaling wajib: \`baseScale = Math.min(width, height) / 1080\` diterapkan ke semua ukuran font, stroke, dan padding.
-4. PURE VECTOR: Seluruh ornamen dan ilustrasi digambar dengan elemen SVG murni (<svg>, <path>, <rect>, <circle>). Dilarang aset eksternal.
-5. NEVER-FREEZE: Layar tidak boleh membeku diam. Wajib ada ambient micro-motion halus hingga akhir.
-6. KONTRAK EKSPOR WAJIB DI AKHIR FILE:
-   export default VibeGraphic;
-   export const DynamicMotion = VibeGraphic;
-   export type DynamicMotionProps = VibeGraphicProps;`
+import { buildMasterPrompt } from './constants/prompts'
+import { ANIMATION_TYPES, THREE_RUNTIME_READY, isAnimationType } from '../../shared/animationTechnique'
+import type { AnimationType } from '../../shared/animationTechnique'
+export { MASTER_PROMPT_TEMPLATE } from './constants/prompts'
 
 // ──────────────────────────────────────────────────────────────────────────────
 // TSX Default Props Parser — extracts default prop values from component
@@ -178,9 +153,194 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: st
   ])
 }
 
+/**
+ * Auto-Sanitize Unterminated Strings:
+ * Mendeteksi string biasa ("..." atau '...') yang terputus oleh newline tanpa escape (\).
+ * Otomatis mengubahnya menjadi template literal dengan backticks (`) atau menyambungkan kembali barisnya
+ * agar tidak menimbulkan Remotion SyntaxError: Unterminated string constant.
+ */
+export function sanitizeUnterminatedStrings(code: string): string {
+  let result = ''
+  let i = 0
+  const n = code.length
+
+  while (i < n) {
+    const ch = code[i]
+    const next = i + 1 < n ? code[i + 1] : ''
+
+    // 1. Single-line comment: // ...
+    if (ch === '/' && next === '/') {
+      const lineEnd = code.indexOf('\n', i)
+      if (lineEnd === -1) {
+        result += code.slice(i)
+        break
+      } else {
+        result += code.slice(i, lineEnd + 1)
+        i = lineEnd + 1
+        continue
+      }
+    }
+
+    // 2. Multi-line comment: /* ... */
+    if (ch === '/' && next === '*') {
+      const commentEnd = code.indexOf('*/', i + 2)
+      if (commentEnd === -1) {
+        result += code.slice(i)
+        break
+      } else {
+        result += code.slice(i, commentEnd + 2)
+        i = commentEnd + 2
+        continue
+      }
+    }
+
+    // 3. Template literal: `...`
+    if (ch === '`') {
+      let tplContent = '`'
+      i++
+      while (i < n) {
+        if (code[i] === '\\') {
+          tplContent += code[i] + (i + 1 < n ? code[i + 1] : '')
+          i += 2
+        } else if (code[i] === '$' && i + 1 < n && code[i + 1] === '{') {
+          tplContent += '${'
+          i += 2
+          let braceDepth = 1
+          while (i < n && braceDepth > 0) {
+            if (code[i] === '{') braceDepth++
+            else if (code[i] === '}') braceDepth--
+            tplContent += code[i]
+            i++
+          }
+        } else if (code[i] === '`') {
+          tplContent += '`'
+          i++
+          break
+        } else {
+          tplContent += code[i]
+          i++
+        }
+      }
+      result += tplContent
+      continue
+    }
+
+    // 4. Regular string literals: "..." or '...'
+    if (ch === '"' || ch === "'") {
+      const quote = ch
+      i++ // Skip opening quote
+
+      let strContent = ''
+      let hasUnescapedNewline = false
+      let foundClosingQuote = false
+
+      while (i < n) {
+        const c = code[i]
+
+        // Escaped character (including escaped newline '\ \n')
+        if (c === '\\') {
+          if (i + 1 < n && (code[i + 1] === '\n' || code[i + 1] === '\r')) {
+            if (code[i + 1] === '\r' && i + 2 < n && code[i + 2] === '\n') {
+              strContent += '\\\r\n'
+              i += 3
+            } else {
+              strContent += '\\' + code[i + 1]
+              i += 2
+            }
+          } else {
+            strContent += '\\' + (i + 1 < n ? code[i + 1] : '')
+            i += 2
+          }
+          continue
+        }
+
+        // Matching closing quote
+        if (c === quote) {
+          foundClosingQuote = true
+          i++
+          break
+        }
+
+        // Unescaped newline
+        if (c === '\n' || c === '\r') {
+          hasUnescapedNewline = true
+
+          // Check lookahead: is this string abandoned because the next line starts a new statement / property?
+          const nextNL = c === '\r' && i + 1 < n && code[i + 1] === '\n' ? i + 2 : i + 1
+          const restAfterNL = code.slice(nextNL)
+          const nextLineTrimmed = restAfterNL.split('\n')[0].trim()
+
+          const isNextStatementBoundary =
+            /^(?:const\s|let\s|var\s|function\s|export\s|import\s|return\s|[a-zA-Z_$][a-zA-Z0-9_$]*\s*:|<\/|[}\])])/.test(
+              nextLineTrimmed
+            )
+
+          // Count unescaped occurrences of quote in nextLineTrimmed
+          const cleanNextLine = nextLineTrimmed.replace(new RegExp('\\\\' + quote, 'g'), '')
+          const quoteCount = cleanNextLine.split(quote).length - 1
+
+          // If next line starts a new statement / property and has balanced (even) quotes,
+          // the current line was an abandoned unclosed string literal: close it here.
+          if (isNextStatementBoundary && quoteCount % 2 === 0) {
+            foundClosingQuote = true
+            break
+          }
+
+          strContent += c
+          i++
+          continue
+        }
+
+        strContent += c
+        i++
+      }
+
+      if (hasUnescapedNewline) {
+        // If the string was closed before the newline (abandoned on previous line),
+        // keep original quote delimiter and close it cleanly
+        if (strContent.indexOf('\n') === -1 && strContent.indexOf('\r') === -1) {
+          result += quote + strContent + quote
+        } else {
+          // Ubah string terputus menjadi template literal dengan backticks (`)
+          // Escape backtick di dalam string agar valid
+          const escapedContent = strContent.replace(/\\?`/g, '\\`')
+          result += '`' + escapedContent + '`'
+        }
+      } else {
+        result += quote + strContent + (foundClosingQuote ? quote : quote)
+      }
+      continue
+    }
+
+    // 5. Normal characters
+    result += ch
+    i++
+  }
+
+  return result
+}
+
+/**
+ * Auto-Sanitize JSX Backtick Attributes (Zero-Panic Self-Healing):
+ * Mendeteksi atribut JSX/SVG yang menggunakan template literal backtick tanpa kurung kurawal,
+ * misalnya: <path d=`...` />, points=`...`, style=`...`, transform=`...`.
+ * Remotion compiler / esbuild akan mengalami fatal SyntaxError jika atribut JSX menggunakan backtick tanpa kurung kurawal {`...`}.
+ * Sanitizer ini secara otomatis mengubah attr=`...` menjadi attr={`...`},
+ * termasuk menangani string multiline pada atribut SVG/JSX (d=, points=, style=, dll).
+ */
+export function sanitizeJsxBacktickAttributes(code: string): string {
+  // Regex fixer: detects JSX attributes using template literals without curly braces:
+  // Pola: /(\b[a-zA-Z0-9_-]+)=\`([\s\S]*?)\`/g -> $1={`$2`}
+  // Guarded against JS variable declarations (const/let/var/return/case) and property access (obj.prop)
+  const regex = /(?<!\b(?:const|let|var|return|case)\s+)(?<![.\w])(\b[a-zA-Z0-9_-]+)\s*=\s*`((?:\\`|[^`])*)`/g
+  return code.replace(regex, '$1={`$2`}')
+}
+
 // Clean and strip markdown code fences and extraneous text from AI generated code
 export function cleanAndStripMarkdownCode(raw: string): string {
   let cleaned = (raw || '').trim()
+
+  // A. Pembersih Markdown: Hapus pembungkus markdown secara otomatis
   const fenceMatch = cleaned.match(/```(?:tsx|typescript|jsx|javascript)?\s*([\s\S]*?)```/i)
   if (fenceMatch && fenceMatch[1]) {
     cleaned = fenceMatch[1].trim()
@@ -189,11 +349,28 @@ export function cleanAndStripMarkdownCode(raw: string): string {
     cleaned = cleaned.replace(/\s*```+\s*$/i, '')
     cleaned = cleaned.trim()
   }
+
+  // Preserve // @title: metadata if present before import
+  const titleIdx = cleaned.indexOf('// @title:')
   const importIdx = cleaned.indexOf('import ')
-  if (importIdx > 0) {
+  if (titleIdx >= 0 && (importIdx === -1 || titleIdx < importIdx)) {
+    cleaned = cleaned.slice(titleIdx).trim()
+  } else if (importIdx > 0) {
     cleaned = cleaned.slice(importIdx).trim()
   }
   cleaned = cleaned.replace(/```+\s*$/g, '').trim()
+
+  // Auto-Sanitize Unterminated String Constants (v1.0.7 UX enhancement)
+  cleaned = sanitizeUnterminatedStrings(cleaned)
+
+  // Auto-Sanitize JSX Backtick Attributes (v1.0.8 Zero-Panic Self-Healing)
+  cleaned = sanitizeJsxBacktickAttributes(cleaned)
+
+  // B. Auto-Sanitizer Easing Halusinasi (v1.0.7):
+  cleaned = cleaned.replace(/Easing\.backIn\((.*?)\)/g, 'Easing.in(Easing.back($1))')
+  cleaned = cleaned.replace(/Easing\.backOut\((.*?)\)/g, 'Easing.out(Easing.back($1))')
+  cleaned = cleaned.replace(/Easing\.backInOut\((.*?)\)/g, 'Easing.inOut(Easing.back($1))')
+
   return cleaned
 }
 
@@ -212,6 +389,8 @@ interface ErrorBoundaryState {
 }
 
 export class RemotionErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  static contextType = UiLanguageContext
+  declare context: React.ContextType<typeof UiLanguageContext>
   constructor(props: ErrorBoundaryProps) {
     super(props)
     this.state = { hasError: false, error: null }
@@ -236,33 +415,27 @@ export class RemotionErrorBoundary extends React.Component<ErrorBoundaryProps, E
   }
 
   render(): React.ReactNode {
+    const { t } = this.context
     if (this.state.hasError && this.state.error) {
       return (
         <div className="remotion-error-boundary-box">
-          <div className="error-badge">⚠️ TSX RUNTIME EXCEPTION</div>
+          <div className="error-badge">{t("⚠️ TSX RUNTIME EXCEPTION")}</div>
           <p className="error-msg">{this.state.error.message}</p>
-          <p className="error-subtext">
-            Terjadi runtime error pada komponen animasi. Silakan periksa sintaks kode TSX Anda atau
-            klik Reset untuk memuat kembali template standar.
-          </p>
+          <p className="error-subtext"> {t("Terjadi runtime error pada komponen animasi. Silakan periksa sintaks kode TSX Anda atau klik Reset untuk memuat kembali template standar.")} </p>
           <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
             <button
               type="button"
               className="btn-error-retry"
               onClick={this.handleRetry}
               disabled={this.props.isHealing}
-            >
-              🔄 Coba Muat Ulang
-            </button>
+            > {t("🔄 Coba Muat Ulang")} </button>
             {this.props.onUseFallback && (
               <button
                 type="button"
                 className="btn-error-fallback"
                 onClick={this.props.onUseFallback}
                 disabled={this.props.isHealing}
-              >
-                ⚡ Reset Template Standar
-              </button>
+              > {t("⚡ Reset Template Standar")} </button>
             )}
           </div>
         </div>
@@ -280,6 +453,7 @@ function getElectronAPI(): typeof window.electronAPI | undefined {
 
 // Persistent Storage Configuration for Video Settings & Export Directory
 interface SavedVideoSettings {
+  usesGenerationText?: boolean
   aspectRatio?: AspectRatioType
   resolutionQuality?: ResolutionQualityType
   durationSeconds?: DurationSecondsType
@@ -301,9 +475,9 @@ interface SavedVideoSettings {
 }
 
 export interface ParametricValues {
-  titleText: string
-  subtitleText: string
-  badgeText: string
+  titleText?: string
+  subtitleText?: string
+  badgeText?: string
   accentColor: string
   secondaryColor: string
   backgroundColor: string
@@ -326,17 +500,6 @@ const loadSavedVideoSettings = (): Partial<SavedVideoSettings> => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_VIDEO_SETTINGS)
     if (raw) {
-      const upper = raw.toUpperCase()
-      // Automatic purge of legacy countdown or VERSUS templates
-      if (
-        upper.includes('VERSUS') ||
-        upper.includes('COUNTDOWN') ||
-        upper.includes('CHAMPIONSHIP')
-      ) {
-        console.warn('[App] Legacy template cache detected in localStorage, purging and resetting to Motion Suite Pro branding...')
-        localStorage.removeItem(STORAGE_KEY_VIDEO_SETTINGS)
-        return {}
-      }
       return JSON.parse(raw)
     }
   } catch (e) {
@@ -387,11 +550,13 @@ const playRenderFinishedChime = (): void => {
 }
 
 export function App(): React.JSX.Element {
+  const { language, setLanguage, t, message } = useUiLanguage()
+  const [showLicenseSettings, setShowLicenseSettings] = useState(false)
   // Active Navigation Tab State (4 Tabs Architecture)
   const [activeTab, setActiveTab] = useState<'editor' | 'preview' | 'template' | 'autocoder'>('preview')
 
   // Dynamic App Version from package.json via app.getVersion()
-  const [appVersion, setAppVersion] = useState<string>('PRO v1.0.5')
+  const [appVersion, setAppVersion] = useState<string>('PRO v1.0.7')
 
   useEffect(() => {
     let isMounted = true
@@ -454,18 +619,24 @@ export function App(): React.JSX.Element {
   const durationInFrames = durationSeconds * fps
 
   // Parametric Control Panel States (Quick Parameter Tweaker & Visual Inspector)
-  const [paramTitleText, setParamTitleText] = useState<string>(() => {
+  const [paramTitleText, setParamTitleText] = useState<string | undefined>(() => {
     const saved = loadSavedVideoSettings()
-    return saved.titleText || 'MOTION SUITE PRO'
+    return saved.usesGenerationText ? saved.titleText : (saved.titleText ?? 'MOTION SUITE PRO')
   })
-  const [paramSubtitleText, setParamSubtitleText] = useState<string>(() => {
+  const [paramSubtitleText, setParamSubtitleText] = useState<string | undefined>(() => {
     const saved = loadSavedVideoSettings()
-    return saved.subtitleText || 'AI Creative Motion Graphics Workstation'
+    return saved.usesGenerationText ? saved.subtitleText : (saved.subtitleText ?? 'AI Creative Motion Graphics Workstation')
   })
-  const [paramBadgeText, setParamBadgeText] = useState<string>(() => {
+  const [paramBadgeText, setParamBadgeText] = useState<string | undefined>(() => {
     const saved = loadSavedVideoSettings()
-    return saved.badgeText || 'OFFICIAL RELEASE v1.0'
+    return saved.usesGenerationText ? saved.badgeText : (saved.badgeText ?? 'OFFICIAL RELEASE v1.0')
   })
+  // Legacy sessions keep their text; only a successful NEW Generate owns new text.
+  const [usesGenerationText, setUsesGenerationText] = useState<boolean>(() =>
+    loadSavedVideoSettings().usesGenerationText === true
+  )
+  const [reuseTextOnGenerate, setReuseTextOnGenerate] = useState<boolean>(false)
+
   const [paramAccentColor, setParamAccentColor] = useState<string>(() => {
     const saved = loadSavedVideoSettings()
     return saved.accentColor || '#00f2fe'
@@ -504,9 +675,9 @@ export function App(): React.JSX.Element {
   const [initialParamSnapshot, setInitialParamSnapshot] = useState<ParametricValues>(() => {
     const saved = loadSavedVideoSettings()
     return {
-      titleText: saved.titleText || 'MOTION SUITE PRO',
-      subtitleText: saved.subtitleText || 'AI Creative Motion Graphics Workstation',
-      badgeText: saved.badgeText || 'OFFICIAL RELEASE v1.0',
+      titleText: saved.usesGenerationText ? saved.titleText : (saved.titleText ?? 'MOTION SUITE PRO'),
+      subtitleText: saved.usesGenerationText ? saved.subtitleText : (saved.subtitleText ?? 'AI Creative Motion Graphics Workstation'),
+      badgeText: saved.usesGenerationText ? saved.badgeText : (saved.badgeText ?? 'OFFICIAL RELEASE v1.0'),
       accentColor: saved.accentColor || '#00f2fe',
       secondaryColor: saved.secondaryColor || '#7928ca',
       backgroundColor: saved.backgroundColor || '#0a0d14',
@@ -603,7 +774,8 @@ export function App(): React.JSX.Element {
     if (parsed.secondaryColor !== undefined) setParamSecondaryColor(parsed.secondaryColor)
     if (parsed.backgroundColor !== undefined) setParamBackgroundColor(parsed.backgroundColor)
     if (parsed.isTransparent !== undefined) {
-      setIsTransparent(parsed.isTransparent)
+      // Preserve active transparent UI toggle: do not let AI default 'false' silently reset user's transparent mode
+      setIsTransparent((current) => (current && !parsed.isTransparent ? current : parsed.isTransparent!))
       if (parsed.isTransparent && exportFormat === 'mp4') {
         setExportFormat('prores4444')
       }
@@ -696,7 +868,7 @@ export function App(): React.JSX.Element {
   type UpdatePhase = 'idle' | 'available' | 'downloading' | 'downloaded'
   const [updatePhase, setUpdatePhase] = useState<UpdatePhase>('idle')
   const [updateVersion, setUpdateVersion] = useState<string>('')
-  const [updateReleaseNotes, setUpdateReleaseNotes] = useState<string>('')
+  const [updateReleaseNotes, setUpdateReleaseNotes] = useState<{ version: string; notes: unknown } | null>(null)
   const [updatePercent, setUpdatePercent] = useState<number>(0)
   const [updateErrorMsg, setUpdateErrorMsg] = useState<string>('')
   const [isUpdateDismissed, setIsUpdateDismissed] = useState<boolean>(false)
@@ -766,24 +938,21 @@ export function App(): React.JSX.Element {
 
 
   // ── Auto-Updater: Subscribe to IPC events from main process ───────────────
+  const isMacPlatform =
+    (window as any).api?.platform === 'darwin' ||
+    (window as any).electronAPI?.platform === 'darwin' ||
+    (window as any).electron?.process?.platform === 'darwin' ||
+    (typeof navigator !== 'undefined' && /macintosh|mac os x/i.test(navigator.userAgent))
+
   useEffect(() => {
+    if (isMacPlatform) return
     const api = (window as any).api || (window as any).electronAPI
     if (!api?.onUpdateAvailable) return
 
     const unsubAvailable = api.onUpdateAvailable((info: any) => {
-      if (info?.version) {
-        setUpdateVersion(info.version)
-      }
-      let notes = ''
-      if (Array.isArray(info?.releaseNotes)) {
-        notes = info.releaseNotes
-          .map((n: any) => (typeof n === 'string' ? n : n?.note || ''))
-          .filter(Boolean)
-          .join('\n')
-      } else if (typeof info?.releaseNotes === 'string') {
-        notes = info.releaseNotes
-      }
-      setUpdateReleaseNotes(notes || 'Pembaruan stabilitas dan peningkatan performa sistem.')
+      const version = normalizeUpdateVersion(info?.version)
+      setUpdateVersion(version)
+      setUpdateReleaseNotes({ version, notes: info?.releaseNotes })
       setUpdatePhase('available')
       setUpdateErrorMsg('')
       setIsUpdateDismissed(false)
@@ -795,7 +964,7 @@ export function App(): React.JSX.Element {
     })
     const unsubDownloaded = api.onUpdateDownloaded?.((info?: { version: string }) => {
       if (info?.version) {
-        setUpdateVersion(info.version)
+        setUpdateVersion(normalizeUpdateVersion(info.version))
       }
       setUpdatePhase('downloaded')
       setUpdatePercent(100)
@@ -812,9 +981,10 @@ export function App(): React.JSX.Element {
       unsubDownloaded?.()
       unsubError?.()
     }
-  }, [])
+  }, [isMacPlatform])
 
   const handleStartUpdateDownload = async (): Promise<void> => {
+    if (isMacPlatform) return
     const api = (window as any).api || (window as any).electronAPI
     setUpdatePhase('downloading')
     setUpdatePercent(0)
@@ -842,6 +1012,7 @@ export function App(): React.JSX.Element {
   }
 
   const handleRestartAndInstall = (): void => {
+    if (isMacPlatform) return
     const api = (window as any).api || (window as any).electronAPI
     if (api?.restartAndInstall) {
       api.restartAndInstall()
@@ -854,11 +1025,6 @@ export function App(): React.JSX.Element {
 
   const GOOGLE_DRIVE_MAC_URL =
     'https://drive.google.com/drive/folders/1hWySL1-pSUiXX6VJbwi1UAREi_Jfo_5e?usp=sharing'
-
-  const isMacPlatform =
-    (window as any).api?.platform === 'darwin' ||
-    (window as any).electron?.process?.platform === 'darwin' ||
-    (typeof navigator !== 'undefined' && /macintosh|mac os x/i.test(navigator.userAgent))
 
   const handleOpenMacDownload = (): void => {
     const api = (window as any).api || (window as any).electronAPI
@@ -880,140 +1046,111 @@ export function App(): React.JSX.Element {
   const [isFullscreenPreview, setIsFullscreenPreview] = useState<boolean>(false)
   const iframeRef = React.useRef<HTMLIFrameElement | null>(null)
 
-  // Clean Remotion Studio developer menu bars & raw render buttons inside the preview iframe
-  const injectStudioCleanStyles = React.useCallback((iframeElement?: HTMLIFrameElement | null): void => {
-    const iframe = iframeElement || iframeRef.current
-    if (!iframe) return
-    try {
-      const doc = iframe.contentDocument || iframe.contentWindow?.document
-      if (!doc || !doc.head) return
-
-      let styleTag = doc.getElementById('motion-studio-clean-theme') as HTMLStyleElement | null
-      if (!styleTag) {
-        styleTag = doc.createElement('style')
-        styleTag.id = 'motion-studio-clean-theme'
-        doc.head.appendChild(styleTag)
-      }
-
-      styleTag.textContent = `
-        /* Hide Remotion Studio raw developer header and menu bar */
-        header,
-        nav,
-        [role="banner"],
-        [data-testid="top-bar"],
-        [data-testid="menu-bar"],
-        [data-testid="header"],
-        [data-testid="breadcrumbs"],
-        div[role="menubar"],
-        div[class*="TopBar"],
-        div[class*="MenuBar"],
-        div[class*="HeaderBar"],
-        div[class*="top-bar"],
-        div[class*="menu-bar"],
-        div[class*="Breadcrumbs"],
-        div[class*="breadcrumbs"] {
-          display: none !important;
-          height: 0 !important;
-          min-height: 0 !important;
-          max-height: 0 !important;
-          padding: 0 !important;
-          margin: 0 !important;
-          border: none !important;
-          opacity: 0 !important;
-          visibility: hidden !important;
-          pointer-events: none !important;
-          overflow: hidden !important;
-        }
-
-        /* Hide Remotion Studio top developer menu and internal render button */
-        [data-testid="render-button"],
-        [data-testid="render-button-container"],
-        button[data-testid="render-button"],
-        button[title*="Render"],
-        button[aria-label*="Render"],
-        button[title*="render"],
-        button[aria-label*="render"],
-        div[class*="RenderButton"],
-        div[data-testid="render-modal-opener"],
-        a[href*="/render"] {
-          display: none !important;
-          visibility: hidden !important;
-          pointer-events: none !important;
-          width: 0 !important;
-          height: 0 !important;
-        }
-
-        html, body {
-          overflow: hidden !important;
-          background-color: #000000 !important;
-        }
-      `
-    } catch (err) {
-      console.warn('[StudioPreview] Clean theme injection note:', err)
-    }
-  }, [])
-
-  const handleIframeElementLoad = (e: React.SyntheticEvent<HTMLIFrameElement>): void => {
-    const el = e.currentTarget
-    injectStudioCleanStyles(el)
-
-    // Safely attempt to listen for runtime error events inside iframe if window is accessible
-    try {
-      const win = el.contentWindow
-      if (win) {
-        win.addEventListener('error', (event) => {
-          if (event && event.message) {
-            console.warn('[Studio Iframe Error Event]:', event.message)
-            setCapturedError(String(event.message))
-          }
-        })
-        win.addEventListener('unhandledrejection', (event) => {
-          if (event && event.reason) {
-            const reasonStr = event.reason?.message || String(event.reason)
-            console.warn('[Studio Iframe Unhandled Rejection]:', reasonStr)
-            setCapturedError(reasonStr)
-          }
-        })
-      }
-    } catch {
-      // Cross-origin access safely protected
-    }
-
-    let count = 0
-    const timer = setInterval(() => {
-      count++
-      injectStudioCleanStyles(el)
-      try {
-        const doc = el.contentDocument || el.contentWindow?.document
-        if (doc) {
-          const playBtn = doc.querySelector<HTMLButtonElement>(
-            'button[aria-label="Play"], button[title="Play"], button[data-testid="play-pause-button"]'
-          )
-          if (playBtn) {
-            playBtn.click()
-          }
-        }
-      } catch {
-        // cross-origin protection safely suppressed
-      }
-      if (count >= 20) clearInterval(timer)
-    }, 300)
+  // Refresh iframe preview on code update
+  const remountPlayer = (): void => {
+    setIframeKey((prev) => prev + 1)
   }
 
-  // Listen for Remotion Studio stderr / runtime errors via IPC Backend (Zero Cross-Origin Risk)
+  // Clean Remotion Studio developer menu bars & raw render buttons inside preview iframe(s)
+  const injectStudioCleanStyles = React.useCallback(
+    (iframeElement?: HTMLIFrameElement | null): void => {
+      const candidates: HTMLIFrameElement[] = []
+      if (iframeElement) candidates.push(iframeElement)
+      if (iframeRef.current && !candidates.includes(iframeRef.current)) candidates.push(iframeRef.current)
+      const queried = Array.from(
+        document.querySelectorAll<HTMLIFrameElement>('iframe.studio-iframe, iframe.fullscreen-preview-iframe')
+      )
+      for (const el of queried) {
+        if (!candidates.includes(el)) candidates.push(el)
+      }
+
+      candidates.forEach((iframe) => {
+        try {
+          const doc = iframe.contentDocument || iframe.contentWindow?.document
+          if (!doc || !doc.head) return
+
+          let styleTag = doc.getElementById('motion-studio-clean-theme') as HTMLStyleElement | null
+          if (!styleTag) {
+            styleTag = doc.createElement('style')
+            styleTag.id = 'motion-studio-clean-theme'
+            doc.head.appendChild(styleTag)
+          }
+
+          styleTag.textContent = `
+            /* Hide Remotion Studio raw developer header and menu bar */
+            header,
+            nav,
+            [role="banner"],
+            [data-testid="top-bar"],
+            [data-testid="menu-bar"],
+            [data-testid="header"],
+            [data-testid="breadcrumbs"],
+            div[role="menubar"],
+            div[class*="TopBar"],
+            div[class*="MenuBar"],
+            div[class*="HeaderBar"],
+            div[class*="top-bar"],
+            div[class*="menu-bar"],
+            div[class*="Breadcrumbs"],
+            div[class*="breadcrumbs"] {
+              display: none !important;
+              height: 0 !important;
+              min-height: 0 !important;
+              max-height: 0 !important;
+              padding: 0 !important;
+              margin: 0 !important;
+              border: none !important;
+              opacity: 0 !important;
+              visibility: hidden !important;
+              pointer-events: none !important;
+              overflow: hidden !important;
+            }
+
+            /* Hide Remotion Studio top developer menu and internal render button */
+            [data-testid="render-button"],
+            [data-testid="render-button-container"],
+            button[data-testid="render-button"],
+            button[title*="Render"],
+            button[aria-label*="Render"],
+            button[title*="render"],
+            button[aria-label*="render"],
+            div[class*="RenderButton"],
+            div[data-testid="render-modal-opener"],
+            a[href*="/render"] {
+              display: none !important;
+              visibility: hidden !important;
+              pointer-events: none !important;
+              width: 0 !important;
+              height: 0 !important;
+            }
+
+            /* Background transparan untuk iframe agar tembus ke motif papan catur host */
+            html,
+            body,
+            #root,
+            [data-testid="player-container"],
+            [data-remotion-player],
+            .__remotion-player {
+              background: transparent !important;
+              background-color: transparent !important;
+            }
+          `
+        } catch (err) {
+          console.warn('[StudioPreview] Clean theme injection note:', err)
+        }
+      })
+    },
+    []
+  )
+
+  // Synchronize clean studio styles when code is updated or iframe reloads
   useEffect(() => {
-    const api = getElectronAPI()
-    if (!api?.onStudioError) return
-    const unsubscribe = api.onStudioError((err: string) => {
-      if (!err || !err.trim()) return
-      const cleanErr = err.trim()
-      console.warn('[App] Remotion Studio runtime error captured via IPC:', cleanErr)
-      setCapturedError(cleanErr)
-    })
-    return (): void => {
-      unsubscribe()
-    }
-  }, [])
+    injectStudioCleanStyles()
+    const t = setTimeout(() => {
+      injectStudioCleanStyles()
+    }, 300)
+    return (): void => clearTimeout(t)
+  }, [iframeKey, manualCode, injectStudioCleanStyles])
 
   // Silent auto-start Motion Engine background child process on mount
   useEffect(() => {
@@ -1041,20 +1178,6 @@ export function App(): React.JSX.Element {
       isMounted = false
     }
   }, [studioPort])
-
-  // Continuously ensure clean styles are injected while Studio server is active
-  useEffect(() => {
-    if (isStudioRunning) {
-      let count = 0
-      const timer = setInterval(() => {
-        count++
-        injectStudioCleanStyles()
-        if (count >= 15) clearInterval(timer)
-      }, 400)
-      return (): void => clearInterval(timer)
-    }
-    return undefined
-  }, [isStudioRunning, iframeKey, injectStudioCleanStyles])
 
   // Listen for Escape key to exit Fullscreen Preview mode
   useEffect(() => {
@@ -1148,6 +1271,10 @@ export function App(): React.JSX.Element {
 
   // Dynamically detect title and theme styling from TSX code for metadata & export naming
   const detectedTitle = React.useMemo(() => {
+    const titleCommentMatch = manualCode.match(/\/\/\s*@title:\s*(.+)/)
+    if (titleCommentMatch && titleCommentMatch[1] && titleCommentMatch[1].trim()) {
+      return titleCommentMatch[1].trim()
+    }
     const match = manualCode.match(/titleText\s*=\s*['"`]([^'"`]+)['"`]/)
     return match ? match[1] : 'Dynamic Motion'
   }, [manualCode])
@@ -1165,11 +1292,6 @@ export function App(): React.JSX.Element {
     )
     return match ? match[1] : '#080c18'
   }, [manualCode])
-
-  // Refresh iframe preview on code update
-  const remountPlayer = (): void => {
-    setIframeKey((prev) => prev + 1)
-  }
 
   // Hardware License & Feature Gating States
   interface LicenseState {
@@ -1331,30 +1453,98 @@ export function App(): React.JSX.Element {
   // AI Video Concept Prompt & Reference Image states
   const [aiPrompt, setAiPrompt] = useState<string>('')
 
+  // Dynamic Status Bar Title State (v1.0.7)
+  const [statusBarTitle, setStatusBarTitle] = useState<string>('MOTION SUITE PRO')
+  const [lastUserPromptConcept, setLastUserPromptConcept] = useState<string>('')
+
+  // Helper untuk mengekstrak nama konsep prompt pengguna
+  const extractConceptFromPrompt = (prompt: string): string => {
+    if (!prompt || !prompt.trim()) return ''
+    const quoteMatch = prompt.match(/["']([^"']+)["']/)
+    if (quoteMatch && quoteMatch[1].trim()) {
+      return quoteMatch[1].trim()
+    }
+    const firstLine = prompt.split('\n')[0].trim().replace(/^[-*•\d.]+\s*/, '')
+    if (firstLine) {
+      return firstLine.length <= 40 ? firstLine : firstLine.slice(0, 37) + '...'
+    }
+    return prompt.trim().slice(0, 30)
+  }
+
+  // 2. DYNAMIC STATUS BAR TITLE (FOOTER UI)
+  // Hubungkan teks status bar bawah yang saat ini statis ("Title: MOTION SUITE PRO"):
+  // - Parser regex untuk membaca metadata di baris pertama kode: const titleMatch = code.match(/\/\/\s*@title:\s*(.+)/);
+  // - Jika ditemukan tag @title, perbarui state judul di status bar bawah dengan teks tersebut.
+  // - Jika tidak ditemukan tag @title, gunakan nama konsep prompt terakhir dari pengguna sebagai fallback.
+  useEffect(() => {
+    const code = manualCode || ''
+    const titleMatch = code.match(/\/\/\s*@title:\s*(.+)/)
+    if (titleMatch && titleMatch[1] && titleMatch[1].trim()) {
+      setStatusBarTitle(titleMatch[1].trim())
+    } else {
+      const fallbackConcept = lastUserPromptConcept || extractConceptFromPrompt(aiPrompt)
+      if (fallbackConcept) {
+        setStatusBarTitle(fallbackConcept)
+      } else if (detectedTitle && detectedTitle !== 'Dynamic Motion' && detectedTitle !== 'CRITICAL WARNING') {
+        setStatusBarTitle(detectedTitle)
+      } else {
+        setStatusBarTitle('MOTION SUITE PRO')
+      }
+    }
+  }, [manualCode, lastUserPromptConcept, aiPrompt, detectedTitle])
+
   const currentTitle = React.useMemo(() => {
+    const titleMatch = manualCode.match(/\/\/\s*@title:\s*(.+)/)
+    if (titleMatch && titleMatch[1] && titleMatch[1].trim()) {
+      return titleMatch[1].trim()
+    }
     if (detectedTitle && detectedTitle !== 'Dynamic Motion' && detectedTitle !== 'CRITICAL WARNING') {
       return detectedTitle
     }
     if (aiPrompt && aiPrompt.trim()) {
-      const quoteMatch = aiPrompt.match(/["']([^"']+)["']/)
-      if (quoteMatch && quoteMatch[1].trim()) {
-        return quoteMatch[1].trim()
-      }
-      const firstLine = aiPrompt.split('\n')[0].trim().replace(/^[-*•\d.]+\s*/, '')
-      if (firstLine && firstLine.length <= 40) {
-        return firstLine
-      }
+      const concept = extractConceptFromPrompt(aiPrompt)
+      if (concept) return concept
     }
     return detectedTitle || 'Motion-Asset'
-  }, [detectedTitle, aiPrompt])
+  }, [manualCode, detectedTitle, aiPrompt])
   const [refImageBase64, setRefImageBase64] = useState<string | null>(null)
   const [refImageName, setRefImageName] = useState<string | null>(null)
   const [refImageMimeType, setRefImageMimeType] = useState<string | null>(null)
   const [isDraggingRef, setIsDraggingRef] = useState<boolean>(false)
   const refFileInputRef = React.useRef<HTMLInputElement | null>(null)
   const [isAiGenerating, setIsAiGenerating] = useState<boolean>(false)
+  const [generationMode, setGenerationMode] = useState<'fast' | 'quality'>('fast')
+  const [animationType, setAnimationType] = useState<AnimationType>(() => {
+    try {
+      const saved = localStorage.getItem('ms_animation_type')
+      return isAnimationType(saved) ? saved : 'auto'
+    } catch { return 'auto' }
+  })
+  useEffect(() => {
+    try { localStorage.setItem('ms_animation_type', animationType) } catch { /* Storage may be unavailable. */ }
+  }, [animationType])
+  const [precisionSvgStrokes, setPrecisionSvgStrokes] = useState(false)
+  const [reusePaletteOnGenerate, setReusePaletteOnGenerate] = useState(false)
+  const [qualityStage, setQualityStage] = useState<'Planning' | 'Building Animation' | 'Validating' | 'Ready' | null>(null)
+  const [generationStopping, setGenerationStopping] = useState(false)
+  const generateBusyRef = useRef(false)
+  const generationCancelledRef = useRef(false)
+  const generationRequestRef = useRef<string | null>(null)
+  useEffect(() => getElectronAPI()?.onGenerationProgress?.((event) => {
+    if (event.requestId === generationRequestRef.current && event.stage !== 'Ready') {
+      setQualityStage(event.stage)
+      setAiGenStatus({ type: 'info', message: event.event === 'recovering'
+        ? 'Memeriksa dan memperbaiki sintaks animasi...'
+        : event.event === 'fallback'
+        ? 'Mengalami kendala pada layanan AI. Mencoba model cadangan...'
+        : event.stage + '...', title: event.model ? event.stage + ' - ' + event.model : undefined })
+    }
+  }), [])
   const [aiGenStatus, setAiGenStatus] = useState<{
     type: 'success' | 'error' | 'info'
+    title?: string
+    failure?: GenerationFailure
+    diagnostics?: string
     message: string
   } | null>(null)
 
@@ -1405,6 +1595,79 @@ export function App(): React.JSX.Element {
     setTimeout(() => setApiKeySaveStatus(''), 3000)
     setIsApiKeyOpen(false)
   }
+
+  // Surface preview errors; AI repair requires the manual Auto-Fix action.
+  const handleIncomingStudioError = (rawErr: string): void => {
+    const cleanErr = (rawErr || '').trim()
+    if (cleanErr) setCapturedError(cleanErr)
+  }
+
+  const handleIframeElementLoad = (e: React.SyntheticEvent<HTMLIFrameElement>): void => {
+    const el = e.currentTarget
+    injectStudioCleanStyles(el)
+
+    // Quick verification passes to ensure clean style is firmly attached in head after initial render
+    setTimeout(() => {
+      injectStudioCleanStyles(el)
+    }, 150)
+    setTimeout(() => {
+      injectStudioCleanStyles(el)
+    }, 500)
+    setTimeout(() => {
+      injectStudioCleanStyles(el)
+    }, 1200)
+
+    // Safely attempt to listen for runtime error events inside iframe if window is accessible
+    try {
+      const win = el.contentWindow
+      if (win) {
+        win.addEventListener('error', (event) => {
+          if (event && event.message) {
+            console.warn('[Studio Iframe Error Event]:', event.message)
+            handleIncomingStudioError(String(event.message))
+          }
+        })
+        win.addEventListener('unhandledrejection', (event) => {
+          if (event && event.reason) {
+            const reasonStr = event.reason?.message || String(event.reason)
+            console.warn('[Studio Iframe Unhandled Rejection]:', reasonStr)
+            handleIncomingStudioError(reasonStr)
+          }
+        })
+      }
+    } catch {
+      // Cross-origin access safely protected
+    }
+
+    try {
+      const doc = el.contentDocument || el.contentWindow?.document
+      if (doc) {
+        const playBtn = doc.querySelector<HTMLButtonElement>(
+          'button[aria-label="Play"], button[title="Play"], button[data-testid="play-pause-button"]'
+        )
+        if (playBtn) {
+          playBtn.click()
+        }
+      }
+    } catch {
+      // cross-origin protection safely suppressed
+    }
+  }
+
+  // Listen for Remotion Studio stderr / runtime errors via IPC Backend (Zero Cross-Origin Risk)
+  useEffect(() => {
+    const api = getElectronAPI()
+    if (!api?.onStudioError) return
+    const unsubscribe = api.onStudioError((err: string) => {
+      if (!err || !err.trim()) return
+      const cleanErr = err.trim()
+      console.warn('[App] Remotion Studio runtime error captured via IPC:', cleanErr)
+      handleIncomingStudioError(cleanErr)
+    })
+    return (): void => {
+      unsubscribe()
+    }
+  }, [])
 
   const processRefImageFile = (file: File): void => {
     const isSupported =
@@ -1489,7 +1752,7 @@ export function App(): React.JSX.Element {
   const handleGenerateVideoWithAI = async (overridePrompt?: string): Promise<void> => {
     if (!checkLicenseGate()) return
     const promptToUse = (overridePrompt || aiPrompt).trim()
-    if (isAiGenerating) return
+    if (isAiGenerating || generateBusyRef.current || isRendering) return
     if (!geminiApiKey.trim()) {
       setIsApiKeyOpen(true)
       setAiGenStatus({
@@ -1506,12 +1769,45 @@ export function App(): React.JSX.Element {
       return
     }
 
+    const quality = generationMode === 'quality'
+    const selectedAnimationType = animationType
+    const usePrecisionSvgStrokes = quality && precisionSvgStrokes
+    const reuseCurrentPalette = reusePaletteOnGenerate
+    const existingPalette = { accentColor: paramAccentColor, secondaryColor: paramSecondaryColor, backgroundColor: paramBackgroundColor }
+    const requestId = quality ? crypto.randomUUID() : undefined
+    const reuseCurrentText = reuseTextOnGenerate
+    const existingText = { titleText: paramTitleText, subtitleText: paramSubtitleText, badgeText: paramBadgeText }
+
+    const generationContext = {
+      width,
+      height,
+      fps,
+      durationInFrames,
+      isTransparent,
+      scale: paramScale,
+      offsetX: textOffsetX,
+      offsetY: textOffsetY,
+      speedMultiplier: paramSpeedMultiplier,
+      glowIntensity: paramGlowIntensity
+    }
+
+    const promptConcept = extractConceptFromPrompt(promptToUse)
+    if (promptConcept) {
+      setLastUserPromptConcept(promptConcept)
+    }
+
+    generateBusyRef.current = true
+    generationCancelledRef.current = false
+    generationRequestRef.current = requestId ?? null
+    setQualityStage(quality ? 'Planning' : null)
+    setGenerationStopping(false)
     setIsAiGenerating(true)
     setAiGenStatus({
       type: 'info',
-      message: 'Gemini sedang merancang kode animasi motion graphics...'
+      message: quality ? 'Quality Mode Beta: planning and building with Gemini...' : 'Gemini sedang merancang kode animasi motion graphics...'
     })
 
+    let animationWritten = false
     try {
       const api = getElectronAPI()
       if (!api?.generateVideo) {
@@ -1523,41 +1819,92 @@ export function App(): React.JSX.Element {
         setLastWorkingCode(current)
       }
 
+      if (quality && generationCancelledRef.current) throw new Error('Planning: Stopped. Current animation preserved.')
       const res = await api.generateVideo({
         prompt: promptToUse,
         imageBase64: refImageBase64 || undefined,
         mimeType: refImageMimeType || undefined,
-        apiKey: geminiApiKey.trim()
+        apiKey: geminiApiKey.trim(),
+        generationContext,
+        animationType: selectedAnimationType,
+        ...(quality ? { mode: 'quality' as const, requestId,
+          ...(usePrecisionSvgStrokes ? { precisionSvgStrokes: true } : {}),
+          ...(usePrecisionSvgStrokes && reuseCurrentPalette ? { precisionPalette: existingPalette } : {}),
+          ...(reuseCurrentText ? { qualityText: existingText } : {}) } : {})
       })
 
       if (res.success && res.code) {
+        animationWritten = true
         // ── 1. Parse default props from generated code & sync Visual Tweaker ──
         const parsed = parseTsxDefaultProps(res.code)
-        syncParsedPropsToState(parsed)
+        // Adopt the new code's palette in both modes before preview/export can use
+        // historical runtime colors. Explicit palette reuse takes precedence.
+        // Missing literal defaults retain current values; never invent/reset colors.
+        const nextPalette = {
+          accentColor: reuseCurrentPalette ? existingPalette.accentColor : parsed.accentColor ?? existingPalette.accentColor,
+          secondaryColor: reuseCurrentPalette ? existingPalette.secondaryColor : parsed.secondaryColor ?? existingPalette.secondaryColor,
+          backgroundColor: reuseCurrentPalette ? existingPalette.backgroundColor : parsed.backgroundColor ?? existingPalette.backgroundColor
+        }
+        const nextText = quality && res.textMode === 'none'
+          ? { titleText: '', subtitleText: '', badgeText: '' }
+          : reuseCurrentText ? existingText : {
+          titleText: parsed.titleText,
+          subtitleText: parsed.subtitleText,
+          badgeText: parsed.badgeText
+        }
+        // Own undefined fields replace old config keys; JSON omits them so component
+        // defaults/fallbacks can run. Flush before activating the new preview.
+        const textConfig = await api.updateVideoConfig({ ...nextText, ...nextPalette })
+        if (!textConfig.success) throw new Error('Could not apply the new animation text settings.')
+        setParamTitleText(nextText.titleText)
+        setParamSubtitleText(nextText.subtitleText)
+        setParamBadgeText(nextText.badgeText)
+        setParamAccentColor(nextPalette.accentColor)
+        setParamSecondaryColor(nextPalette.secondaryColor)
+        setParamBackgroundColor(nextPalette.backgroundColor)
+        setUsesGenerationText(true)
+        setInitialParamSnapshot((prev) => ({ ...prev, ...nextText, ...nextPalette }))
         setManualCode(res.code)
         setHasGeneratedContent(true)
         setIframeKey((prev) => prev + 1)
         setCapturedError('')
         setUndoStack([])
+        if (quality) setQualityStage('Ready')
         setAiGenStatus({
           type: 'success',
-          message: 'Motion asset berhasil digenerate dan dimuat ke kanvas preview!'
+          message: 'Motion asset berhasil digenerate dan dimuat ke kanvas preview!' +
+            (res.models?.building ? ' Berhasil dibuat menggunakan ' + res.models.building + '.' : '') +
+            (res.models?.planning ? ' Planning: ' + res.models.planning + '.' : '')
         })
         setTimeout(() => setAiGenStatus(null), 5000)
       } else {
-        setAiGenStatus({
-          type: 'error',
-          message: res.error || 'Gagal menghasilkan video dengan Gemini.'
-        })
+        const failure = res.failure ?? generationFailure('unknown', { stage: quality ? 'Planning' : 'Building Animation' })
+        setAiGenStatus({ type: failure.category === 'cancelled' ? 'info' : 'error',
+          ...generationMessage(failure), failure, diagnostics: res.diagnostics })
       }
-    } catch (err) {
-      console.error('[App] Generate AI error:', err)
-      setAiGenStatus({
-        type: 'error',
-        message: err instanceof Error ? err.message : 'Terjadi kesalahan sistem.'
-      })
+    } catch {
+      const failure = generationFailure(quality && generationCancelledRef.current && !animationWritten ? 'cancelled' : 'unknown',
+        { stage: animationWritten ? 'Ready' : quality ? 'Planning' : 'Building Animation' })
+      console.warn('[App] Generate ended:', failure)
+      setAiGenStatus({ type: failure.category === 'cancelled' ? 'info' : 'error', ...generationMessage(failure), failure })
     } finally {
+      generationRequestRef.current = null
+      generateBusyRef.current = false
+      setGenerationStopping(false)
       setIsAiGenerating(false)
+    }
+  }
+
+  const handleStopQualityGeneration = async (): Promise<void> => {
+    const requestId = generationRequestRef.current
+    if (!requestId || generationStopping) return
+    generationCancelledRef.current = true
+    setGenerationStopping(true)
+    try {
+      const accepted = await getElectronAPI()?.cancelGeneration(requestId)
+      if (!accepted) setGenerationStopping(false)
+    } catch {
+      setGenerationStopping(false)
     }
   }
 
@@ -1684,27 +2031,8 @@ export function App(): React.JSX.Element {
     }
   }, [isChatModalOpen])
 
-  // Load initial TSX code from disk on startup with automatic legacy cache purge
+  // Restore the saved session or load the current TSX without changing user content
   useEffect(() => {
-    // 1. Auto-purge any stale localStorage entries containing "VERSUS" or "TOURNAMENT COUNTDOWN"
-    try {
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i)
-        if (key) {
-          const val = localStorage.getItem(key) || ''
-          if (
-            val.toUpperCase().includes('VERSUS') ||
-            val.toUpperCase().includes('TOURNAMENT COUNTDOWN')
-          ) {
-            console.log(`[Sanitizer] Removing stale legacy cache key: ${key}`)
-            localStorage.removeItem(key)
-          }
-        }
-      }
-    } catch (e) {
-      console.warn('[Sanitizer] Cache cleanup warning:', e)
-    }
-
     const loadInitialCode = async (): Promise<void> => {
       try {
         const api = getElectronAPI()
@@ -1735,24 +2063,6 @@ export function App(): React.JSX.Element {
         if (api?.readCurrentCode) {
           const initial = await api.readCurrentCode()
           if (initial) {
-            // Check if legacy VERSUS code is present on disk and overwrite if so
-            if (
-              initial.toUpperCase().includes('VERSUS') ||
-              initial.toUpperCase().includes('COUNTDOWN')
-            ) {
-              console.warn('[App] Legacy template detected on disk, overwriting with Motion Suite Pro branding...')
-              if (api?.getCurrentMotionCode) {
-                const fresh = await api.getCurrentMotionCode()
-                setManualCode(fresh)
-                setLastWorkingCode(fresh)
-                if (api?.applyManualCode) {
-                  await api.applyManualCode(fresh)
-                }
-                const parsedFresh = parseTsxDefaultProps(fresh)
-                syncParsedPropsToState(parsedFresh)
-                return
-              }
-            }
             setManualCode((prev) => (prev && prev.trim() ? prev : initial))
             setLastWorkingCode(initial)
             const parsedInitial = parseTsxDefaultProps(initial)
@@ -1787,7 +2097,7 @@ export function App(): React.JSX.Element {
             event.data.includes('inputRange') ||
             event.data.includes('Exception')
           ) {
-            setCapturedError(event.data)
+            handleIncomingStudioError(event.data)
           }
         } else if (typeof event.data === 'object') {
           const msg =
@@ -1795,7 +2105,7 @@ export function App(): React.JSX.Element {
             event.data.error?.message ||
             (event.data.type === 'remotion-error' ? event.data.data : null)
           if (msg && typeof msg === 'string') {
-            setCapturedError(msg)
+            handleIncomingStudioError(msg)
           }
         }
       } catch {
@@ -1805,7 +2115,7 @@ export function App(): React.JSX.Element {
 
     const handleWindowError = (event: ErrorEvent): void => {
       if (event.message && !event.message.includes('ResizeObserver')) {
-        setCapturedError(event.message)
+        handleIncomingStudioError(event.message)
       }
     }
 
@@ -1836,6 +2146,7 @@ export function App(): React.JSX.Element {
   useEffect(() => {
     try {
       const settings: SavedVideoSettings = {
+        usesGenerationText,
         aspectRatio,
         resolutionQuality,
         durationSeconds,
@@ -1866,6 +2177,7 @@ export function App(): React.JSX.Element {
       console.warn('[App] Failed to save video settings to localStorage:', e)
     }
   }, [
+    usesGenerationText,
     aspectRatio,
     resolutionQuality,
     durationSeconds,
@@ -1953,8 +2265,11 @@ export function App(): React.JSX.Element {
     }
 
     const cleanCode = cleanAndStripMarkdownCode(trimmed)
+    if (cleanCode !== manualCode) {
+      setManualCode(cleanCode)
+    }
     setIsApplyingCode(true)
-    setCodeEditorStatus('Menulis kode ke VibeGraphic.tsx...')
+    setCodeEditorStatus('Memeriksa dan menyimpan kode TSX...')
 
     try {
       const api = getElectronAPI()
@@ -1969,18 +2284,14 @@ export function App(): React.JSX.Element {
       )
 
       if (res.success) {
-        if (api.applyManualCode) {
-          try {
-            await api.applyManualCode(cleanCode)
-          } catch {
-            // ignore
-          }
-        }
+        // Main returns the exact validated candidate; do not write it a second time.
+        const appliedCode = (res as { code?: string }).code ?? cleanCode
+        setManualCode(appliedCode)
         // Buffer delay to ensure Remotion bundler completes file compile
         await new Promise((r) => setTimeout(r, 300))
         remountPlayer()
         // ── Parse props from applied code and sync Visual Tweaker ──
-        const parsedManual = parseTsxDefaultProps(cleanCode)
+        const parsedManual = parseTsxDefaultProps(appliedCode)
         syncParsedPropsToState(parsedManual)
         setHasGeneratedContent(true)
         setCodeEditorStatus('Kode berhasil disimpan! Kanvas melakukan hot-reload otomatis.')
@@ -2047,7 +2358,8 @@ export function App(): React.JSX.Element {
   // Master Prompt AI: Copies comprehensive Remotion prompt guidelines for ChatGPT / Claude
   const handleCopyMasterPrompt = async (): Promise<void> => {
     try {
-      await navigator.clipboard.writeText(MASTER_PROMPT_TEMPLATE)
+      const prompt = buildMasterPrompt({ width, height, fps, durationInFrames, resolutionLabel: resolutionQuality, animationType })
+      await navigator.clipboard.writeText(prompt)
       setIsPromptCopied(true)
       setCodeEditorStatus('Master Prompt AI berhasil disalin ke clipboard!')
       setTimeout(() => {
@@ -2062,6 +2374,31 @@ export function App(): React.JSX.Element {
     }
   }
 
+  // Helper Sanitizer Nama File Ekspor Video (Windows Safe):
+  // - Ambil statusBarTitle (fallback: "motion_project")
+  // - Bersihkan karakter khusus yang dilarang Windows (\ / : * ? " < > |)
+  // - Ubah spasi menjadi underscore atau strip dan jadikan huruf kecil:
+  //   "Live Vital & Heart Rate Monitor" -> "live_vital_and_heart_rate_monitor.mp4"
+  const sanitizeExportFileName = (title?: string, extension: string = 'mp4'): string => {
+    const base = (title || '').trim() || 'motion_project'
+    const ext = extension.replace(/^\./, '')
+
+    let clean = base
+      .replace(/\s*&\s*/g, '_and_')
+      .replace(/[\\/:*?"<>|]/g, '')
+      .replace(/[\s\t\n\r-]+/g, '_')
+      .replace(/[^a-zA-Z0-9_]/g, '')
+      .replace(/_+/g, '_')
+      .replace(/^_|_$/g, '')
+      .toLowerCase()
+
+    if (!clean) {
+      clean = 'motion_project'
+    }
+
+    return `${clean}.${ext}`
+  }
+
   // Handle Video Rendering Export via physical Remotion CLI (MP4 H.264 or MOV ProRes 4444 Alpha)
   const handleExportVideo = async (): Promise<void> => {
     if (!checkLicenseGate()) return
@@ -2072,6 +2409,10 @@ export function App(): React.JSX.Element {
     setRenderStatus('Mempersiapkan pipeline render...')
     setRenderResult(null)
 
+    const ext = exportFormat === 'mp4' ? 'mp4' : 'mov'
+    const activeProjectTitle = statusBarTitle || currentTitle || 'motion_project'
+    const exportFileName = sanitizeExportFileName(activeProjectTitle, ext)
+
     try {
       const api = getElectronAPI()
       if (!api?.startRender) {
@@ -2081,7 +2422,8 @@ export function App(): React.JSX.Element {
       const res = await api.startRender({
         format: exportFormat,
         isTransparent: exportFormat === 'mp4' ? false : isTransparent,
-        title: paramTitleText || currentTitle || 'Motion-Asset',
+        title: activeProjectTitle,
+        customFileName: exportFileName,
         resolutionLabel: resolutionQuality,
         renderMode,
         customOutputFolder: customOutputFolder || undefined,
@@ -2092,7 +2434,8 @@ export function App(): React.JSX.Element {
         badgeText: paramBadgeText,
         accentColor: paramAccentColor,
         secondaryColor: paramSecondaryColor,
-        backgroundColor: paramBackgroundColor,
+        backgroundColor:
+          exportFormat !== 'mp4' && isTransparent ? 'transparent' : paramBackgroundColor,
         scale: paramScale,
         offsetX: textOffsetX,
         offsetY: textOffsetY,
@@ -2375,6 +2718,23 @@ export function App(): React.JSX.Element {
     }
   }
 
+  const animationTypeControl = (
+      <div className="animation-type-control">
+        <label htmlFor="animation-type">{t("Jenis Animasi")}</label>
+        <select id="animation-type" className="specs-select" value={animationType}
+          aria-describedby="animation-type-help" disabled={isAiGenerating || isRendering}
+          style={{ width: 'auto' }}
+          onChange={(event) => { if (isAnimationType(event.target.value)) setAnimationType(event.target.value) }}>
+          {ANIMATION_TYPES.map(option => <option key={option.value} value={option.value}
+            disabled={option.value === '3d' && !THREE_RUNTIME_READY}>{t(option.label)}</option>)}
+        </select>
+        <small id="animation-type-help" className="form-sublabel">
+          {message(ANIMATION_TYPES.find(option => option.value === animationType)?.help)}
+          {!THREE_RUNTIME_READY && <span> {t("Animasi 3D belum tersedia.")}</span>}
+        </small>
+      </div>
+  )
+
   return (
     <div className="motion-app h-screen max-h-screen overflow-hidden flex flex-col">
       {/* App Top Navigation Bar */}
@@ -2385,9 +2745,7 @@ export function App(): React.JSX.Element {
               <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
             </svg>
           </div>
-          <div className="brand-title">
-            MOTION SUITE PRO
-            <span className="brand-badge">{appVersion.startsWith('PRO') ? appVersion : `PRO ${appVersion}`}</span>
+          <div className="brand-title"> {t("MOTION SUITE PRO")} <span className="brand-badge">{appVersion.startsWith('PRO') ? appVersion : t("PRO {p0}", {p0: appVersion})}</span>
           </div>
         </div>
 
@@ -2398,39 +2756,45 @@ export function App(): React.JSX.Element {
             className={`nav-tab-btn ${activeTab === 'preview' ? 'active' : ''}`}
             onClick={() => setActiveTab('preview')}
           >
-            <span className="tab-icon">🎬</span>
-            <span>Studio Preview</span>
+            <span className="tab-icon"><StudioIcon /></span>
+            <span>{t("Studio Preview")}</span>
           </button>
           <button
             type="button"
             className={`nav-tab-btn ${activeTab === 'editor' ? 'active' : ''}`}
             onClick={() => setActiveTab('editor')}
           >
-            <span className="tab-icon">💻</span>
-            <span>Code Inspector</span>
+            <span className="tab-icon"><StudioIcon /></span>
+            <span>{t("Code Inspector")}</span>
           </button>
         </nav>
 
         <div className="header-meta">
-          {updatePhase !== 'idle' && isUpdateDismissed && (
+          <label className="language-control"><span>{t('Language')}</span>
+            <select aria-label={t('Language')} value={language} onChange={(event) => setLanguage(event.target.value === 'en' ? 'en' : 'id')}>
+              <option value="id">Indonesia</option><option value="en">English</option>
+            </select>
+          </label>
+          {!isMacPlatform && updatePhase !== 'idle' && isUpdateDismissed && (
             <button
               type="button"
               className="header-update-badge"
               onClick={() => setIsUpdateDismissed(false)}
-              title="Buka jendela pembaruan"
+              title={t("Buka jendela pembaruan")}
             >
               <span className="update-badge-dot" />
-              <span>Update v{updateVersion || '1.0.5'}</span>
+              <span>{updateVersion ? `${t("Update v")}${updateVersion}` : t("update.versionUnknown")}</span>
             </button>
           )}
           <div className="meta-status">
             <span className={`status-dot ${isStudioRunning ? 'online' : 'connecting'}`} />
-            <span>{isStudioRunning ? 'Motion Engine Ready' : 'Inisialisasi Engine...'}</span>
+            <span>{isStudioRunning ? t("Motion Engine Ready") : t("Inisialisasi Engine...")}</span>
           </div>
         </div>
       </header>
 
       {/* Main Content Viewport: 4-Tab Workspace */}
+      {activeTab !== 'preview' && animationTypeControl}
       <div className="main-content-viewport flex-1 min-h-0 overflow-hidden flex flex-col">
         {/* TAB 1: TSX Live Editor Full Layout */}
         <div
@@ -2441,13 +2805,11 @@ export function App(): React.JSX.Element {
             <div className="full-editor-toolbar">
               <div className="full-editor-title-group">
                 <div className="editor-title-row">
-                  <span className="full-editor-icon">💻</span>
-                  <h2 className="full-editor-title">Code Inspector (TSX Live Editor)</h2>
-                  <span className="editor-tech-badge">BYOC • Live Engine</span>
+                  <span className="full-editor-icon"><StudioIcon /></span>
+                  <h2 className="full-editor-title">{t("Code Inspector (TSX Live Editor)")}</h2>
+                  <span className="editor-tech-badge">{t("BYOC • Live Engine")}</span>
                 </div>
-                <p className="full-editor-subtitle">
-                  Editor TSX mandiri untuk menulis atau memodifikasi kode animasi secara leluasa. Kompilasi langsung memperbarui canvas visual secara instan.
-                </p>
+                <p className="full-editor-subtitle"> {t("Editor TSX mandiri untuk menulis atau memodifikasi kode animasi secara leluasa. Kompilasi langsung memperbarui canvas visual secara instan.")} </p>
               </div>
 
               <div className="full-editor-actions">
@@ -2455,18 +2817,16 @@ export function App(): React.JSX.Element {
                   type="button"
                   className={`btn-editor-tool ${isPromptCopied ? 'success' : ''}`}
                   onClick={handleCopyMasterPrompt}
-                  title="Salin Panduan Master Prompt ke clipboard"
+                  title={t("Salin Panduan Master Prompt ke clipboard")}
                 >
-                  {isPromptCopied ? '✅ Disalin!' : '🤖 Salin Master Prompt AI'}
+                  {isPromptCopied ? t("✅ Disalin!") : t("🤖 Salin Master Prompt AI")}
                 </button>
                 <button
                   type="button"
                   className="btn-editor-tool secondary"
                   onClick={handleResetBoilerplate}
-                  title="Kembalikan ke template awal"
-                >
-                  🔄 Reset Template
-                </button>
+                  title={t("Kembalikan ke template awal")}
+                > {t("🔄 Reset Template")} </button>
                 <button
                   type="button"
                   className="btn-render-motion full-editor-apply-btn"
@@ -2479,12 +2839,12 @@ export function App(): React.JSX.Element {
                   {isApplyingCode ? (
                     <>
                       <span className="ai-status-spinner" />
-                      <span>Mengompilasi...</span>
+                      <span>{t("Mengompilasi...")}</span>
                     </>
                   ) : (
                     <>
-                      <span>🚀</span>
-                      <span>Render & Buka Preview</span>
+                      <span><StudioIcon /></span>
+                      <span>{t("Render & Buka Preview")}</span>
                     </>
                   )}
                 </button>
@@ -2496,27 +2856,38 @@ export function App(): React.JSX.Element {
                 className="full-code-textarea"
                 value={manualCode}
                 onChange={(e) => setManualCode(e.target.value)}
-                placeholder="Paste kode TSX dari ChatGPT / Claude atau ketik kode animasi di sini..."
+                onPaste={(e) => {
+                  const pasted = e.clipboardData.getData('text')
+                  if (pasted) {
+                    const sanitized = cleanAndStripMarkdownCode(pasted)
+                    if (sanitized !== pasted) {
+                      e.preventDefault()
+                      const textarea = e.currentTarget
+                      const start = textarea.selectionStart
+                      const end = textarea.selectionEnd
+                      const current = textarea.value
+                      const next = current.substring(0, start) + sanitized + current.substring(end)
+                      setManualCode(next)
+                    }
+                  }
+                }}
+                placeholder={t("Paste kode TSX dari ChatGPT / Claude atau ketik kode animasi di sini...")}
                 spellCheck={false}
               />
             </div>
 
             <div className="full-editor-footer">
               <div className="full-editor-footer-left">
-                <span className="specs-summary-badge">
-                  📐 {width} × {height} ({aspectRatio}) • {durationSeconds}s • {fps} FPS
-                </span>
+                <span className="specs-summary-badge"><StudioIcon />{width} × {height} ({aspectRatio}{t(") •")} {durationSeconds}{t("s •")} {fps} {t("FPS")} </span>
                 {codeEditorStatus && (
-                  <span className="editor-footer-status">{codeEditorStatus}</span>
+                  <span className="editor-footer-status">{message(codeEditorStatus)}</span>
                 )}
               </div>
               <button
                 type="button"
                 className="btn-preview-link"
                 onClick={() => setActiveTab('preview')}
-              >
-                🎬 Lihat di Live Preview ➔
-              </button>
+              > {t("🎬 Lihat di Live Preview ➔")} </button>
             </div>
           </div>
         </div>
@@ -2531,145 +2902,6 @@ export function App(): React.JSX.Element {
           <section className="left-column overflow-y-auto max-h-full pr-1.5 custom-scrollbar">
             {/* AI Video Creator & API Settings Section */}
             <div className="ai-creator-section">
-              {/* Hardware License Validation Card */}
-              <div className={`license-validation-card ${licenseStatus.isValid ? 'valid' : 'invalid'}`}>
-                <div className="license-card-header">
-                  <div className="license-header-left">
-                    <span className="license-header-icon license-shield-icon">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                    </span>
-                    <span className="license-header-title">Status Lisensi</span>
-                  </div>
-                  <span className={`license-badge ${licenseStatus.isValid ? 'active' : 'inactive'}`}>
-                    {licenseStatus.isValid
-                      ? licenseStatus.plan === 'lifetime'
-                        ? 'Aktif - Lifetime'
-                        : `Aktif - Bulanan (Exp: ${licenseStatus.expiryDate ? new Date(licenseStatus.expiryDate).toISOString().slice(0, 10) : '-'})`
-                      : licenseStatus.plan === 'monthly'
-                        ? 'Lisensi Expired'
-                        : 'Belum Divalidasi'}
-                  </span>
-                </div>
-
-                <div className="license-card-body">
-                  <div className="license-input-row">
-                    <input
-                      type="text"
-                      className="license-key-input"
-                      value={licenseKeyInput}
-                      onChange={(e) => setLicenseKeyInput(e.target.value)}
-                      placeholder="Tempel kunci lisensi digital di sini..."
-                      disabled={isLicenseValidating}
-                    />
-                    <button
-                      type="button"
-                      className="btn-validate-license"
-                      onClick={handleValidateLicense}
-                      disabled={isLicenseValidating}
-                    >
-                      {isLicenseValidating ? '...' : 'Validasi'}
-                    </button>
-                  </div>
-
-                  {licenseFeedback && (
-                    <div className={`license-feedback-msg ${licenseFeedback.type}`}>
-                      {licenseFeedback.message}
-                    </div>
-                  )}
-
-                  <div className="license-machine-id-row">
-                    <span className="machine-id-label">Machine ID:</span>
-                    <code
-                      className="machine-id-value"
-                      title="Klik untuk menyalin Machine ID"
-                      onClick={() => {
-                        navigator.clipboard.writeText(licenseStatus.machineId)
-                        setLicenseFeedback({ type: 'success', message: 'Machine ID disalin!' })
-                        setTimeout(() => setLicenseFeedback(null), 3000)
-                      }}
-                    >
-                      {licenseStatus.machineId} 📋
-                    </code>
-                  </div>
-                </div>
-              </div>
-
-              {/* Gemini API Key Settings Accordion */}
-              <div className="api-key-accordion">
-                <div
-                  className="api-key-accordion-header"
-                  onClick={() => setIsApiKeyOpen(!isApiKeyOpen)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') setIsApiKeyOpen(!isApiKeyOpen)
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                    <span>🔑</span>
-                    <span className="api-key-title">Gemini API Key</span>
-                    <button 
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        window.electron.ipcRenderer.send('open-external-url', 'https://aistudio.google.com/app/apikey')
-                      }}
-                      className="text-xs text-cyan-400 hover:text-cyan-300 underline flex items-center gap-1 cursor-pointer"
-                    >
-                      🔑 Dapatkan API Key Gratis ↗
-                    </button>
-                    <span className={`api-key-status-badge ${geminiApiKey ? 'set' : 'unset'}`}>
-                      {geminiApiKey ? '✓ Tersimpan' : '⚠️ Belum Diatur'}
-                    </span>
-                  </div>
-                  <span className={`accordion-caret ${isApiKeyOpen ? 'open' : ''}`}>▼</span>
-                </div>
-
-                {isApiKeyOpen && (
-                  <div className="api-key-accordion-body">
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
-                      <p className="api-key-desc" style={{ margin: 0 }}>
-                        Mendukung Google Gemini API Key resmi dari Google AI Studio (Model: Gemini 3.6 / 3.7 Flash & Multi-Model Fallback).
-                      </p>
-                      <button 
-                        type="button"
-                        onClick={() => window.electron.ipcRenderer.send('open-external-url', 'https://aistudio.google.com/app/apikey')}
-                        className="text-xs text-cyan-400 hover:text-cyan-300 underline flex items-center gap-1 cursor-pointer"
-                      >
-                        🔑 Dapatkan API Key Gratis ↗
-                      </button>
-                    </div>
-                    <div className="api-key-input-row">
-                      <input
-                        type="password"
-                        className="api-key-input"
-                        value={apiKeyInput}
-                        onChange={(e) => {
-                          const val = e.target.value
-                          setApiKeyInput(val)
-                          const trimmed = val.trim()
-                          if (trimmed) {
-                            setGeminiApiKey(trimmed)
-                            localStorage.setItem(STORAGE_KEY_GEMINI_API_KEY, trimmed)
-                          }
-                        }}
-                        placeholder="Masukkan API Key (AIza... atau AQ...)"
-                      />
-                      <button
-                        type="button"
-                        className="btn-save-api-key"
-                        onClick={handleSaveApiKey}
-                      >
-                        Simpan
-                      </button>
-                    </div>
-                    {apiKeySaveStatus && (
-                      <div className="api-key-feedback">{apiKeySaveStatus}</div>
-                    )}
-                  </div>
-                )}
-              </div>
-
               {/* AI Video Concept Prompt & Reference Image */}
               <div className="ai-generator-card">
                 <div className="ai-generator-header">
@@ -2677,19 +2909,95 @@ export function App(): React.JSX.Element {
                     <span className="ai-sparkle-icon">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
                     </span>
-                    <span className="ai-card-title">AI Motion Engine</span>
+                    <span className="ai-card-title">{t("AI Motion Engine")}</span>
                   </div>
-                  <span className="ai-model-badge">Gemini Flash</span>
+                  <span className="ai-model-badge">{t("Gemini Flash")}</span>
                 </div>
 
+                <label className="form-sublabel" htmlFor="animation-brief">{t("Animation brief")}</label>
                 <textarea
+                  id="animation-brief"
                   className="ai-prompt-input"
                   value={aiPrompt}
                   onChange={(e) => setAiPrompt(e.target.value)}
-                  placeholder="Ketik konsep animasi... (misal: 'HUD Countdown futuristik dengan neon cyan, glitch partikel, dan hitung mundur 5 detik')"
+                  placeholder={t("Ketik konsep animasi... (misal: 'HUD Countdown futuristik dengan neon cyan, glitch partikel, dan hitung mundur 5 detik')")}
                   rows={3}
                 />
 
+                {activeTab === 'preview' && animationTypeControl}
+
+                <div className="form-group">
+                  <label className="form-sublabel" htmlFor="generation-mode">{t("Generation mode")}</label>
+                  <select
+                    id="generation-mode"
+                    className="specs-select"
+                    value={generationMode}
+                    disabled={isAiGenerating || isRendering}
+                    onChange={(event) => { setGenerationMode(event.target.value as 'fast' | 'quality'); setQualityStage(null) }}
+                  >
+                    <option value="fast">{t("Fast")}</option>
+                    <option value="quality">{t("Quality Mode (Beta)")}</option>
+                  </select>
+                  {generationMode === 'quality' && <p className="generation-mode-hint">{t("Quality planning notice")}</p>}
+                </div>
+
+                <div className="generation-actions">
+                {isAiGenerating && generationMode === 'quality' && (
+                  <button type="button" className="btn-cancel-render" onClick={handleStopQualityGeneration} disabled={generationStopping}>
+                    {generationStopping ? t("Stopping...") : t("Stop")}
+                  </button>
+                )}
+
+                {/* Generate Video Button */}
+                <button
+                  type="button"
+                  className="btn-generate-ai"
+                  onClick={() => handleGenerateVideoWithAI()}
+                  disabled={isAiGenerating || isRendering}
+                >
+                  {isAiGenerating ? (
+                    <>
+                      <span className="ai-status-spinner" />
+                      <span>{generationMode === 'quality' ? t(qualityStage || 'Planning') : t("Gemini sedang merancang animasi...")}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span><StudioIcon /></span>
+                      <span>{t("Generate Motion Asset")}</span>
+                    </>
+                  )}
+                </button>
+                </div>
+                {generationMode === 'quality' && qualityStage && (
+                  <div className="form-sublabel" role="status" aria-live="polite" aria-label={t(qualityStage)}>
+                    {(['Planning', 'Building Animation', 'Validating', 'Ready'] as const).map((stage, index) => (
+                      <React.Fragment key={stage}>
+                        {index > 0 && ' > '}
+                        {qualityStage === stage ? <strong>{t(stage)}</strong> : t(stage)}
+                      </React.Fragment>
+                    ))}
+                  </div>
+                )}
+
+                {/* AI Generation Status Box */}
+                {aiGenStatus && (
+                  <div className={`ai-gen-status-box ${aiGenStatus.type}`}>
+                    {aiGenStatus.type === 'info' && isAiGenerating && <span className="ai-status-spinner" />}
+                    <div role="status" aria-live="polite">
+                      {aiGenStatus.title && <strong>{aiGenStatus.failure ? message(generationMessage(aiGenStatus.failure).title) : message(aiGenStatus.title)}</strong>}
+                      <div>{aiGenStatus.failure ? message(generationMessage(aiGenStatus.failure).message) : message(aiGenStatus.message)}</div>
+                      {aiGenStatus.failure && <small>{message(aiGenStatus.failure.stage)}</small>}
+                      {aiGenStatus.diagnostics && (
+                        <details><summary>{t("Diagnostik teknis")}</summary>
+                          <pre style={{ whiteSpace: 'pre-wrap' }}>{aiGenStatus.diagnostics}</pre>
+                        </details>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <details className="generation-options">
+                  <summary>{t("Additional generation settings")}{refImageBase64 && <span className="reference-attached">{t("Reference attached")}</span>}</summary>
                 {/* Reference Media Dropzone (Video-to-Code Cloner: Image, GIF, Video MP4) */}
                 <input
                   ref={refFileInputRef}
@@ -2711,23 +3019,23 @@ export function App(): React.JSX.Element {
                         className="ref-image-thumb"
                       />
                     ) : (
-                      <img src={refImageBase64} alt="Reference" className="ref-image-thumb" />
+                      <img src={refImageBase64} alt={t("Reference")} className="ref-image-thumb" />
                     )}
                     <div className="ref-image-meta">
-                      <span className="ref-image-name">{refImageName || 'File Referensi'}</span>
+                      <span className="ref-image-name">{refImageName || t('File Referensi')}</span>
                       <span className="ref-image-badge">
                         {refImageMimeType?.startsWith('video/')
-                          ? '✓ Video Referensi Aktif'
+                          ? t("✓ Video Referensi Aktif")
                           : refImageMimeType === 'image/gif'
-                            ? '✓ GIF Referensi Aktif'
-                            : '✓ Referensi Aktif'}
+                            ? t("✓ GIF Referensi Aktif")
+                            : t("✓ Referensi Aktif")}
                       </span>
                     </div>
                     <button
                       type="button"
                       className="btn-remove-ref-image"
                       onClick={handleRemoveRefImage}
-                      title="Hapus referensi"
+                      title={t("Hapus referensi")}
                     >
                       ✕
                     </button>
@@ -2745,42 +3053,165 @@ export function App(): React.JSX.Element {
                       if (e.key === 'Enter' || e.key === ' ') refFileInputRef.current?.click()
                     }}
                   >
-                    <span style={{ fontSize: '20px' }}>🎬</span>
+                    <span style={{ fontSize: '20px' }}><StudioIcon /></span>
                     <div className="ref-dropzone-text">
-                      <strong>Drop Gambar, GIF, atau Video Pendek (MP4) Referensi</strong> atau klik di sini
-                    </div>
-                    <span className="ref-dropzone-hint">(AI Video-to-Code Cloner mereverse-engineer ritme gerakan &amp; tata visual)</span>
+                      <strong>{t("Drop Gambar, GIF, atau Video Pendek (MP4) Referensi")}</strong> {t("atau klik di sini")} </div>
+                    <span className="ref-dropzone-hint">{t("(AI Video-to-Code Cloner mereverse-engineer ritme gerakan &amp; tata visual)")}</span>
                   </div>
                 )}
 
-                {/* AI Generation Status Box */}
-                {aiGenStatus && (
-                  <div className={`ai-gen-status-box ${aiGenStatus.type}`}>
-                    {aiGenStatus.type === 'info' && <span className="ai-status-spinner" />}
-                    <span>{aiGenStatus.message}</span>
-                  </div>
-                )}
-
-                {/* Generate Video Button */}
-                <button
-                  type="button"
-                  className="btn-generate-ai"
-                  onClick={() => handleGenerateVideoWithAI()}
-                  disabled={isAiGenerating || isRendering}
-                >
-                  {isAiGenerating ? (
-                    <>
-                      <span className="ai-status-spinner" />
-                      <span>Gemini sedang merancang animasi...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>⚡</span>
-                      <span>Generate Motion Asset</span>
-                    </>
+                <div className="form-group generation-preferences">
+                  {generationMode === 'quality' && (
+                    <div className="form-sublabel"> {t("Additional AI planning, then animation code. More time and API usage; request budget up to 180 seconds.")} </div>
                   )}
-                </button>
+                  {generationMode === 'quality' && (
+                    <label className="form-sublabel">
+                      <input type="checkbox" checked={precisionSvgStrokes}
+                        disabled={isAiGenerating || isRendering}
+                        onChange={(event) => setPrecisionSvgStrokes(event.target.checked)} />{' '} {t("Precision SVG Strokes (Beta)")} <span style={{ display: 'block' }}>{t("Optional path drawing for suitable icons and outlines. No additional AI stage.")}</span>
+                    </label>
+                  )}
+                    <label className="form-sublabel">
+                      <input type="checkbox" checked={reusePaletteOnGenerate}
+                        disabled={isAiGenerating || isRendering}
+                        onChange={(event) => setReusePaletteOnGenerate(event.target.checked)} />{' '} {t("Gunakan palet saat ini untuk Generate ini")} <span style={{ display: 'block' }}>{t("Jika tidak dicentang, gunakan default warna dari kode baru. Warna yang tidak didefinisikan tetap dipertahankan; warna dapat diedit setelah Generate.")}</span>
+                    </label>
+                <label className="form-sublabel">
+                  <input
+                    type="checkbox"
+                    checked={reuseTextOnGenerate}
+                    onChange={(event) => setReuseTextOnGenerate(event.target.checked)}
+                    disabled={isAiGenerating || isRendering}
+                  />{' '} {t("Reuse current title, subtitle and badge in the next generation")} </label>
+
+                </div>
+                </details>
               </div>
+              {/* Hardware License Validation Card */}
+              <div className={`license-validation-card ${licenseStatus.isValid ? 'valid' : 'invalid'}`}>
+                <div className="license-card-header">
+                  <div className="license-header-left">
+                    <span className="license-header-icon license-shield-icon">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    </span>
+                    <span className="license-header-title">{t("Status Lisensi")}</span>
+                  </div>
+                  <span className={`license-badge ${licenseStatus.isValid ? 'active' : 'inactive'}`}>
+                    {licenseStatus.isValid
+                      ? licenseStatus.plan === 'lifetime'
+                        ? t("Aktif - Lifetime")
+                        : t("Aktif - Bulanan (Exp: {p0})", {p0: licenseStatus.expiryDate ? new Date(licenseStatus.expiryDate).toISOString().slice(0, 10) : '-'})
+                      : licenseStatus.plan === 'monthly'
+                        ? t("Lisensi Expired")
+                        : t("Belum Divalidasi")}
+                  </span>
+                <button type="button" className="license-settings-toggle" aria-expanded={!licenseStatus.isValid || showLicenseSettings} onClick={() => setShowLicenseSettings(value => !value)}>{t('Manage license')}</button>
+                </div>
+
+
+                <div className="license-card-body" hidden={licenseStatus.isValid && !showLicenseSettings}>
+                  <div className="license-input-row">
+                    <input
+                      type="text"
+                      className="license-key-input"
+                      value={licenseKeyInput}
+                      onChange={(e) => setLicenseKeyInput(e.target.value)}
+                      placeholder={t("Tempel kunci lisensi digital di sini...")}
+                      disabled={isLicenseValidating}
+                    />
+                    <button
+                      type="button"
+                      className="btn-validate-license"
+                      onClick={handleValidateLicense}
+                      disabled={isLicenseValidating}
+                    >
+                      {isLicenseValidating ? '...' : t("Validasi")}
+                    </button>
+                  </div>
+
+                  {licenseFeedback && (
+                    <div className={`license-feedback-msg ${licenseFeedback.type}`}>
+                      {message(licenseFeedback.message)}
+                    </div>
+                  )}
+
+                  <div className="license-machine-id-row">
+                    <span className="machine-id-label">{t("Machine ID:")}</span>
+                    <code
+                      className="machine-id-value"
+                      title={t("Klik untuk menyalin Machine ID")}
+                      onClick={() => {
+                        navigator.clipboard.writeText(licenseStatus.machineId)
+                        setLicenseFeedback({ type: 'success', message: 'Machine ID disalin!' })
+                        setTimeout(() => setLicenseFeedback(null), 3000)
+                      }}
+                    >
+                      {licenseStatus.machineId}<StudioIcon /></code>
+                  </div>
+                </div>
+              </div>
+
+              {/* Gemini API Key Settings Accordion */}
+              <div className="api-key-accordion">
+                <div
+                  className="api-key-accordion-header"
+                  onClick={() => setIsApiKeyOpen(!isApiKeyOpen)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') setIsApiKeyOpen(!isApiKeyOpen)
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <span><StudioIcon /></span>
+                    <span className="api-key-title">{t("Gemini API Key")}</span>
+
+                    <span className={`api-key-status-badge ${geminiApiKey ? 'set' : 'unset'}`}>
+                      {geminiApiKey ? t("✓ Tersimpan") : t("⚠️ Belum Diatur")}
+                    </span>
+                  </div>
+                  <span className={`accordion-caret ${isApiKeyOpen ? 'open' : ''}`}>▼</span>
+                </div>
+
+                {isApiKeyOpen && (
+                  <div className="api-key-accordion-body">
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
+                      <p className="api-key-desc" style={{ margin: 0 }}> {t("Mendukung Google Gemini API Key resmi dari Google AI Studio (Model: Gemini 3.6 / 3.7 Flash & Multi-Model Fallback).")} </p>
+                      <button 
+                        type="button"
+                        onClick={() => window.electron.ipcRenderer.send('open-external-url', 'https://aistudio.google.com/app/apikey')}
+                        className="text-xs text-cyan-400 hover:text-cyan-300 underline flex items-center gap-1 cursor-pointer"
+                      > {t("🔑 Dapatkan API Key Gratis ↗")} </button>
+                    </div>
+                    <div className="api-key-input-row">
+                      <input
+                        type="password"
+                        className="api-key-input"
+                        value={apiKeyInput}
+                        onChange={(e) => {
+                          const val = e.target.value
+                          setApiKeyInput(val)
+                          const trimmed = val.trim()
+                          if (trimmed) {
+                            setGeminiApiKey(trimmed)
+                            localStorage.setItem(STORAGE_KEY_GEMINI_API_KEY, trimmed)
+                          }
+                        }}
+                        placeholder={t("Masukkan API Key (AIza... atau AQ...)")}
+                      />
+                      <button
+                        type="button"
+                        className="btn-save-api-key"
+                        onClick={handleSaveApiKey}
+                      > {t("Simpan")} </button>
+                    </div>
+                    {apiKeySaveStatus && (
+                      <div className="api-key-feedback">{message(apiKeySaveStatus)}</div>
+                    )}
+                  </div>
+                )}
+              </div>
+
             </div>
 
 
@@ -2788,15 +3219,14 @@ export function App(): React.JSX.Element {
             {/* Video Specifications: Aspect Ratio, Resolution, Duration & FPS */}
             <div className="specs-section">
               <div className="specs-header-row">
-                <span className="form-label">Video Dimensions & Framerate</span>
+                <span className="form-label">{t("Video Dimensions & Framerate")}</span>
                 <span className="specs-summary-badge">
-                  {width} × {height} ({aspectRatio}) • {durationSeconds}s • {fps} FPS
-                </span>
+                  {width} × {height} ({aspectRatio}{t(") •")} {durationSeconds}{t("s •")} {fps} {t("FPS")} </span>
               </div>
 
               {/* Aspect Ratio Selector */}
               <div className="form-group">
-                <label className="form-sublabel">Aspect Ratio</label>
+                <label className="form-sublabel">{t("Aspect Ratio")}</label>
                 <div className="ratio-selector-grid">
                   <button
                     type="button"
@@ -2805,8 +3235,8 @@ export function App(): React.JSX.Element {
                   >
                     <span className="ratio-icon ratio-icon-landscape" />
                     <div className="ratio-info">
-                      <span className="ratio-title">Landscape</span>
-                      <span className="ratio-desc">16:9 (Standard)</span>
+                      <span className="ratio-title">{t("Landscape")}</span>
+                      <span className="ratio-desc">{t("16:9 (Standard)")}</span>
                     </div>
                   </button>
 
@@ -2822,8 +3252,8 @@ export function App(): React.JSX.Element {
                   >
                     <span className="ratio-icon ratio-icon-vertical" />
                     <div className="ratio-info">
-                      <span className="ratio-title">Vertical</span>
-                      <span className="ratio-desc">9:16 (Reels/Shorts)</span>
+                      <span className="ratio-title">{t("Vertical")}</span>
+                      <span className="ratio-desc">{t("9:16 (Reels/Shorts)")}</span>
                     </div>
                   </button>
                 </div>
@@ -2831,9 +3261,7 @@ export function App(): React.JSX.Element {
 
               {/* Resolution Quality Dropdown */}
               <div className="form-group">
-                <label className="form-sublabel" htmlFor="resolution-select">
-                  Resolution Quality
-                </label>
+                <label className="form-sublabel" htmlFor="resolution-select"> {t("Resolution Quality")} </label>
                 <div className="select-wrapper">
                   <select
                     id="resolution-select"
@@ -2843,14 +3271,14 @@ export function App(): React.JSX.Element {
                   >
                     {aspectRatio === '16:9' ? (
                       <>
-                        <option value="1080p">1080p Full HD (1920×1080)</option>
-                        <option value="2k">2K QHD (2560×1440)</option>
-                        <option value="4k">4K Ultra HD (3840×2160)</option>
+                        <option value="1080p">{t("1080p Full HD (1920×1080)")}</option>
+                        <option value="2k">{t("2K QHD (2560×1440)")}</option>
+                        <option value="4k">{t("4K Ultra HD (3840×2160)")}</option>
                       </>
                     ) : (
                       <>
-                        <option value="1080p">1080p Full HD (1080×1920)</option>
-                        <option value="4k">4K Ultra HD (2160×3840)</option>
+                        <option value="1080p">{t("1080p Full HD (1080×1920)")}</option>
+                        <option value="4k">{t("4K Ultra HD (2160×3840)")}</option>
                       </>
                     )}
                   </select>
@@ -2861,9 +3289,7 @@ export function App(): React.JSX.Element {
               {/* Duration & Frame Rate (FPS) Grid */}
               <div className="specs-dropdown-grid">
                 <div className="form-group">
-                  <label className="form-sublabel" htmlFor="duration-select">
-                    Duration
-                  </label>
+                  <label className="form-sublabel" htmlFor="duration-select"> {t("Duration")} </label>
                   <div className="select-wrapper">
                     <select
                       id="duration-select"
@@ -2873,19 +3299,17 @@ export function App(): React.JSX.Element {
                         setDurationSeconds(Number(e.target.value) as DurationSecondsType)
                       }
                     >
-                      <option value={5}>5 Detik ({5 * fps}f)</option>
-                      <option value={10}>10 Detik ({10 * fps}f)</option>
-                      <option value={15}>15 Detik ({15 * fps}f)</option>
-                      <option value={20}>20 Detik ({20 * fps}f)</option>
+                      <option value={5}>{t("5 Detik (")}{5 * fps}{t("f)")}</option>
+                      <option value={10}>{t("10 Detik (")}{10 * fps}{t("f)")}</option>
+                      <option value={15}>{t("15 Detik (")}{15 * fps}{t("f)")}</option>
+                      <option value={20}>{t("20 Detik (")}{20 * fps}{t("f)")}</option>
                     </select>
                     <div className="select-caret">▼</div>
                   </div>
                 </div>
 
                 <div className="form-group">
-                  <label className="form-sublabel" htmlFor="fps-select">
-                    Frame Rate (FPS)
-                  </label>
+                  <label className="form-sublabel" htmlFor="fps-select"> {t("Frame Rate (FPS)")} </label>
                   <div className="select-wrapper">
                     <select
                       id="fps-select"
@@ -2893,9 +3317,9 @@ export function App(): React.JSX.Element {
                       value={fps}
                       onChange={(e) => setFps(Number(e.target.value))}
                     >
-                      <option value={24}>24 FPS (Cinematic)</option>
-                      <option value={30}>30 FPS (Standard Web)</option>
-                      <option value={60}>60 FPS (Ultra Smooth)</option>
+                      <option value={24}>{t("24 FPS (Cinematic)")}</option>
+                      <option value={30}>{t("30 FPS (Standard Web)")}</option>
+                      <option value={60}>{t("60 FPS (Ultra Smooth)")}</option>
                     </select>
                     <div className="select-caret">▼</div>
                   </div>
@@ -2910,10 +3334,9 @@ export function App(): React.JSX.Element {
               {/* Streamlined Preview Header Bar */}
               <div className="streamlined-preview-bar">
                 <div className="preview-bar-left">
-                  <h3 className="preview-bar-title">Motion Canvas — Live Preview</h3>
+                  <h3 className="preview-bar-title">{t("Motion Canvas — Live Preview")}</h3>
                   <span className="preview-spec-chip">
-                    {width} × {height} ({resolutionQuality.toUpperCase()}) • {fps} FPS
-                  </span>
+                    {width} × {height} ({resolutionQuality.toUpperCase()}{t(") •")} {fps} {t("FPS")} </span>
                 </div>
 
                 <div className="preview-bar-actions">
@@ -2921,27 +3344,21 @@ export function App(): React.JSX.Element {
                     type="button"
                     className={`btn-bar-action ${isParamTweakerOpen ? 'active' : ''}`}
                     onClick={() => setIsParamTweakerOpen((prev) => !prev)}
-                    title="Buka / tutup panel kontrol parameter visual & transformasi (Visual Tweaker)"
-                  >
-                    🎛️ Visual Tweaker
-                  </button>
+                    title={t("Buka / tutup panel kontrol parameter visual & transformasi (Visual Tweaker)")}
+                  > {t("🎛️ Visual Tweaker")} </button>
                   <button
                     type="button"
                     className="btn-bar-action"
                     onClick={handleRefreshStudio}
                     disabled={!isStudioRunning || isStudioStarting}
-                    title="Muat ulang kanvas preview"
-                  >
-                    Sync Canvas
-                  </button>
+                    title={t("Muat ulang kanvas preview")}
+                  > {t("Sync Canvas")} </button>
                   <button
                     type="button"
                     className="btn-bar-action"
                     onClick={() => setIsFullscreenPreview(true)}
-                    title="Buka preview video dalam layar penuh"
-                  >
-                    Cinema Mode
-                  </button>
+                    title={t("Buka preview video dalam layar penuh")}
+                  > {t("Cinema Mode")} </button>
                 </div>
               </div>
 
@@ -2949,9 +3366,9 @@ export function App(): React.JSX.Element {
               {capturedError && (
                 <div className="preview-captured-error-banner">
                   <div className="error-banner-left">
-                    <span className="error-banner-icon">⚠️</span>
+                    <span className="error-banner-icon"><StudioIcon /></span>
                     <div className="error-banner-text">
-                      <strong>Runtime Error Terdeteksi:</strong> {capturedError}
+                      <strong>{t("Runtime Error Terdeteksi:")}</strong> {capturedError}
                     </div>
                   </div>
                   <div className="error-banner-actions">
@@ -2960,15 +3377,15 @@ export function App(): React.JSX.Element {
                       className="btn-banner-autofix"
                       onClick={() => handleExecuteAutoFix(capturedError)}
                       disabled={isAutoFixing}
-                      title="Analisis dan perbaiki error ini menggunakan AI"
+                      title={t("Analisis dan perbaiki error ini menggunakan AI")}
                     >
-                      {isAutoFixing ? 'Memperbaiki...' : '⚡ Auto-Fix Sekarang'}
+                      {isAutoFixing ? t("Memperbaiki...") : t("⚡ Auto-Fix Sekarang")}
                     </button>
                     <button
                       type="button"
                       className="btn-banner-dismiss"
                       onClick={() => setCapturedError('')}
-                      title="Tutup notifikasi error"
+                      title={t("Tutup notifikasi error")}
                     >
                       ✕
                     </button>
@@ -2978,22 +3395,23 @@ export function App(): React.JSX.Element {
 
               {/* Studio Iframe / Player Frame */}
               <div
-                className="studio-iframe-frame"
+                className={`studio-iframe-frame ${isTransparent ? 'transparent-preview' : ''}`}
                 style={{
                   borderColor: isStudioRunning ? 'rgba(0, 242, 254, 0.25)' : 'rgba(255, 255, 255, 0.1)',
                   boxShadow: isStudioRunning
                     ? '0 25px 60px -15px rgba(0,0,0,0.8), 0 0 30px rgba(0, 242, 254, 0.12)'
-                    : '0 20px 50px -15px rgba(0,0,0,0.7)'
+                    : '0 20px 50px -15px rgba(0,0,0,0.7)',
+                  background: isTransparent
+                    ? 'repeating-conic-gradient(#3a3a3a 0% 25%, #222222 0% 50%) 50% / 20px 20px'
+                    : undefined
                 }}
               >
                 {!isStudioRunning || isStudioStarting ? (
                   <div className="canvas-booting-state">
                     <div className="cyber-spinner-ring" />
                     <div className="booting-text-group">
-                      <h4 className="booting-title">Menginisialisasi Motion Engine...</h4>
-                      <p className="booting-subtitle">
-                        Menyiapkan lingkungan render dan komputasi visual di latar belakang
-                      </p>
+                      <h4 className="booting-title">{t("Menginisialisasi Motion Engine...")}</h4>
+                      <p className="booting-subtitle"> {t("Menyiapkan lingkungan render dan komputasi visual di latar belakang")} </p>
                     </div>
                   </div>
                 ) : !hasGeneratedContent ? (
@@ -3002,7 +3420,7 @@ export function App(): React.JSX.Element {
                     <div className="blueprint-content">
                       <div className="blueprint-badge">
                         <span className="pulse-dot" />
-                        <span>MOTION ENGINE READY</span>
+                        <span>{t("MOTION ENGINE READY")}</span>
                       </div>
                       <div className="blueprint-icon-box">
                         <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -3011,10 +3429,8 @@ export function App(): React.JSX.Element {
                           <path d="M9 21V9" />
                         </svg>
                       </div>
-                      <h3 className="blueprint-title">Motion Canvas Siap</h3>
-                      <p className="blueprint-desc">
-                        Masukkan instruksi di panel kiri untuk merancang aset motion.
-                      </p>
+                      <h3 className="blueprint-title">{t("Motion Canvas Siap")}</h3>
+                      <p className="blueprint-desc"> {t("Masukkan instruksi di panel kiri untuk merancang aset motion.")} </p>
                       <div className="blueprint-specs">
                         <span>{width} × {height}</span>
                         <span className="spec-dot">•</span>
@@ -3022,26 +3438,34 @@ export function App(): React.JSX.Element {
                         <span className="spec-dot">•</span>
                         <span>{resolutionQuality.toUpperCase()}</span>
                         <span className="spec-dot">•</span>
-                        <span>{fps} FPS</span>
+                        <span>{fps} {t("FPS")}</span>
                       </div>
                       <button
                         type="button"
                         className="btn-blueprint-open-canvas"
                         onClick={() => setHasGeneratedContent(true)}
-                        title="Buka kanvas preview langsung"
+                        title={t("Buka kanvas preview langsung")}
                       >
-                        <span>🎬 Buka Kanvas Langsung</span>
+                        <span>{t("🎬 Buka Kanvas Langsung")}</span>
                       </button>
                     </div>
                   </div>
                 ) : (
-                  <div className="studio-iframe-clip-wrapper">
+                  <div
+                    className={`studio-iframe-clip-wrapper ${isTransparent ? 'transparent-preview' : ''}`}
+                    style={{
+                      background: isTransparent
+                        ? 'repeating-conic-gradient(#3a3a3a 0% 25%, #222222 0% 50%) 50% / 20px 20px'
+                        : undefined
+                    }}
+                  >
                     <iframe
                       ref={iframeRef}
                       key={iframeKey}
                       src={`http://localhost:${studioPort}`}
-                      title="Motion Canvas — Live Preview"
+                      title={t("Motion Canvas — Live Preview")}
                       className="studio-iframe"
+                      style={{ background: 'transparent' }}
                       onLoad={handleIframeElementLoad}
                       allow="fullscreen; autoplay; clipboard-read; clipboard-write"
                       allowFullScreen
@@ -3057,11 +3481,11 @@ export function App(): React.JSX.Element {
                   canUndo={undoStack.length > 0}
                   onRevert={handleRevert}
                   onSnapshotBeforeChange={handleSnapshotBeforeChange}
-                  titleText={paramTitleText}
+                  titleText={paramTitleText ?? ''}
                   onChangeTitleText={setParamTitleText}
-                  subtitleText={paramSubtitleText}
+                  subtitleText={paramSubtitleText ?? ''}
                   onChangeSubtitleText={setParamSubtitleText}
-                  badgeText={paramBadgeText}
+                  badgeText={paramBadgeText ?? ''}
                   onChangeBadgeText={setParamBadgeText}
                   accentColor={paramAccentColor}
                   onChangeAccentColor={setParamAccentColor}
@@ -3102,32 +3526,34 @@ export function App(): React.JSX.Element {
                     disabled={isRendering}
                     title={
                       isRendering
-                        ? 'Rendering sedang berjalan...'
-                        : 'Buka asisten chat AI untuk merevisi video ini secara realtime'
+                        ? t("Rendering sedang berjalan...")
+                        : t("Buka asisten chat AI untuk merevisi video ini secara realtime")
                     }
                   >
-                    <span>Edit Video dengan AI</span>
-                    <span className="ai-btn-badge">Realtime Chat</span>
+                    <span>{t("Edit Video dengan AI")}</span>
+                    <span className="ai-btn-badge">{t("Realtime Chat")}</span>
                   </button>
 
-                  <button
-                    type="button"
-                    className="btn-auto-fix-ai"
-                    onClick={handleOpenAutoFixModal}
-                    disabled={isRendering || isAutoFixing}
-                    title="Perbaiki error runtime secara otomatis dengan Gemini AI"
-                  >
-                    {isAutoFixing ? (
-                      <>
-                        <span className="ai-status-spinner" />
-                        <span>Memperbaiki Error...</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>Auto-Fix Error</span>
-                      </>
-                    )}
-                  </button>
+                  {capturedError ? (
+                    <button
+                      type="button"
+                      className="btn-auto-fix-ai"
+                      onClick={handleOpenAutoFixModal}
+                      disabled={isRendering || isAutoFixing}
+                      title={t("Perbaiki error runtime secara otomatis dengan Gemini AI")}
+                    >
+                      {isAutoFixing ? (
+                        <>
+                          <span className="ai-status-spinner" />
+                          <span>{t("Memperbaiki Error...")}</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>{t("Auto-Fix Error")}</span>
+                        </>
+                      )}
+                    </button>
+                  ) : null}
 
                   <button
                     type="button"
@@ -3136,11 +3562,11 @@ export function App(): React.JSX.Element {
                     disabled={!lastWorkingCode || isRendering || isAutoFixing}
                     title={
                       lastWorkingCode
-                        ? 'Kembalikan file VibeGraphic.tsx ke versi kode terakhir yang aman dan stabil'
-                        : 'Belum ada versi kode sebelumnya untuk di-rollback'
+                        ? t("Kembalikan file VibeGraphic.tsx ke versi kode terakhir yang aman dan stabil")
+                        : t("Belum ada versi kode sebelumnya untuk di-rollback")
                     }
                   >
-                    <span>Kembalikan ke Versi Sebelumnya</span>
+                    <span>{t("Kembalikan ke Versi Sebelumnya")}</span>
                   </button>
                 </div>
 
@@ -3160,12 +3586,10 @@ export function App(): React.JSX.Element {
                           }
                         }}
                         disabled={isRendering}
-                        title="Pilih format render video"
+                        title={t("Pilih format render video")}
                       >
-                        <option value="mp4">MP4 (H.264 - Standar)</option>
-                        <option value="prores4444">
-                          MOV (Apple ProRes 4444 - Kualitas Terbaik)
-                        </option>
+                        <option value="mp4">{t("MP4 (H.264 - Standar)")}</option>
+                        <option value="prores4444"> {t("MOV (Apple ProRes 4444 - Kualitas Terbaik)")} </option>
                       </select>
                       <span className="render-format-caret">▼</span>
                     </div>
@@ -3175,23 +3599,44 @@ export function App(): React.JSX.Element {
                       className="render-bg-dropdown-wrap"
                       title={
                         exportFormat === 'mp4'
-                          ? 'Format MP4 hanya mendukung latar solid'
-                          : 'Pilih mode latar belakang: Solid atau Transparan (Alpha Channel)'
+                          ? t("Format MP4 tidak mendukung Alpha Channel. Ubah ke format MOV (ProRes 4444) untuk mengaktifkan video transparan.")
+                          : t("Pilih mode latar belakang: Solid atau Transparan (Alpha Channel)")
                       }
                     >
                       <select
                         className="render-bg-select"
-                        value={exportFormat === 'mp4' ? 'solid' : isTransparent ? 'transparent' : 'solid'}
-                        onChange={(e) => setIsTransparent(e.target.value === 'transparent')}
-                        disabled={isRendering || exportFormat === 'mp4'}
+                        value={isTransparent ? 'transparent' : 'solid'}
+                        onChange={(e) => {
+                          const val = e.target.value === 'transparent'
+                          if (exportFormat === 'mp4' && val) return
+                          setIsTransparent(val)
+                        }}
+                        disabled={isRendering}
                         title={
                           exportFormat === 'mp4'
-                            ? 'Format MP4 hanya mendukung latar solid'
-                            : 'Pilih mode latar belakang: Solid atau Transparan (Alpha Channel)'
+                            ? t("Format MP4 tidak mendukung Alpha Channel. Ubah ke format MOV (ProRes 4444) untuk mengaktifkan video transparan.")
+                            : t("Pilih mode latar belakang: Solid atau Transparan (Alpha Channel)")
                         }
                       >
-                        <option value="solid">⬛ Solid / Latar Penuh</option>
-                        <option value="transparent">✨ Transparan (Alpha Channel)</option>
+                        <option value="solid">{t("⬛ Solid / Latar Penuh")}</option>
+                        <option
+                          value="transparent"
+                          disabled={exportFormat === 'mp4'}
+                          style={
+                            exportFormat === 'mp4'
+                              ? {
+                                  opacity: 0.4,
+                                  cursor: 'not-allowed',
+                                  pointerEvents: 'none',
+                                  color: 'rgba(255, 255, 255, 0.4)'
+                                }
+                              : undefined
+                          }
+                        >
+                          {exportFormat === 'mp4'
+                            ? t("✨ Transparan (Khusus MOV)")
+                            : t("✨ Transparan (Alpha Channel)")}
+                        </option>
                       </select>
                       <span className="render-bg-caret">▼</span>
                     </div>
@@ -3203,11 +3648,11 @@ export function App(): React.JSX.Element {
                         value={renderMode}
                         onChange={(e) => setRenderMode(e.target.value as 'auto' | 'gpu' | 'cpu')}
                         disabled={isRendering}
-                        title="Pilih mode render hardware (Auto / GPU Hardware Acceleration / CPU SwiftShader)"
+                        title={t("Pilih mode render hardware (Auto / GPU Hardware Acceleration / CPU SwiftShader)")}
                       >
-                        <option value="auto">⚡ Mode: Auto</option>
-                        <option value="gpu">🚀 Mode: GPU (Akselerasi)</option>
-                        <option value="cpu">💻 Mode: CPU (SwiftShader)</option>
+                        <option value="auto">{t("⚡ Mode: Auto")}</option>
+                        <option value="gpu">{t("🚀 Mode: GPU (Akselerasi)")}</option>
+                        <option value="cpu">{t("💻 Mode: CPU (SwiftShader)")}</option>
                       </select>
                       <span className="render-mode-caret">▼</span>
                     </div>
@@ -3221,8 +3666,8 @@ export function App(): React.JSX.Element {
                         disabled={isRendering}
                         title={
                           customOutputFolder
-                            ? `Buka Folder Ekspor di File Explorer: ${customOutputFolder}`
-                            : 'Buka Folder Ekspor di File Explorer (Downloads/Motion Studio Exports)'
+                            ? t("Open export folder: {p0}", { p0: customOutputFolder })
+                            : t("Buka Folder Ekspor di File Explorer (Downloads/Motion Studio Exports)")
                         }
                       >
                         <svg className="folder-icon-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
@@ -3230,13 +3675,13 @@ export function App(): React.JSX.Element {
                           className="folder-label-text"
                           title={
                             customOutputFolder
-                              ? `Folder Ekspor: ${customOutputFolder}`
-                              : 'Folder Ekspor: Downloads/Motion Studio Exports'
+                              ? t("Export folder: {p0}", { p0: customOutputFolder })
+                              : t("Folder Ekspor: Downloads/Motion Studio Exports")
                           }
                         >
                           {customOutputFolder
-                            ? customOutputFolder.split(/[\\\/]/).filter(Boolean).pop() || 'Folder Custom'
-                            : 'Folder Ekspor'}
+                            ? customOutputFolder.split(/[\\\/]/).filter(Boolean).pop() || t("Custom folder")
+                            : t("Folder Ekspor")}
                         </span>
                       </button>
                       <button
@@ -3244,10 +3689,8 @@ export function App(): React.JSX.Element {
                         className="btn-change-folder shrink-0"
                         onClick={handleSelectOutputFolder}
                         disabled={isRendering}
-                        title="Ganti folder tujuan ekspor video"
-                      >
-                        Ganti
-                      </button>
+                        title={t("Ganti folder tujuan ekspor video")}
+                      > {t("Ganti")} </button>
                     </div>
                   </div>
 
@@ -3261,17 +3704,15 @@ export function App(): React.JSX.Element {
                             style={{ width: `${Math.max(4, renderProgress)}%` }}
                           />
                           <span className="render-progress-text">
-                            {renderStatus || `Rendering ${renderProgress}%...`}
+                            {message(renderStatus) || t("Rendering {p0}%...", {p0: renderProgress})}
                           </span>
                         </div>
                         <button
                           type="button"
                           className="btn-cancel-render"
                           onClick={handleCancelRender}
-                          title="Batalkan proses rendering"
-                        >
-                          ✕ Batal
-                        </button>
+                          title={t("Batalkan proses rendering")}
+                        > {t("✕ Batal")} </button>
                       </div>
                     ) : (
                       <button
@@ -3279,10 +3720,10 @@ export function App(): React.JSX.Element {
                         className="btn-export-video-primary shrink-0 whitespace-nowrap px-4 py-2"
                         onClick={handleExportVideo}
                         disabled={isAiGenerating || isAiRefining}
-                        title="Render video fisik beresolusi tinggi"
+                        title={t("Render video fisik beresolusi tinggi")}
                       >
                         <svg className="btn-render-icon-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                        <span>Ekspor / Render Video</span>
+                        <span>{t("Ekspor / Render Video")}</span>
                       </button>
                     )}
                   </div>
@@ -3299,10 +3740,10 @@ export function App(): React.JSX.Element {
                     <div className="toast-info">
                       <div className="toast-title">
                         {renderResult.type === 'success'
-                          ? 'Render berhasil disimpan!'
-                          : 'Render Gagal'}
+                          ? t("Render berhasil disimpan!")
+                          : t("Render Gagal")}
                       </div>
-                      <div className="toast-detail">{renderResult.message}</div>
+                      <div className="toast-detail">{message(renderResult.message)}</div>
                     </div>
                   </div>
                   <div className="toast-right">
@@ -3311,16 +3752,14 @@ export function App(): React.JSX.Element {
                         type="button"
                         className="btn-toast-folder"
                         onClick={() => handleOpenExportFolder(renderResult.filePath)}
-                        title="Buka folder video di File Explorer"
-                      >
-                        📂 Buka Folder
-                      </button>
+                        title={t("Buka folder video di File Explorer")}
+                      > {t("📂 Buka Folder")} </button>
                     )}
                     <button
                       type="button"
                       className="btn-toast-dismiss"
                       onClick={() => setRenderResult(null)}
-                      title="Tutup pemberitahuan"
+                      title={t("Tutup pemberitahuan")}
                     >
                       ✕
                     </button>
@@ -3332,31 +3771,29 @@ export function App(): React.JSX.Element {
               <div className="preview-footer">
                 <div className="meta-group">
                   <div className="meta-item">
-                    <strong>Title:</strong>
-                    <span>{paramTitleText || detectedTitle || 'Custom Motion'}</span>
+                    <strong>{t("Title:")}</strong>
+                    <span>{statusBarTitle}</span>
                   </div>
                   <div className="meta-item">
-                    <strong>Specs:</strong>
+                    <strong>{t("Specs:")}</strong>
                     <span style={{ color: '#38bdf8' }}>
-                      {aspectRatio} • {resolutionQuality.toUpperCase()} ({width}×{height}) • {fps}{' '}
-                      FPS
-                    </span>
+                      {aspectRatio} • {resolutionQuality.toUpperCase()} ({width}×{height}{t(") •")} {fps}{' '} {t("FPS")} </span>
                   </div>
                   <div className="meta-item">
-                    <strong>Format:</strong>
+                    <strong>{t("Format:")}</strong>
                     <span style={{ color: exportFormat !== 'mp4' ? '#c084fc' : '#38bdf8' }}>
                       {exportFormat === 'prores4444'
                         ? isTransparent
-                          ? 'MOV (ProRes 4444 Alpha)'
-                          : 'MOV (ProRes 4444 Solid)'
-                        : 'MP4 (H.264)'}
+                          ? t("MOV (ProRes 4444 Alpha)")
+                          : t("MOV (ProRes 4444 Solid)")
+                        : t("MP4 (H.264)")}
                     </span>
                   </div>
                 </div>
 
                 <div className="meta-group">
                   <div className="meta-item">
-                    <span>Accent:</span>
+                    <span>{t("Accent:")}</span>
                     <div className="meta-color-pill">
                       <span className="color-dot" style={{ backgroundColor: detectedAccent }} />
                       <span>{detectedAccent}</span>
@@ -3364,7 +3801,7 @@ export function App(): React.JSX.Element {
                   </div>
 
                   <div className="meta-item">
-                    <span>Background:</span>
+                    <span>{t("Background:")}</span>
                     <div className="meta-color-pill">
                       <span
                         className="color-dot"
@@ -3381,7 +3818,7 @@ export function App(): React.JSX.Element {
                       />
                       <span>
                         {exportFormat === 'prores4444' && isTransparent
-                          ? 'Alpha / Transparan'
+                          ? t("Alpha / Transparan")
                           : detectedBg}
                       </span>
                     </div>
@@ -3389,8 +3826,7 @@ export function App(): React.JSX.Element {
 
                   <div className="meta-item">
                     <span style={{ opacity: 0.7 }}>
-                      {durationSeconds}.0s / {durationInFrames} frames ({fps} FPS)
-                    </span>
+                      {durationSeconds}{t(".0s /")} {durationInFrames} {t("frames (")}{fps} {t("FPS)")} </span>
                   </div>
                 </div>
               </div>
@@ -3432,15 +3868,15 @@ export function App(): React.JSX.Element {
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7H3a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z"/><path d="M9 14v1"/><path d="M15 14v1"/><path d="M3 21a7 7 0 0 0 18 0"/></svg>
                 </div>
                 <div>
-                  <h3>AI Motion Director</h3>
-                  <p>Beri instruksi revisi pada aset motion yang sedang aktif</p>
+                  <h3>{t("AI Motion Director")}</h3>
+                  <p>{t("Beri instruksi revisi pada aset motion yang sedang aktif")}</p>
                 </div>
               </div>
               <button
                 type="button"
                 className="ai-chat-close-btn"
                 onClick={() => setIsChatModalOpen(false)}
-                title="Tutup dialog chat"
+                title={t("Tutup dialog chat")}
               >
                 ✕
               </button>
@@ -3461,21 +3897,21 @@ export function App(): React.JSX.Element {
                       type="button"
                       className={`chat-copy-btn ${copiedChatId === msg.id ? 'copied' : ''}`}
                       onClick={() => handleCopyChatMessage(msg.id, msg.text)}
-                      title={copiedChatId === msg.id ? 'Tersalin ke clipboard!' : 'Salin isi pesan'}
+                      title={copiedChatId === msg.id ? t("Tersalin ke clipboard!") : t("Salin isi pesan")}
                     >
                       {copiedChatId === msg.id ? (
                         <>
                           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                          <span>Tersalin!</span>
+                          <span>{t("Tersalin!")}</span>
                         </>
                       ) : (
                         <>
                           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
-                          <span>Salin</span>
+                          <span>{t("Salin")}</span>
                         </>
                       )}
                     </button>
-                    <div className="chat-bubble-text">{msg.text}</div>
+                    <div className="chat-bubble-text">{msg.id === 'welcome' ? message(msg.text) : msg.text}</div>
                     <div className="chat-bubble-time">{msg.timestamp}</div>
                   </div>
                 </div>
@@ -3491,7 +3927,7 @@ export function App(): React.JSX.Element {
                       <span />
                       <span />
                     </div>
-                    <span className="loading-text">Gemini sedang merevisi kode VibeGraphic.tsx...</span>
+                    <span className="loading-text">{t("Gemini sedang merevisi kode VibeGraphic.tsx...")}</span>
                   </div>
                 </div>
               )}
@@ -3499,7 +3935,7 @@ export function App(): React.JSX.Element {
             </div>
 
             <div className="ai-chat-suggestions">
-              <span className="suggestion-label">Saran Cepat:</span>
+              <span className="suggestion-label">{t("Saran Cepat:")}</span>
               <button
                 type="button"
                 className="chip-suggestion"
@@ -3507,9 +3943,7 @@ export function App(): React.JSX.Element {
                   handleSendChatRevision('Percepat tempo animasi menjadi lebih energik dan dinamis (1.5x)')
                 }
                 disabled={isAiRefining}
-              >
-                Percepat Tempo (1.5x)
-              </button>
+              > {t("Percepat Tempo (1.5x)")} </button>
               <button
                 type="button"
                 className="chip-suggestion"
@@ -3519,9 +3953,7 @@ export function App(): React.JSX.Element {
                   )
                 }
                 disabled={isAiRefining}
-              >
-                Ganti Aksen Warna
-              </button>
+              > {t("Ganti Aksen Warna")} </button>
               <button
                 type="button"
                 className="chip-suggestion"
@@ -3531,9 +3963,7 @@ export function App(): React.JSX.Element {
                   )
                 }
                 disabled={isAiRefining}
-              >
-                Tambah Efek Partikel/Orbit
-              </button>
+              > {t("Tambah Efek Partikel/Orbit")} </button>
             </div>
 
             <form
@@ -3548,7 +3978,7 @@ export function App(): React.JSX.Element {
                 className="ai-chat-input"
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
-                placeholder="Ketik instruksi revisi (misal: 'Buat judul berkedip halus dan aksen warna emas')..."
+                placeholder={t("Ketik instruksi revisi (misal: 'Buat judul berkedip halus dan aksen warna emas')...")}
                 disabled={isAiRefining}
               />
               <button
@@ -3559,7 +3989,7 @@ export function App(): React.JSX.Element {
                 {isAiRefining ? (
                   <span className="ai-status-spinner" />
                 ) : (
-                  <span>Kirim</span>
+                  <span>{t("Kirim")}</span>
                 )}
               </button>
             </form>
@@ -3570,7 +4000,7 @@ export function App(): React.JSX.Element {
       {/* Floating Rollback / Auto-Fix Toast Notification */}
       {rollbackToast && (
         <div className="floating-rollback-toast">
-          <span>{rollbackToast}</span>
+          <span>{message(rollbackToast)}</span>
         </div>
       )}
 
@@ -3590,13 +4020,13 @@ export function App(): React.JSX.Element {
                 <div>
                   <h3 style={{ margin: 0, fontSize: '15px', color: autoFixMode === 'visual_recovery' ? '#38bdf8' : '#fef08a', fontWeight: 800 }}>
                     {autoFixMode === 'visual_recovery'
-                      ? 'Visual Recovery — Pemulihan Kanvas Blank'
-                      : 'Auto-Fix Error AI (Self-Healing)'}
+                      ? t("Visual Recovery — Pemulihan Kanvas Blank")
+                      : t("Auto-Fix Error AI (Self-Healing)")}
                   </h3>
                   <p style={{ margin: 0, fontSize: '11px', color: '#94a3b8' }}>
                     {autoFixMode === 'visual_recovery'
-                      ? 'Pemulihan visual layar gelap, opacity frame 0 & sinkronisasi viewport'
-                      : 'Analisis runtime error & perbaiki kode TSX secara otomatis'}
+                      ? t("Pemulihan visual layar gelap, opacity frame 0 & sinkronisasi viewport")
+                      : t("Analisis runtime error & perbaiki kode TSX secara otomatis")}
                   </p>
                 </div>
               </div>
@@ -3604,7 +4034,7 @@ export function App(): React.JSX.Element {
                 type="button"
                 className="ai-chat-close-btn"
                 onClick={() => setIsAutoFixModalOpen(false)}
-                title="Tutup dialog auto-fix"
+                title={t("Tutup dialog auto-fix")}
               >
                 ✕
               </button>
@@ -3616,37 +4046,33 @@ export function App(): React.JSX.Element {
                 <div className="detected-error-box">
                   <div className="detected-error-header">
                     <span className="error-pulse-dot" />
-                    <strong>Runtime Error Terdeteksi Otomatis:</strong>
+                    <strong>{t("Runtime Error Terdeteksi Otomatis:")}</strong>
                   </div>
                   <pre className="detected-error-code">
                     {autoFixErrorInput || capturedError || 'Runtime error terdeteksi pada engine preview.'}
                   </pre>
-                  <p className="detected-error-help">
-                    Pesan error di atas ditangkap otomatis dari engine preview. Klik tombol di bawah untuk perbaikan 1-klik dengan AI.
-                  </p>
+                  <p className="detected-error-help"> {t("Pesan error di atas ditangkap otomatis dari engine preview. Klik tombol di bawah untuk perbaikan 1-klik dengan AI.")} </p>
                 </div>
               ) : (
                 /* Mode 2: Visual Recovery / Blank Screen (Silent Failure) */
                 <div className="visual-recovery-card">
                   <div className="visual-recovery-header">
-                    <span className="recovery-sparkle-icon">✨</span>
-                    <strong>Tampilan Kanvas Gelap / Blank Terdeteksi</strong>
+                    <span className="recovery-sparkle-icon"><StudioIcon /></span>
+                    <strong>{t("Tampilan Kanvas Gelap / Blank Terdeteksi")}</strong>
                   </div>
-                  <p className="visual-recovery-desc">
-                    Tidak ada runtime crash teknis pada preview. Mode <strong>Visual Recovery</strong> akan memeriksa dan memperbaiki penyebab umum layar kosong:
-                  </p>
+                  <p className="visual-recovery-desc"> {t("Tidak ada runtime crash teknis pada preview. Mode")} <strong>{t("Visual Recovery")}</strong> {t("akan memeriksa dan memperbaiki penyebab umum layar kosong:")} </p>
                   <ul className="visual-recovery-checklist">
-                    <li>✓ Memastikan <strong>opacity elemen pada Frame 0</strong> minimal 0.95 (tidak tertahan di 0/NaN).</li>
-                    <li>✓ Mengoreksi koordinat agar semua elemen berada di dalam <strong>viewport kanvas aktif</strong> ({width} × {height}).</li>
-                    <li>✓ Memastikan warna teks & badge <strong>kontras tajam</strong> dengan background solid pada &lt;AbsoluteFill&gt;.</li>
-                    <li>✓ Menggunakan <code>useVideoConfig()</code> untuk tata letak dinamis sesuai resolusi aktif.</li>
+                    <li>{t("✓ Memastikan")} <strong>{t("opacity elemen pada Frame 0")}</strong> {t("minimal 0.95 (tidak tertahan di 0/NaN).")}</li>
+                    <li>{t("✓ Mengoreksi koordinat agar semua elemen berada di dalam")} <strong>{t("viewport kanvas aktif")}</strong> ({width} × {height}).</li>
+                    <li>{t("✓ Memastikan warna teks & badge")} <strong>{t("kontras tajam")}</strong> {t("dengan background solid pada &lt;AbsoluteFill&gt;.")}</li>
+                    <li>{t("✓ Menggunakan")} <code>{t("useVideoConfig()")}</code> {t("untuk tata letak dinamis sesuai resolusi aktif.")}</li>
                   </ul>
                   <div className="visual-recovery-specs-pill">
-                    <span>📐 {width} × {height} ({aspectRatio})</span>
+                    <span><StudioIcon />{width} × {height} ({aspectRatio})</span>
                     <span>•</span>
-                    <span>{fps} FPS</span>
+                    <span>{fps} {t("FPS")}</span>
                     <span>•</span>
-                    <span>{durationSeconds} Detik ({durationInFrames} frames)</span>
+                    <span>{durationSeconds} {t("Detik (")}{durationInFrames} {t("frames)")}</span>
                   </div>
                 </div>
               )}
@@ -3659,8 +4085,8 @@ export function App(): React.JSX.Element {
                   onClick={() => setShowManualErrorInput((prev) => !prev)}
                 >
                   {showManualErrorInput
-                    ? '▼ Sembunyikan Input Manual'
-                    : '▶ Tambah Catatan / Sesuaikan Pesan Manual (Opsional)'}
+                    ? t("▼ Sembunyikan Input Manual")
+                    : t("▶ Tambah Catatan / Sesuaikan Pesan Manual (Opsional)")}
                 </button>
               </div>
 
@@ -3671,10 +4097,10 @@ export function App(): React.JSX.Element {
                     value={autoFixErrorInput}
                     onChange={(e) => setAutoFixErrorInput(e.target.value)}
                     rows={3}
-                    placeholder="Ketik atau edit catatan error/instruksi tambahan untuk AI di sini..."
+                    placeholder={t("Ketik atau edit catatan error/instruksi tambahan untuk AI di sini...")}
                   />
                   <div className="auto-fix-chips">
-                    <span className="chip-label">Pilihan Error Umum (Klik Cepat):</span>
+                    <span className="chip-label">{t("Pilihan Error Umum (Klik Cepat):")}</span>
                     <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                       <button
                         type="button"
@@ -3685,9 +4111,7 @@ export function App(): React.JSX.Element {
                           )
                           setAutoFixMode('runtime_error')
                         }}
-                      >
-                        ⚠️ interpolate() inputRange
-                      </button>
+                      > {t("⚠️ interpolate() inputRange")} </button>
                       <button
                         type="button"
                         className="chip-suggestion"
@@ -3697,9 +4121,7 @@ export function App(): React.JSX.Element {
                           )
                           setAutoFixMode('runtime_error')
                         }}
-                      >
-                        ⚠️ Range length mismatch
-                      </button>
+                      > {t("⚠️ Range length mismatch")} </button>
                       <button
                         type="button"
                         className="chip-suggestion"
@@ -3709,9 +4131,7 @@ export function App(): React.JSX.Element {
                           )
                           setAutoFixMode('visual_recovery')
                         }}
-                      >
-                        🎨 Blank Screen Frame 0
-                      </button>
+                      > {t("🎨 Blank Screen Frame 0")} </button>
                     </div>
                   </div>
                 </div>
@@ -3723,9 +4143,7 @@ export function App(): React.JSX.Element {
                   className="btn-cancel-autofix"
                   onClick={() => setIsAutoFixModalOpen(false)}
                   disabled={isAutoFixing}
-                >
-                  Batal
-                </button>
+                > {t("Batal")} </button>
                 <button
                   type="button"
                   className={`btn-execute-autofix ${autoFixMode === 'visual_recovery' ? 'visual-recovery-btn' : ''}`}
@@ -3740,17 +4158,17 @@ export function App(): React.JSX.Element {
                   {isAutoFixing ? (
                     <>
                       <span className="ai-status-spinner" />
-                      <span>{autoFixMode === 'visual_recovery' ? 'Memulihkan Visual...' : 'Memperbaiki Error...'}</span>
+                      <span>{autoFixMode === 'visual_recovery' ? t("Memulihkan Visual...") : t("Memperbaiki Error...")}</span>
                     </>
                   ) : autoFixMode === 'visual_recovery' ? (
                     <>
-                      <span>✨</span>
-                      <span>Perbaiki Tampilan Blank / Reset Visual</span>
+                      <span><StudioIcon /></span>
+                      <span>{t("Perbaiki Tampilan Blank / Reset Visual")}</span>
                     </>
                   ) : (
                     <>
-                      <span>⚡</span>
-                      <span>Perbaiki Error Ini (1-Klik AI)</span>
+                      <span><StudioIcon /></span>
+                      <span>{t("Perbaiki Error Ini (1-Klik AI)")}</span>
                     </>
                   )}
                 </button>
@@ -3765,8 +4183,8 @@ export function App(): React.JSX.Element {
         <div className="license-modal-overlay" onClick={() => setIsLicenseAlertOpen(false)}>
           <div className="license-modal" onClick={(e) => e.stopPropagation()}>
             <div className="license-modal-header">
-              <span className="license-modal-icon">🔒</span>
-              <h3>Akses Ditolak: Fitur Terkunci</h3>
+              <span className="license-modal-icon"><StudioIcon /></span>
+              <h3>{t("Akses Ditolak: Fitur Terkunci")}</h3>
               <button
                 type="button"
                 className="license-modal-close"
@@ -3775,33 +4193,26 @@ export function App(): React.JSX.Element {
                 ✕
               </button>
             </div>
-            <p className="license-modal-desc">
-              Akses Ditolak: Fitur ini terkunci. Masukkan nomor lisensi Motion Suite Pro yang valid untuk menggunakan generator AI dan render video.
-            </p>
+            <p className="license-modal-desc"> {t("Akses Ditolak: Fitur ini terkunci. Masukkan nomor lisensi Motion Suite Pro yang valid untuk menggunakan generator AI dan render video.")} </p>
             <div className="license-modal-machine-box">
-              <span className="machine-title">Hardware Machine ID Perangkat Anda:</span>
+              <span className="machine-title">{t("Hardware Machine ID Perangkat Anda:")}</span>
               <code
                 className="machine-code"
                 onClick={() => {
                   navigator.clipboard.writeText(licenseStatus.machineId)
                   setLicenseFeedback({ type: 'success', message: 'Machine ID disalin ke clipboard!' })
                 }}
-                title="Klik untuk menyalin Machine ID"
+                title={t("Klik untuk menyalin Machine ID")}
               >
-                {licenseStatus.machineId} 📋
-              </code>
-              <small className="machine-help">
-                Berikan kode Machine ID di atas kepada admin/penjual untuk mendapatkan kunci lisensi Anda.
-              </small>
+                {licenseStatus.machineId}<StudioIcon /></code>
+              <small className="machine-help"> {t("Berikan kode Machine ID di atas kepada admin/penjual untuk mendapatkan kunci lisensi Anda.")} </small>
             </div>
             <div className="license-modal-actions">
               <button
                 type="button"
                 className="btn-license-modal-primary"
                 onClick={() => setIsLicenseAlertOpen(false)}
-              >
-                Saya Mengerti (Masukkan Lisensi di Panel Kiri)
-              </button>
+              > {t("Saya Mengerti (Masukkan Lisensi di Panel Kiri)")} </button>
             </div>
           </div>
         </div>
@@ -3839,9 +4250,8 @@ export function App(): React.JSX.Element {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ fontSize: '18px' }}>🎬</span>
-              <span style={{ fontWeight: 700, fontSize: '15px', color: '#f1f5f9' }}>
-                Layar Penuh Preview — {currentTitle || 'Motion Suite Pro Video'}
+              <span style={{ fontSize: '18px' }}><StudioIcon /></span>
+              <span style={{ fontWeight: 700, fontSize: '15px', color: '#f1f5f9' }}> {t("Layar Penuh Preview —")} {currentTitle || 'Motion Suite Pro Video'}
               </span>
               <span
                 style={{
@@ -3854,28 +4264,23 @@ export function App(): React.JSX.Element {
                   color: '#10b981'
                 }}
               >
-                {aspectRatio} • {resolutionQuality.toUpperCase()} • {fps} FPS
-              </span>
+                {aspectRatio} • {resolutionQuality.toUpperCase()} • {fps} {t("FPS")} </span>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-              <span style={{ fontSize: '12px', color: '#94a3b8' }}>
-                Tekan <kbd style={{ padding: '2px 6px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.2)', color: '#e2e8f0', fontSize: '11px' }}>Esc</kbd> untuk keluar
-              </span>
+              <span style={{ fontSize: '12px', color: '#94a3b8' }}> {t("Tekan")} <kbd style={{ padding: '2px 6px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.2)', color: '#e2e8f0', fontSize: '11px' }}>{t("Esc")}</kbd> {t("untuk keluar")} </span>
               <button
                 type="button"
                 className="btn-close-fullscreen"
                 onClick={() => setIsFullscreenPreview(false)}
-                title="Keluar dari Layar Penuh (Esc)"
-              >
-                ✕ Keluar Layar Penuh
-              </button>
+                title={t("Keluar dari Layar Penuh (Esc)")}
+              > {t("✕ Keluar Layar Penuh")} </button>
             </div>
           </div>
 
           {/* Fullscreen Video Frame Container */}
           <div
-            className="fullscreen-preview-body"
+            className={`fullscreen-preview-body ${isTransparent ? 'transparent-preview' : ''}`}
             style={{
               flex: 1,
               display: 'flex',
@@ -3884,23 +4289,33 @@ export function App(): React.JSX.Element {
               marginTop: '14px',
               overflow: 'hidden',
               borderRadius: '12px',
-              background: '#000000',
+              background: isTransparent
+                ? 'repeating-conic-gradient(#3a3a3a 0% 25%, #222222 0% 50%) 50% / 20px 20px'
+                : '#000000',
               border: '1px solid rgba(255, 255, 255, 0.1)',
               boxShadow: '0 0 50px rgba(0, 0, 0, 0.9), 0 0 25px rgba(16, 185, 129, 0.15)'
             }}
           >
-            <div className="studio-iframe-clip-wrapper">
+            <div
+              className={`studio-iframe-clip-wrapper ${isTransparent ? 'transparent-preview' : ''}`}
+              style={{
+                background: isTransparent
+                  ? 'repeating-conic-gradient(#3a3a3a 0% 25%, #222222 0% 50%) 50% / 20px 20px'
+                  : undefined
+              }}
+            >
               <iframe
                 key={`fullscreen-${iframeKey}`}
                 src={`http://localhost:${studioPort}`}
-                title="Studio Preview — Live Canvas"
+                title={t("Studio Preview — Live Canvas")}
                 className="fullscreen-preview-iframe"
                 onLoad={handleIframeElementLoad}
                 style={{
                   width: '100%',
                   height: 'calc(100% + 46px)',
                   marginTop: '-46px',
-                  border: 'none'
+                  border: 'none',
+                  background: 'transparent'
                 }}
                 allow="fullscreen; autoplay; clipboard-read; clipboard-write"
                 allowFullScreen
@@ -3911,7 +4326,7 @@ export function App(): React.JSX.Element {
       )}
 
       {/* ── Auto-Update Pop-Up Modal (OBS Studio Style) ────────────────── */}
-      {updatePhase !== 'idle' && !isUpdateDismissed && (
+      {!isMacPlatform && updatePhase !== 'idle' && !isUpdateDismissed && (
         <div
           className="update-modal-backdrop"
           onClick={() => setIsUpdateDismissed(true)}
@@ -3943,11 +4358,8 @@ export function App(): React.JSX.Element {
                   </svg>
                 </div>
                 <div className="update-modal-header-text">
-                  <h3 id="update-modal-title" className="update-modal-title">
-                    Pembaruan Tersedia
-                  </h3>
-                  <p className="update-modal-version-tag">
-                    Motion Suite Pro <strong>v{updateVersion || '1.0.6'}</strong>
+                  <h3 id="update-modal-title" className="update-modal-title">{updatePhase === 'downloading' ? t("update.downloadingTitle") : updatePhase === 'downloaded' ? t("Pembaruan Siap Dipasang!") : t("Pembaruan Tersedia")}</h3>
+                  <p className="update-modal-version-tag"> {t("Motion Suite Pro")} <strong>{updateVersion ? `v${updateVersion}` : t("update.versionUnknown")}</strong>
                   </p>
                 </div>
               </div>
@@ -3955,7 +4367,7 @@ export function App(): React.JSX.Element {
                 type="button"
                 className="update-modal-close-btn"
                 onClick={() => setIsUpdateDismissed(true)}
-                title="Tutup (Nanti Saja)"
+                title={t("Tutup (Nanti Saja)")}
               >
                 ✕
               </button>
@@ -3963,44 +4375,9 @@ export function App(): React.JSX.Element {
 
             {/* Modal Body */}
             <div className="update-modal-body">
-              <p className="update-modal-description">
-                Versi baru Motion Suite Pro v{updateVersion || '1.0.6'} telah tersedia. Pembaruan ini mencakup peningkatan engine rendering, pembaruan fitur visual, dan peningkatan stabilitas.
-              </p>
+              <p className="update-modal-description">{t("update.availableDescription", { p0: updateVersion ? `v${updateVersion}` : t("update.versionUnknown") })}</p>
 
-              {/* Rincian Fitur Pembaruan v1.0.6 */}
-              <div
-                style={{
-                  background: 'rgba(15, 23, 42, 0.75)',
-                  border: '1px solid rgba(56, 189, 248, 0.25)',
-                  borderRadius: '10px',
-                  padding: '12px 14px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '8px'
-                }}
-              >
-                <div style={{ fontSize: '12px', fontWeight: 700, color: '#38bdf8', letterSpacing: '0.5px' }}>
-                  HIGHLIGHT FITUR PEMBARUAN v1.0.6:
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12px', color: '#e2e8f0', lineHeight: 1.45 }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                    <span style={{ fontSize: '14px', flexShrink: 0 }}>⚡</span>
-                    <span><strong>Engine Prompt-to-Code v1.0.6:</strong> Vektor masif berdimensi &amp; layout split-stage 16:9.</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                    <span style={{ fontSize: '14px', flexShrink: 0 }}>🛡️</span>
-                    <span><strong>Silent Dry-Run Verification:</strong> Pengujian render 1-frame di latar belakang sebelum konfirmasi.</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                    <span style={{ fontSize: '14px', flexShrink: 0 }}>🔧</span>
-                    <span><strong>Auto-Fix Cerdas:</strong> Perlindungan anti-crash NaN, pembagian nol, dan finite range check.</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                    <span style={{ fontSize: '14px', flexShrink: 0 }}>🎨</span>
-                    <span><strong>Multi-Style Adaptation:</strong> Bebas gaya visual (Pop Art, Modern SaaS, Bold Sports, Editorial).</span>
-                  </div>
-                </div>
-              </div>
+              <UpdateReleaseNotes version={updateVersion} notes={updateReleaseNotes?.version === updateVersion ? updateReleaseNotes.notes : undefined} />
 
               {/* Catatan Keamanan Resmi macOS (Khusus macOS) */}
               {isMacPlatform && (
@@ -4016,25 +4393,10 @@ export function App(): React.JSX.Element {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, color: '#34d399' }}>
-                    <span>🍏</span>
-                    <span>Pemberitahuan Resmi macOS:</span>
+                    <span><StudioIcon /></span>
+                    <span>{t("Pemberitahuan Resmi macOS:")}</span>
                   </div>
-                  <p style={{ margin: 0, fontSize: '12px', color: '#d1fae5', lineHeight: '1.55' }}>
-                    Pembaruan versi 1.0.6 disediakan melalui Google Drive resmi Motion Suite Pro untuk instalasi manual yang aman dan stabil. File installer (.dmg) 100% bersih dan terverifikasi oleh pengembang.
-                  </p>
-                </div>
-              )}
-
-              {/* Release Notes Area */}
-              {updateReleaseNotes && updateReleaseNotes !== 'Pembaruan stabilitas dan peningkatan performa sistem.' && (
-                <div className="update-modal-notes-section">
-                  <div className="update-modal-notes-label">
-                    <span>Catatan Rilis (Release Notes):</span>
-                    <span className="update-modal-tag">v{updateVersion || '1.0.6'}</span>
-                  </div>
-                  <div className="update-release-notes-box">
-                    {updateReleaseNotes}
-                  </div>
+                  <p style={{ margin: 0, fontSize: '12px', color: '#d1fae5', lineHeight: '1.55' }}> {t("Pembaruan versi 1.0.7 disediakan melalui Google Drive resmi Motion Suite Pro untuk instalasi manual yang aman dan stabil. File installer (.dmg) 100% bersih dan terverifikasi oleh pengembang.")} </p>
                 </div>
               )}
 
@@ -4044,8 +4406,8 @@ export function App(): React.JSX.Element {
                   <div className="update-progress-info">
                     <span className="update-progress-label">
                       {updatePercent >= 100
-                        ? 'Memverifikasi paket instalasi...'
-                        : 'Mengunduh pembaruan di latar belakang...'}
+                        ? t("Memverifikasi paket instalasi...")
+                        : t("Mengunduh pembaruan di latar belakang...")}
                     </span>
                     <span className="update-progress-number">{updatePercent}%</span>
                   </div>
@@ -4061,12 +4423,10 @@ export function App(): React.JSX.Element {
               {/* Download Completed Notification (Windows / Default) */}
               {!isMacPlatform && updatePhase === 'downloaded' && (
                 <div className="update-modal-downloaded-banner">
-                  <span style={{ fontSize: '18px' }}>🎉</span>
+                  <span style={{ fontSize: '18px' }}><StudioIcon /></span>
                   <div className="downloaded-text">
-                    <strong>Pembaruan Siap Dipasang!</strong>
-                    <span>
-                      Paket instalasi v{updateVersion || '1.0.6'} telah selesai diunduh dan diverifikasi. Klik tombol di bawah untuk memasang dan me-restart aplikasi.
-                    </span>
+                    <strong>{t("Pembaruan Siap Dipasang!")}</strong>
+                    <span>{t("update.downloadedDescription", { p0: updateVersion ? `v${updateVersion}` : t("update.versionUnknown") })}</span>
                   </div>
                 </div>
               )}
@@ -4074,7 +4434,7 @@ export function App(): React.JSX.Element {
               {/* Error Banner if any */}
               {updateErrorMsg && (
                 <div className="update-modal-error-banner">
-                  <span>⚠️</span>
+                  <span><StudioIcon /></span>
                   <span>{updateErrorMsg}</span>
                 </div>
               )}
@@ -4088,9 +4448,7 @@ export function App(): React.JSX.Element {
                     type="button"
                     className="update-modal-btn secondary"
                     onClick={() => setIsUpdateDismissed(true)}
-                  >
-                    Nanti Saja
-                  </button>
+                  > {t("Nanti Saja")} </button>
                   <button
                     type="button"
                     className="update-modal-btn primary"
@@ -4100,8 +4458,8 @@ export function App(): React.JSX.Element {
                       borderColor: '#10b981'
                     }}
                   >
-                    <span>📥</span>
-                    <span>Unduh via Google Drive Resmi</span>
+                    <span><StudioIcon /></span>
+                    <span>{t("Unduh via Google Drive Resmi")}</span>
                   </button>
                 </>
               ) : (
@@ -4112,16 +4470,14 @@ export function App(): React.JSX.Element {
                         type="button"
                         className="update-modal-btn secondary"
                         onClick={() => setIsUpdateDismissed(true)}
-                      >
-                        Nanti Saja
-                      </button>
+                      > {t("Nanti Saja")} </button>
                       <button
                         type="button"
                         className="update-modal-btn primary"
                         onClick={handleStartUpdateDownload}
                       >
-                        <span>⚡</span>
-                        <span>Update Sekarang</span>
+                        <span><StudioIcon /></span>
+                        <span>{t("Update Sekarang")}</span>
                       </button>
                     </>
                   )}
@@ -4132,17 +4488,15 @@ export function App(): React.JSX.Element {
                         type="button"
                         className="update-modal-btn secondary"
                         onClick={() => setIsUpdateDismissed(true)}
-                      >
-                        Sembunyikan (Unduh di Latar)
-                      </button>
+                      > {t("Sembunyikan (Unduh di Latar)")} </button>
                       {updateErrorMsg ? (
                         <button
                           type="button"
                           className="update-modal-btn primary retry"
                           onClick={handleStartUpdateDownload}
                         >
-                          <span>🔄</span>
-                          <span>Coba Lagi</span>
+                          <span><StudioIcon /></span>
+                          <span>{t("Coba Lagi")}</span>
                         </button>
                       ) : (
                         <button
@@ -4150,7 +4504,7 @@ export function App(): React.JSX.Element {
                           className="update-modal-btn primary disabled"
                           disabled
                         >
-                          <span>Mengunduh ({updatePercent}%)...</span>
+                          <span>{t("Mengunduh (")}{updatePercent}%)...</span>
                         </button>
                       )}
                     </>
@@ -4162,16 +4516,14 @@ export function App(): React.JSX.Element {
                         type="button"
                         className="update-modal-btn secondary"
                         onClick={() => setIsUpdateDismissed(true)}
-                      >
-                        Nanti Saja
-                      </button>
+                      > {t("Nanti Saja")} </button>
                       <button
                         type="button"
                         className="update-modal-btn primary install"
                         onClick={handleRestartAndInstall}
                       >
-                        <span>🚀</span>
-                        <span>Pasang &amp; Restart</span>
+                        <span><StudioIcon /></span>
+                        <span>{t("Pasang &amp; Restart")}</span>
                       </button>
                     </>
                   )}
@@ -4239,7 +4591,7 @@ export function App(): React.JSX.Element {
                   cursor: 'pointer',
                   padding: '4px 8px'
                 }}
-                title="Tutup"
+                title={t("Tutup")}
               >
                 ✕
               </button>
@@ -4248,18 +4600,16 @@ export function App(): React.JSX.Element {
               {(licenseStatus.isClockDesynced || licenseStatus.statusCode === 'CLOCK_DESYNC') && (
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                    <span style={{ fontSize: '32px' }}>⏰</span>
+                    <span style={{ fontSize: '32px' }}><StudioIcon /></span>
                     <div>
-                      <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#fbbf24' }}>
-                        Manipulasi Jam Sistem Terdeteksi
-                      </h3>
-                      <span style={{ fontSize: '12px', color: '#9ca3af' }}>Anti-Clock Rollback Guard Active</span>
+                      <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#fbbf24' }}> {t("Manipulasi Jam Sistem Terdeteksi")} </h3>
+                      <span style={{ fontSize: '12px', color: '#9ca3af' }}>{t("Anti-Clock Rollback Guard Active")}</span>
                     </div>
                   </div>
 
                   <p style={{ fontSize: '13px', color: '#d1d5db', lineHeight: '1.6', marginBottom: '16px' }}>
-                    {licenseStatus.statusMessage ||
-                      'Sistem mendeteksi bahwa tanggal/jam lokal perangkat Anda dimundurkan dari waktu rekaman sebelumnya. Untuk melindungi integritas lisensi, fitur render dan generator AI dikunci sementara.'}
+                    {message(licenseStatus.statusMessage ||
+                      'Sistem mendeteksi bahwa tanggal/jam lokal perangkat Anda dimundurkan dari waktu rekaman sebelumnya. Untuk melindungi integritas lisensi, fitur render dan generator AI dikunci sementara.')}
                   </p>
 
                   <div
@@ -4273,9 +4623,7 @@ export function App(): React.JSX.Element {
                       color: '#fef3c7',
                       lineHeight: '1.5'
                     }}
-                  >
-                    💡 <strong>Solusi Mudah:</strong> Klik tombol di bawah untuk menyinkronkan waktu dengan server internet (Google/Cloudflare). Jam sistem Anda akan terverifikasi dan akses fitur akan terbuka kembali seketika.
-                  </div>
+                  ><StudioIcon /><strong>{t("Solusi Mudah:")}</strong> {t("Klik tombol di bawah untuk menyinkronkan waktu dengan server internet (Google/Cloudflare). Jam sistem Anda akan terverifikasi dan akses fitur akan terbuka kembali seketika.")} </div>
 
                   {timeSyncFeedback && (
                     <div
@@ -4295,7 +4643,7 @@ export function App(): React.JSX.Element {
                         color: timeSyncFeedback.type === 'success' ? '#4ade80' : '#f87171'
                       }}
                     >
-                      {timeSyncFeedback.message}
+                      {message(timeSyncFeedback.message)}
                     </div>
                   )}
 
@@ -4323,12 +4671,12 @@ export function App(): React.JSX.Element {
                       {isSyncingTime ? (
                         <>
                           <span className="ai-status-spinner" />
-                          <span>Menyinkronkan Waktu Internet...</span>
+                          <span>{t("Menyinkronkan Waktu Internet...")}</span>
                         </>
                       ) : (
                         <>
-                          <span>🔄</span>
-                          <span>Sinkronkan Waktu via Internet (1-Klik)</span>
+                          <span><StudioIcon /></span>
+                          <span>{t("Sinkronkan Waktu via Internet (1-Klik)")}</span>
                         </>
                       )}
                     </button>
@@ -4340,18 +4688,16 @@ export function App(): React.JSX.Element {
               {!licenseStatus.isClockDesynced && licenseStatus.statusCode === 'EXPIRED' && (
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                    <span style={{ fontSize: '32px' }}>⏳</span>
+                    <span style={{ fontSize: '32px' }}><StudioIcon /></span>
                     <div>
-                      <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#f87171' }}>
-                        Masa Berlaku Lisensi Telah Berakhir
-                      </h3>
-                      <span style={{ fontSize: '12px', color: '#9ca3af' }}>Subscription Expired</span>
+                      <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#f87171' }}> {t("Masa Berlaku Lisensi Telah Berakhir")} </h3>
+                      <span style={{ fontSize: '12px', color: '#9ca3af' }}>{t("Subscription Expired")}</span>
                     </div>
                   </div>
 
                   <p style={{ fontSize: '13px', color: '#d1d5db', lineHeight: '1.6', marginBottom: '16px' }}>
-                    {licenseStatus.statusMessage ||
-                      'Masa aktif lisensi Anda telah habis. Masukkan Kunci Lisensi baru atau perpanjang lisensi Anda untuk melanjutkan ekspor video dan fitur generator AI.'}
+                    {message(licenseStatus.statusMessage ||
+                      'Masa aktif lisensi Anda telah habis. Masukkan Kunci Lisensi baru atau perpanjang lisensi Anda untuk melanjutkan ekspor video dan fitur generator AI.')}
                   </p>
 
                   <div
@@ -4364,7 +4710,7 @@ export function App(): React.JSX.Element {
                       fontSize: '12px'
                     }}
                   >
-                    <div style={{ color: '#9ca3af', marginBottom: '4px' }}>Hardware Machine ID Perangkat Anda:</div>
+                    <div style={{ color: '#9ca3af', marginBottom: '4px' }}>{t("Hardware Machine ID Perangkat Anda:")}</div>
                     <code
                       style={{
                         display: 'inline-block',
@@ -4379,10 +4725,9 @@ export function App(): React.JSX.Element {
                         navigator.clipboard.writeText(licenseStatus.machineId)
                         setLicenseFeedback({ type: 'success', message: 'Machine ID disalin!' })
                       }}
-                      title="Klik untuk menyalin"
+                      title={t("Klik untuk menyalin")}
                     >
-                      {licenseStatus.machineId} 📋
-                    </code>
+                      {licenseStatus.machineId}<StudioIcon /></code>
                   </div>
 
                   <div style={{ marginBottom: '14px' }}>
@@ -4394,12 +4739,10 @@ export function App(): React.JSX.Element {
                         color: '#e5e7eb',
                         marginBottom: '6px'
                       }}
-                    >
-                      Masukkan Kunci Lisensi Baru:
-                    </label>
+                    > {t("Masukkan Kunci Lisensi Baru:")} </label>
                     <input
                       type="text"
-                      placeholder="Tempel kunci lisensi baru di sini..."
+                      placeholder={t("Tempel kunci lisensi baru di sini...")}
                       value={licenseKeyInput}
                       onChange={(e) => setLicenseKeyInput(e.target.value)}
                       style={{
@@ -4433,7 +4776,7 @@ export function App(): React.JSX.Element {
                         color: licenseFeedback.type === 'success' ? '#4ade80' : '#f87171'
                       }}
                     >
-                      {licenseFeedback.message}
+                      {message(licenseFeedback.message)}
                     </div>
                   )}
 
@@ -4461,12 +4804,12 @@ export function App(): React.JSX.Element {
                       {isLicenseValidating ? (
                         <>
                           <span className="ai-status-spinner" />
-                          <span>Memvalidasi Lisensi...</span>
+                          <span>{t("Memvalidasi Lisensi...")}</span>
                         </>
                       ) : (
                         <>
-                          <span>⚡</span>
-                          <span>Aktifkan Lisensi Baru</span>
+                          <span><StudioIcon /></span>
+                          <span>{t("Aktifkan Lisensi Baru")}</span>
                         </>
                       )}
                     </button>

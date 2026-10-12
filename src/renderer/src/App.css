@@ -157,16 +157,27 @@
 .update-release-notes-box {
   max-height: 220px;
   overflow-y: auto;
-  background: rgba(5, 8, 16, 0.75);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  padding: 12px 14px;
-  font-size: 12.5px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 10px;
+  font-size: 13px;
   color: #cbd5e1;
   line-height: 1.6;
-  white-space: pre-wrap;
-  word-break: break-word;
+  overflow-wrap: anywhere;
   font-family: inherit;
+}
+
+.update-release-notes-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.update-release-notes-empty {
+  margin: 0;
+  color: #94a3b8;
 }
 
 .update-release-notes-box::-webkit-scrollbar {
@@ -3628,6 +3639,20 @@
   display: block;
 }
 
+/* WYSIWYG Checkerboard Pattern for Transparent Canvas Preview (After Effects Neutral Gray Standard) */
+.studio-iframe-frame.transparent-preview,
+.studio-iframe-clip-wrapper.transparent-preview,
+.fullscreen-preview-body.transparent-preview,
+.player-inner.transparent-preview {
+  background: repeating-conic-gradient(#3a3a3a 0% 25%, #222222 0% 50%) 50% / 20px 20px !important;
+}
+
+.studio-iframe,
+.fullscreen-preview-iframe {
+  background: transparent !important;
+}
+
+
 /* Native Motion Studio Player Controls Bar */
 .native-player-controls-bar {
   display: flex;
@@ -4592,6 +4617,14 @@
   opacity: 0.45;
   cursor: not-allowed;
   border-color: rgba(255, 255, 255, 0.08);
+}
+
+.render-bg-select option:disabled {
+  color: rgba(255, 255, 255, 0.38) !important;
+  background-color: #0f172a !important;
+  opacity: 0.4 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
 }
 
 .render-bg-caret {
@@ -7407,7 +7440,14 @@
   height: calc(100% + 46px) !important;
   margin-top: -46px !important;
   border: none;
+  background: transparent !important;
+  background-color: transparent !important;
   display: block;
+}
+
+.studio-iframe-clip-wrapper.transparent-preview {
+  background: repeating-conic-gradient(#3a3a3a 0% 25%, #222222 0% 50%) 50% / 20px 20px !important;
+  background-color: #222222 !important;
 }
 
 /* Pin bottom controls bar without obstruction */
@@ -7695,3 +7735,176 @@
   }
 }
 
+/* Professional Motion Studio: scoped to application chrome, never composition artwork. */
+body .motion-app {
+  --studio-bg: #15191d;
+  --studio-panel: #1c2227;
+  --studio-raised: #242c32;
+  --studio-border: #39444d;
+  --studio-text: #e6ecef;
+  --studio-muted: #a7b1b9;
+  --studio-accent: #72b7ad;
+  color: var(--studio-text);
+  background: var(--studio-bg);
+  font-family: Inter, "Segoe UI", system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+}
+body .motion-app *, body .param-tweaker-drawer * { box-sizing: border-box; }
+body .motion-app [hidden] { display: none !important; }
+body .motion-app .app-header {
+  min-height: 56px; height: auto; padding: 8px 16px; gap: 16px;
+  background: var(--studio-panel); border-bottom: 1px solid var(--studio-border); box-shadow: none;
+}
+body .motion-app .brand-title { font-size: 14px; letter-spacing: .06em; color: var(--studio-text); }
+body .motion-app .brand-icon, body .motion-app .brand-badge,
+body .motion-app .ai-model-badge, body .motion-app .meta-status {
+  background: transparent; color: var(--studio-muted); box-shadow: none; border-color: var(--studio-border);
+}
+body .motion-app .header-nav-tabs { gap: 4px; }
+body .motion-app .nav-tab-btn { color: var(--studio-muted); background: transparent; border-radius: 6px; padding: 8px 12px; }
+body .motion-app .nav-tab-btn.active { color: var(--studio-accent); background: var(--studio-raised); box-shadow: none; }
+body .motion-app .header-meta { gap: 12px; flex-wrap: wrap; }
+body .motion-app .language-control { display: flex; gap: 8px; align-items: center; color: var(--studio-muted); font-size: 12px; }
+body .motion-app .language-control select { width: 105px; min-height: 32px; padding: 4px 8px; }
+body .motion-app .app-layout { display: flex; gap: 16px; padding: 16px; min-height: 0; overflow: hidden; background: var(--studio-bg); }
+body .motion-app .left-column { flex: 0 0 304px; width: 304px; min-width: 0; max-width: 304px; overflow-y: auto; padding-right: 4px; }
+body .motion-app .right-column { flex: 1 1 0; width: auto; min-width: 0; min-height: 0; overflow-y: auto; }
+body .motion-app .ai-creator-section { gap: 12px; }
+body .motion-app .ai-generator-card, body .motion-app .api-key-accordion,
+body .motion-app .license-validation-card, body .motion-app .video-specs-card,
+body .motion-app .full-editor-container, body .motion-app .preview-panel,
+body .motion-app .chat-modal, body .motion-app .autofix-modal,
+body .motion-app .update-modal, body .motion-app .critical-license-card {
+  background: var(--studio-panel); border: 1px solid var(--studio-border); border-radius: 8px; box-shadow: none;
+}
+body .motion-app .ai-generator-card { padding: 16px; }
+body .motion-app .ai-generator-header { margin-bottom: 12px; }
+body .motion-app .ai-card-title { color: var(--studio-text); font-weight: 600; }
+body .motion-app .form-group { margin-top: 16px; }
+body .motion-app .form-sublabel { color: var(--studio-muted); font-size: 12px; line-height: 1.5; }
+body .motion-app .form-sublabel input[type="checkbox"] { margin-right: 6px; accent-color: var(--studio-accent); }
+body .motion-app input:not([type="color"]):not([type="range"]):not([type="checkbox"]),
+body .motion-app select, body .motion-app textarea {
+  background: #11171c; border: 1px solid var(--studio-border); color: var(--studio-text); border-radius: 6px; box-shadow: none;
+}
+body .motion-app input::placeholder, body .motion-app textarea::placeholder { color: #a7b1b9; opacity: 1; }
+body .motion-app select { min-height: 34px; white-space: normal; }
+body .motion-app .ai-prompt-input { min-height: 112px; padding: 12px; line-height: 1.6; resize: vertical; }
+body .motion-app button { border-radius: 6px; box-shadow: none !important; text-shadow: none; transition: background-color .12s, border-color .12s; }
+body .motion-app button:not(.nav-tab-btn):not(.btn-generate-ai):not(.btn-render):not(.btn-apply-code):not(.btn-update-now):not(.btn-validate-license):not(.btn-install-update) {
+  color: var(--studio-text); background: var(--studio-raised); border-color: var(--studio-border);
+}
+body .motion-app .btn-generate-ai, body .motion-app .btn-render, body .motion-app .btn-apply-code,
+body .motion-app .btn-update-now, body .motion-app .btn-validate-license, body .motion-app .btn-install-update {
+  background: var(--studio-accent); color: #102825; border: 1px solid var(--studio-accent); font-weight: 600;
+}
+body .motion-app button:hover:not(:disabled) { filter: brightness(1.08); transform: none; }
+body .motion-app button:disabled { opacity: .5; cursor: not-allowed; filter: none; }
+body .motion-app :is(button,input,select,textarea,[tabindex]):focus-visible {
+  outline: 2px solid var(--studio-accent); outline-offset: 2px;
+}
+body .motion-app .license-card-header { padding: 10px 12px; }
+body .motion-app .license-card-body { padding: 12px; }
+body .motion-app .license-validation-card.valid { border-color: var(--studio-border); }
+body .motion-app .license-settings-toggle { margin: 0 12px 10px; padding: 4px 8px; font-size: 12px; }
+body .motion-app .api-key-accordion-header { padding: 12px; }
+body .motion-app .ref-image-dropzone { background: transparent; border-color: var(--studio-border); padding: 12px; }
+body .motion-app .ref-dropzone-text, body .motion-app .ref-dropzone-hint { font-size: 12px; color: var(--studio-muted); }
+body .motion-app .full-editor-container { flex: 1; min-height: 0; display: flex; flex-direction: column; margin: 16px; overflow: hidden; }
+body .motion-app .full-editor-body { flex: 1; min-height: 0; }
+body .motion-app .full-code-textarea { width: 100%; height: 100%; min-height: 180px; font-family: Consolas, monospace; font-size: 13px; line-height: 1.6; border-radius: 0; padding: 16px; }
+body .motion-app .full-editor-header, body .motion-app .full-editor-footer { background: var(--studio-panel); flex-wrap: wrap; gap: 8px; }
+body .motion-app .full-editor-desc { color: var(--studio-muted); }
+body .motion-app .render-controls { flex-wrap: wrap; gap: 8px; }
+body .motion-app .preview-header { background: var(--studio-panel); flex-wrap: wrap; gap: 8px; }
+body .motion-app .preview-container { box-shadow: none !important; }
+body .motion-app :is(.text-cyan-400,.text-purple-400,.text-blue-400) { color: var(--studio-accent); }
+body .motion-app :is(.chat-modal,.autofix-modal,.update-modal,.critical-license-card) { max-width: min(720px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow-y: auto; }
+body .motion-app .ai-gen-status-box { padding: 12px; border-radius: 6px; }
+body .motion-app .ai-gen-status-box.error { border-color: #e39a99; color: #f2b6b5; }
+body .motion-app .ai-gen-status-box.success { border-color: #82c9aa; color: #a7dec5; }
+body .motion-app .ai-gen-status-box.info { border-color: var(--studio-border); color: var(--studio-text); }
+body .motion-app .ai-gen-status-box pre { overflow-x: auto; max-height: 180px; }
+.studio-icon { display: inline-block; flex-shrink: 0; vertical-align: middle; color: currentColor; }
+@media (max-width: 1120px) {
+  body .motion-app .app-layout { gap: 12px; padding: 12px; }
+  body .motion-app .left-column { flex-basis: 280px; width: 280px; max-width: 280px; }
+  body .motion-app .app-header { gap: 8px; padding: 8px 12px; }
+  body .motion-app .meta-status { display: none; }
+}
+@media (max-height: 650px) {
+  body .motion-app .app-layout { padding-top: 8px; padding-bottom: 8px; }
+  body .motion-app .app-header { min-height: 48px; }
+  body .motion-app .preview-container { min-height: 190px; }
+}
+
+body .motion-app .btn-render-motion {
+  background: var(--studio-accent) !important; color: #102825 !important;
+  border: 1px solid var(--studio-accent); font-weight: 600;
+}
+body .motion-app .btn-export-video-primary {
+  background: var(--studio-accent) !important; color: #102825 !important;
+  border: 1px solid var(--studio-accent); font-weight: 600;
+}
+body .motion-app .full-editor-toolbar { background: var(--studio-panel); flex-wrap: wrap; gap: 12px; }
+body .motion-app .full-editor-title, body .motion-app .full-editor-icon { color: var(--studio-text); }
+body .motion-app .editor-tech-badge { color: var(--studio-muted); background: transparent; border-color: var(--studio-border); }
+body .motion-app .video-specs-section { background: var(--studio-panel); border: 1px solid var(--studio-border); border-radius: 8px; padding: 12px; }
+body .motion-app .specs-summary-badge { color: var(--studio-muted); background: var(--studio-raised); border-color: var(--studio-border); }
+body .motion-app .ai-sparkle-icon { color: var(--studio-accent); }
+body .motion-app .preview-empty-state { background: var(--studio-panel); color: var(--studio-muted); }
+
+/* Final workstation polish: presentation only; player and artwork are untouched. */
+body .motion-app .left-column { padding: 0 4px 16px 0; gap: 16px; }
+body .motion-app .ai-creator-section { gap: 10px; }
+body .motion-app .ai-generator-card { padding: 14px; border: 0; background: var(--studio-panel); }
+body .motion-app .ai-generator-header { margin-bottom: 10px; }
+body .motion-app .ai-prompt-input { min-height: 100px; padding: 10px; line-height: 1.5; }
+body .motion-app .animation-type-control { display: flex; flex-direction: column; gap: 5px; margin: 12px 0; }
+body .motion-app .animation-type-control label { font-size: 12px; font-weight: 600; color: var(--studio-text); }
+body .motion-app .animation-type-control select { width: 100% !important; }
+body .motion-app .animation-type-control small { margin: 0; line-height: 1.4; }
+body .motion-app > .animation-type-control { flex-direction: row; align-items: center; margin: 0; padding: 8px 20px; }
+body .motion-app > .animation-type-control select { width: auto !important; }
+body .motion-app .ai-generator-card > .form-group { margin-top: 10px; }
+body .motion-app .generation-actions { display: flex; flex-direction: column; gap: 8px; margin: 14px 0 10px; }
+body .motion-app .generation-mode-hint { margin: 6px 0 0; color: var(--studio-muted); font-size: 12px; line-height: 1.4; }
+body .motion-app .generation-actions .btn-generate-ai { margin: 0; min-height: 40px; padding: 10px 12px; animation: none; }
+body .motion-app .ai-sparkle-icon { animation: none; }
+body .motion-app .generation-options { border-top: 1px solid var(--studio-border); margin-top: 12px; padding-top: 10px; }
+body .motion-app .generation-options > summary { cursor: pointer; font-size: 12px; font-weight: 600; color: var(--studio-muted); }
+body .motion-app .generation-options[open] > summary { margin-bottom: 12px; }
+body .motion-app .generation-options .form-sublabel { display: block; margin-bottom: 10px; }
+body .motion-app .reference-attached { display: block; margin: 4px 0 0 14px; color: var(--studio-accent); font-weight: 400; }
+body .motion-app .license-validation-card, body .motion-app .api-key-accordion { border: 0; background: transparent; border-radius: 0; }
+body .motion-app .license-card-header { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px 2px; }
+body .motion-app .license-header-left { margin-right: auto; }
+body .motion-app .license-settings-toggle { margin: 0; padding: 4px 8px; min-height: 28px; }
+body .motion-app .license-card-body { border-top: 1px solid var(--studio-border); padding: 10px 2px; }
+body .motion-app .api-key-accordion-header { padding: 8px 2px; gap: 8px; }
+body .motion-app .api-key-accordion-body { border-top: 1px solid var(--studio-border); padding: 10px 2px; }
+body .motion-app .specs-section { background: transparent; border: 0; border-top: 1px solid var(--studio-border); border-radius: 0; padding: 16px 0 0; }
+body .motion-app .specs-header-row { flex-wrap: wrap; gap: 6px; }
+body .motion-app .specs-select { min-height: 36px; padding: 7px 10px; }
+body .motion-app .streamlined-preview-bar { gap: 8px; border: 0; background: var(--studio-panel); box-shadow: none; }
+body .motion-app .studio-iframe-frame { box-shadow: none !important; border-color: var(--studio-border) !important; }
+body .motion-app .canvas-booting-state { background: var(--studio-panel); }
+body .motion-app .cyber-spinner-ring { box-shadow: none; filter: none; border-top-color: var(--studio-accent); }
+body .motion-app .booting-title { text-shadow: none; }
+body .motion-app .render-export-row { flex-wrap: wrap; gap: 8px; }
+body .motion-app .render-export-left-controls { flex-wrap: wrap; overflow: visible; gap: 8px; }
+body .motion-app .full-editor-toolbar { padding: 12px 16px; }
+body .motion-app .full-editor-actions { flex-wrap: wrap; gap: 8px; }
+body .motion-app .btn-editor-tool { min-height: 36px; padding: 8px 12px; }
+body .motion-app .full-editor-title { font-size: 16px; }
+body .motion-app .full-editor-subtitle { color: var(--studio-muted); font-size: 12px; line-height: 1.5; }
+@media (max-width: 1120px) {
+  body .motion-app .nav-tab-btn { padding: 7px 8px; font-size: 12px; }
+  body .motion-app .brand-title { font-size: 13px; }
+  body .motion-app .header-meta { gap: 6px; }
+}
+@media (max-height: 650px) {
+  body .motion-app .ai-prompt-input { min-height: 82px; }
+  body .motion-app .ai-generator-card { padding: 12px; }
+}

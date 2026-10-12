@@ -1,3 +1,4 @@
+import { useUiLanguage, StudioIcon } from '../i18n'
 import React, { useState, useEffect } from 'react'
 import {
   rasioOptions,
@@ -25,6 +26,7 @@ export const TemplateCustomAI: React.FC<TemplateCustomAIProps> = ({
   onApplyAndGenerate,
   isGenerating = false
 }) => {
+  const { t, message } = useUiLanguage()
   const [params, setParams] = useState<TemplateParams>(defaultTemplateParams)
   const [outputPrompt, setOutputPrompt] = useState<string>('')
   const [isAiEnriching, setIsAiEnriching] = useState<boolean>(false)
@@ -166,29 +168,23 @@ export const TemplateCustomAI: React.FC<TemplateCustomAIProps> = ({
       {/* Header Bar */}
       <div className="template-header-bar">
         <div className="template-title-group">
-          <div className="template-badge-pro">MOTION CORE ENGINE v1.2</div>
-          <h2 className="template-main-title">🪄 Design Architect</h2>
-          <p className="template-sub-title">
-            Mesin parameter preset visual & peracik prompt terstruktur untuk video motion graphics berbasis AI.
-          </p>
+          <div className="template-badge-pro">{t("MOTION CORE ENGINE v1.2")}</div>
+          <h2 className="template-main-title">{t("🪄 Design Architect")}</h2>
+          <p className="template-sub-title"> {t("Mesin parameter preset visual & peracik prompt terstruktur untuk video motion graphics berbasis AI.")} </p>
         </div>
         <div className="template-header-actions">
           <button
             type="button"
             className="btn-template-tool"
             onClick={handleRandomizeAll}
-            title="Acak seluruh parameter untuk ide instan"
-          >
-            🎲 Acak Parameter (Random)
-          </button>
+            title={t("Acak seluruh parameter untuk ide instan")}
+          > {t("🎲 Acak Parameter (Random)")} </button>
           <button
             type="button"
             className="btn-template-tool secondary"
             onClick={() => setParams(defaultTemplateParams)}
-            title="Kembalikan ke pengaturan awal"
-          >
-            🔄 Reset
-          </button>
+            title={t("Kembalikan ke pengaturan awal")}
+          > {t("🔄 Reset")} </button>
         </div>
       </div>
 
@@ -197,13 +193,13 @@ export const TemplateCustomAI: React.FC<TemplateCustomAIProps> = ({
         {/* Kolom Kiri: Format, Dimensi & Gaya Dasar */}
         <div className="template-card-column">
           <div className="column-card-header">
-            <span className="column-card-icon">📐</span>
-            <span className="column-card-title">Dimensi, Timing & Art Style</span>
+            <span className="column-card-icon"><StudioIcon /></span>
+            <span className="column-card-title">{t("Dimensi, Timing & Art Style")}</span>
           </div>
 
           {/* Rasio Resolusi */}
           <div className="template-form-group">
-            <label className="template-form-label">Rasio Resolusi</label>
+            <label className="template-form-label">{t("Rasio Resolusi")}</label>
             <div className="template-select-wrap">
               <select
                 className="template-select"
@@ -212,7 +208,7 @@ export const TemplateCustomAI: React.FC<TemplateCustomAIProps> = ({
               >
                 {rasioOptions.map((opt) => (
                   <option key={opt} value={opt}>
-                    {opt}
+                    {t(opt)}
                   </option>
                 ))}
               </select>
@@ -223,7 +219,7 @@ export const TemplateCustomAI: React.FC<TemplateCustomAIProps> = ({
           {/* Waktu Video & FPS Grid */}
           <div className="template-form-row">
             <div className="template-form-group flex-1">
-              <label className="template-form-label">Waktu Video</label>
+              <label className="template-form-label">{t("Waktu Video")}</label>
               <div className="template-select-wrap">
                 <select
                   className="template-select"
@@ -232,7 +228,7 @@ export const TemplateCustomAI: React.FC<TemplateCustomAIProps> = ({
                 >
                   {waktuOptions.map((opt) => (
                     <option key={opt} value={opt}>
-                      {opt}
+                      {t(opt)}
                     </option>
                   ))}
                 </select>
@@ -241,7 +237,7 @@ export const TemplateCustomAI: React.FC<TemplateCustomAIProps> = ({
             </div>
 
             <div className="template-form-group flex-1">
-              <label className="template-form-label">Frame Rate</label>
+              <label className="template-form-label">{t("Frame Rate")}</label>
               <div className="template-select-wrap">
                 <select
                   className="template-select"
@@ -250,7 +246,7 @@ export const TemplateCustomAI: React.FC<TemplateCustomAIProps> = ({
                 >
                   {fpsOptions.map((opt) => (
                     <option key={opt} value={opt}>
-                      {opt}
+                      {t(opt)}
                     </option>
                   ))}
                 </select>
@@ -261,21 +257,20 @@ export const TemplateCustomAI: React.FC<TemplateCustomAIProps> = ({
 
           {/* Tema Video (Opsional) */}
           <div className="template-form-group">
-            <label className="template-form-label">
-              Tema Video <span className="label-optional">(Opsional)</span>
+            <label className="template-form-label"> {t("Tema Video")} <span className="label-optional">{t("(Opsional)")}</span>
             </label>
             <input
               type="text"
               className="template-input-text"
               value={params.tema}
               onChange={(e) => handleChangeParam('tema', e.target.value)}
-              placeholder="Misal: Flash Sale Diskon 70%, Cyber System Alert, Podcast Intro..."
+              placeholder={t("Misal: Flash Sale Diskon 70%, Cyber System Alert, Podcast Intro...")}
             />
           </div>
 
           {/* Art Style / Aesthetic */}
           <div className="template-form-group">
-            <label className="template-form-label">Art Style / Aesthetic</label>
+            <label className="template-form-label">{t("Art Style / Aesthetic")}</label>
             <div className="template-select-wrap">
               <select
                 className="template-select"
@@ -284,7 +279,7 @@ export const TemplateCustomAI: React.FC<TemplateCustomAIProps> = ({
               >
                 {artStyles.map((opt) => (
                   <option key={opt} value={opt}>
-                    {opt}
+                    {t(opt)}
                   </option>
                 ))}
               </select>
@@ -296,13 +291,13 @@ export const TemplateCustomAI: React.FC<TemplateCustomAIProps> = ({
         {/* Kolom Kanan: Animasi, Kamera & Tipografi */}
         <div className="template-card-column">
           <div className="column-card-header">
-            <span className="column-card-icon">🎬</span>
-            <span className="column-card-title">Motion, Kamera & Tipografi</span>
+            <span className="column-card-icon"><StudioIcon /></span>
+            <span className="column-card-title">{t("Motion, Kamera & Tipografi")}</span>
           </div>
 
           {/* Gaya Animasi Masuk */}
           <div className="template-form-group">
-            <label className="template-form-label">Gaya Animasi Masuk</label>
+            <label className="template-form-label">{t("Gaya Animasi Masuk")}</label>
             <div className="template-select-wrap">
               <select
                 className="template-select"
@@ -311,7 +306,7 @@ export const TemplateCustomAI: React.FC<TemplateCustomAIProps> = ({
               >
                 {animasiMasuk.map((opt) => (
                   <option key={opt} value={opt}>
-                    {opt}
+                    {t(opt)}
                   </option>
                 ))}
               </select>
@@ -321,7 +316,7 @@ export const TemplateCustomAI: React.FC<TemplateCustomAIProps> = ({
 
           {/* Pergerakan Kamera / Idle */}
           <div className="template-form-group">
-            <label className="template-form-label">Pergerakan Kamera / Idle</label>
+            <label className="template-form-label">{t("Pergerakan Kamera / Idle")}</label>
             <div className="template-select-wrap">
               <select
                 className="template-select"
@@ -330,7 +325,7 @@ export const TemplateCustomAI: React.FC<TemplateCustomAIProps> = ({
               >
                 {kameraIdle.map((opt) => (
                   <option key={opt} value={opt}>
-                    {opt}
+                    {t(opt)}
                   </option>
                 ))}
               </select>
@@ -341,7 +336,7 @@ export const TemplateCustomAI: React.FC<TemplateCustomAIProps> = ({
           {/* Pacing / Rhythm & Tingkat Kompleksitas */}
           <div className="template-form-row">
             <div className="template-form-group flex-1">
-              <label className="template-form-label">Pacing / Rhythm</label>
+              <label className="template-form-label">{t("Pacing / Rhythm")}</label>
               <div className="template-select-wrap">
                 <select
                   className="template-select"
@@ -350,7 +345,7 @@ export const TemplateCustomAI: React.FC<TemplateCustomAIProps> = ({
                 >
                   {pacingOptions.map((opt) => (
                     <option key={opt} value={opt}>
-                      {opt}
+                      {t(opt)}
                     </option>
                   ))}
                 </select>
@@ -359,7 +354,7 @@ export const TemplateCustomAI: React.FC<TemplateCustomAIProps> = ({
             </div>
 
             <div className="template-form-group flex-1">
-              <label className="template-form-label">Tingkat Kompleksitas</label>
+              <label className="template-form-label">{t("Tingkat Kompleksitas")}</label>
               <div className="template-select-wrap">
                 <select
                   className="template-select"
@@ -368,7 +363,7 @@ export const TemplateCustomAI: React.FC<TemplateCustomAIProps> = ({
                 >
                   {kompleksitasOptions.map((opt) => (
                     <option key={opt} value={opt}>
-                      {opt}
+                      {t(opt)}
                     </option>
                   ))}
                 </select>
@@ -379,7 +374,7 @@ export const TemplateCustomAI: React.FC<TemplateCustomAIProps> = ({
 
           {/* Gaya Tipografi/Teks */}
           <div className="template-form-group">
-            <label className="template-form-label">Gaya Tipografi / Teks</label>
+            <label className="template-form-label">{t("Gaya Tipografi / Teks")}</label>
             <div className="template-select-wrap">
               <select
                 className="template-select"
@@ -388,7 +383,7 @@ export const TemplateCustomAI: React.FC<TemplateCustomAIProps> = ({
               >
                 {tipografiOptions.map((opt) => (
                   <option key={opt} value={opt}>
-                    {opt}
+                    {t(opt)}
                   </option>
                 ))}
               </select>
@@ -402,24 +397,24 @@ export const TemplateCustomAI: React.FC<TemplateCustomAIProps> = ({
       <div className="template-output-card">
         <div className="output-card-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span className="output-card-icon">📝</span>
-            <span className="output-card-title">Prompt Template Motion (Dapat Diedit)</span>
+            <span className="output-card-icon"><StudioIcon /></span>
+            <span className="output-card-title">{t("Prompt Template Motion (Dapat Diedit)")}</span>
           </div>
-          <span className="output-char-count">{outputPrompt.length} karakter</span>
+          <span className="output-char-count">{outputPrompt.length} {t("karakter")}</span>
         </div>
 
         <textarea
           className="template-output-textarea"
           value={outputPrompt}
           onChange={(e) => setOutputPrompt(e.target.value)}
-          placeholder="Hasil peracikan prompt parameter akan muncul di sini..."
+          placeholder={t("Hasil peracikan prompt parameter akan muncul di sini...")}
           rows={6}
         />
 
         {/* Feedback Alert Status */}
         {statusMsg && (
           <div className={`template-status-banner ${statusMsg.type}`}>
-            <span>{statusMsg.text}</span>
+            <span>{message(statusMsg.text)}</span>
           </div>
         )}
 
@@ -430,10 +425,10 @@ export const TemplateCustomAI: React.FC<TemplateCustomAIProps> = ({
             className="btn-action-offline"
             onClick={handleGenerateOffline}
             disabled={isAiEnriching || isGenerating}
-            title="Meracik template prompt tanpa memanggil API"
+            title={t("Meracik template prompt tanpa memanggil API")}
           >
-            <span>⚙️</span>
-            <span>Generate Template Offline</span>
+            <span><StudioIcon /></span>
+            <span>{t("Generate Template Offline")}</span>
           </button>
 
           <button
@@ -441,17 +436,17 @@ export const TemplateCustomAI: React.FC<TemplateCustomAIProps> = ({
             className="btn-action-ai-enrich"
             onClick={handleGenerateWithAI}
             disabled={isAiEnriching || isGenerating}
-            title="Sempurnakan ide visual & timing menggunakan Gemini AI"
+            title={t("Sempurnakan ide visual & timing menggunakan Gemini AI")}
           >
             {isAiEnriching ? (
               <>
                 <span className="ai-status-spinner" />
-                <span>Menyempurnakan dengan AI...</span>
+                <span>{t("Menyempurnakan dengan AI...")}</span>
               </>
             ) : (
               <>
-                <span>✨</span>
-                <span>Generate Template dengan AI</span>
+                <span><StudioIcon /></span>
+                <span>{t("Generate Template dengan AI")}</span>
               </>
             )}
           </button>
@@ -461,17 +456,17 @@ export const TemplateCustomAI: React.FC<TemplateCustomAIProps> = ({
             className="btn-action-apply-generate"
             onClick={handleCopyAndApply}
             disabled={isAiEnriching || isGenerating}
-            title="Salin prompt, generate kode video fisik, dan langsung buka Live Preview"
+            title={t("Salin prompt, generate kode video fisik, dan langsung buka Live Preview")}
           >
             {isGenerating ? (
               <>
                 <span className="ai-status-spinner" />
-                <span>Sedang Merender Video...</span>
+                <span>{t("Sedang Merender Video...")}</span>
               </>
             ) : (
               <>
-                <span>🚀</span>
-                <span>{isCopied ? 'Tersalin! Merender...' : 'Copy Template & Terapkan (Generate)'}</span>
+                <span><StudioIcon /></span>
+                <span>{isCopied ? t("Tersalin! Merender...") : t("Copy Template & Terapkan (Generate)")}</span>
               </>
             )}
           </button>

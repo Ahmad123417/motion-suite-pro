@@ -1,3 +1,5 @@
+import type { GenerationOutcome, GenerationProgress } from '../shared/generationFeedback'
+import type { AnimationType } from '../shared/animationTechnique'
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 
@@ -55,6 +57,7 @@ export interface ApplyManualCodeResult {
 
 // Custom APIs for renderer
 const customElectronAPI = {
+  setUiLanguage: (language: 'id' | 'en'): Promise<'id' | 'en'> => ipcRenderer.invoke('ui:set-language', language),
   renderVideo: (config: RenderVideoConfig): Promise<RenderResult> => {
     return ipcRenderer.invoke('render-video', config)
   },
@@ -95,6 +98,7 @@ const customElectronAPI = {
     format: 'mp4' | 'mov' | 'prores422' | 'prores4444'
     isTransparent?: boolean
     title?: string
+    customFileName?: string
     resolutionLabel?: string
     renderMode?: 'auto' | 'gpu' | 'cpu'
     customOutputFolder?: string
@@ -165,13 +169,37 @@ const customElectronAPI = {
     return ipcRenderer.invoke('verify-remotion-render', payload)
   },
   generateVideo: (payload: {
+    animationType?: AnimationType
+    mode?: 'fast' | 'quality'
+    requestId?: string
+    qualityText?: { titleText?: string; subtitleText?: string; badgeText?: string }
+    precisionSvgStrokes?: boolean
+    precisionPalette?: { accentColor: string; secondaryColor: string; backgroundColor: string }
     prompt: string
     imageBase64?: string
     mimeType?: string
     apiKey: string
     assetPath?: string
-  }): Promise<{ success: boolean; code?: string; filePath?: string; error?: string }> => {
+    generationContext?: {
+      width: number
+      height: number
+      fps: number
+      durationInFrames: number
+      isTransparent: boolean
+      scale: number
+      offsetX: number
+      offsetY: number
+      speedMultiplier: number
+      glowIntensity: number
+    }
+  }): Promise<{ success: boolean; code?: string; filePath?: string; error?: string; textMode?: 'none' | 'requested' | 'minimal' } & GenerationOutcome> => {
     return ipcRenderer.invoke('ai:generate-video', payload)
+  },
+  cancelGeneration: (requestId: string): Promise<boolean> => ipcRenderer.invoke('ai:cancel-generation', requestId),
+  onGenerationProgress: (callback: (progress: GenerationProgress) => void): (() => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, progress: GenerationProgress): void => callback(progress)
+    ipcRenderer.on('ai:generation-progress', listener)
+    return () => { ipcRenderer.removeListener('ai:generation-progress', listener) }
   },
   refineVideo: (payload: {
     instruction: string

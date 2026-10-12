@@ -1,3 +1,4 @@
+import { useUiLanguage, StudioIcon } from '../i18n'
 import React, { useState, useRef } from 'react'
 
 export interface BatchSlot {
@@ -17,6 +18,7 @@ interface AutoCoderProps {
 }
 
 export const AutoCoder: React.FC<AutoCoderProps> = ({ apiKey, uploadedAssetPath }) => {
+  const { t, message } = useUiLanguage()
   const [slotCount, setSlotCount] = useState<number>(3)
   const [baseInstruction, setBaseInstruction] = useState<string>(
     'Buat variasi video motion graphic promo dinamis dengan tipografi kinetic, aksen neon cyberpunk, dan transisi spring.'
@@ -258,17 +260,14 @@ export const AutoCoder: React.FC<AutoCoderProps> = ({ apiKey, uploadedAssetPath 
       {/* Header Bar */}
       <div className="autocoder-header">
         <div>
-          <div className="autocoder-badge">AUTONOMOUS BATCH GENERATOR</div>
-          <h2 className="autocoder-title">⚡ Batch Pipeline</h2>
-          <p className="autocoder-subtitle">
-            Otomasi produksi aset motion graphics massal berbasis antrean mandiri & Gemini AI.
-          </p>
+          <div className="autocoder-badge">{t("AUTONOMOUS BATCH GENERATOR")}</div>
+          <h2 className="autocoder-title">{t("⚡ Batch Pipeline")}</h2>
+          <p className="autocoder-subtitle"> {t("Otomasi produksi aset motion graphics massal berbasis antrean mandiri & Gemini AI.")} </p>
         </div>
         <div className="autocoder-stats-pill">
           <span className="stats-dot" />
           <span>
-            {completedCount} / {slots.length} Selesai
-          </span>
+            {completedCount} / {slots.length} {t("Selesai")} </span>
         </div>
       </div>
 
@@ -278,8 +277,8 @@ export const AutoCoder: React.FC<AutoCoderProps> = ({ apiKey, uploadedAssetPath 
         <div className="autocoder-queue-column">
           <div className="queue-card-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '18px' }}>📋</span>
-              <h3 className="queue-header-title">Antrean Tugas ({slots.length} Slot)</h3>
+              <span style={{ fontSize: '18px' }}><StudioIcon /></span>
+              <h3 className="queue-header-title">{t("Antrean Tugas (")}{slots.length} {t("Slot)")}</h3>
             </div>
             <div style={{ display: 'flex', gap: '6px' }}>
               <button
@@ -287,19 +286,15 @@ export const AutoCoder: React.FC<AutoCoderProps> = ({ apiKey, uploadedAssetPath 
                 className="btn-queue-action"
                 onClick={handleAddSlot}
                 disabled={isProcessing}
-                title="Tambah satu slot baru ke antrean"
-              >
-                + Tambah Slot
-              </button>
+                title={t("Tambah satu slot baru ke antrean")}
+              > {t("+ Tambah Slot")} </button>
               <button
                 type="button"
                 className="btn-queue-action danger"
                 onClick={handleResetSlots}
                 disabled={isProcessing || slots.length === 0}
-                title="Bersihkan semua slot"
-              >
-                🗑️ Reset
-              </button>
+                title={t("Bersihkan semua slot")}
+              > {t("🗑️ Reset")} </button>
             </div>
           </div>
 
@@ -307,18 +302,14 @@ export const AutoCoder: React.FC<AutoCoderProps> = ({ apiKey, uploadedAssetPath 
           <div className="queue-slots-list">
             {slots.length === 0 ? (
               <div className="queue-empty-state">
-                <div style={{ fontSize: '36px', marginBottom: '8px' }}>📭</div>
-                <div style={{ fontWeight: 700, color: '#f1f5f9' }}>Antrean Kosong</div>
-                <p style={{ fontSize: '12px', color: '#94a3b8', margin: '4px 0 12px 0' }}>
-                  Gunakan tombol "+ Tambah Slot" atau atur jumlah loop di panel kanan lalu klik "Buat Slot".
-                </p>
+                <div style={{ fontSize: '36px', marginBottom: '8px' }}><StudioIcon /></div>
+                <div style={{ fontWeight: 700, color: '#f1f5f9' }}>{t("Antrean Kosong")}</div>
+                <p style={{ fontSize: '12px', color: '#94a3b8', margin: '4px 0 12px 0' }}> {t("Gunakan tombol \"+ Tambah Slot\" atau atur jumlah loop di panel kanan lalu klik \"Buat Slot\".")} </p>
                 <button
                   type="button"
                   className="btn-queue-action"
                   onClick={() => setSlotCount(3)}
-                >
-                  + Muat 3 Slot Contoh
-                </button>
+                > {t("+ Muat 3 Slot Contoh")} </button>
               </div>
             ) : (
               slots.map((slot, index) => (
@@ -342,20 +333,17 @@ export const AutoCoder: React.FC<AutoCoderProps> = ({ apiKey, uploadedAssetPath 
                       <div className="slot-prompt-preview">{slot.prompt}</div>
                       {slot.outputPath && (
                         <div className="slot-output-row">
-                          <span className="slot-path-text" title={slot.outputPath}>
-                            📁 {slot.outputPath}
+                          <span className="slot-path-text" title={slot.outputPath}><StudioIcon />{slot.outputPath}
                           </span>
                           <button
                             type="button"
                             className="btn-slot-folder"
                             onClick={() => window.api?.openFileLocation(slot.outputPath!)}
-                            title="Buka folder file di explorer"
-                          >
-                            Buka
-                          </button>
+                            title={t("Buka folder file di explorer")}
+                          > {t("Buka")} </button>
                         </div>
                       )}
-                      {slot.error && <div className="slot-error-text">⚠️ {slot.error}</div>}
+                      {slot.error && <div className="slot-error-text"><StudioIcon />{slot.error}</div>}
                     </div>
                   </div>
 
@@ -365,7 +353,7 @@ export const AutoCoder: React.FC<AutoCoderProps> = ({ apiKey, uploadedAssetPath 
                       className="btn-remove-slot"
                       onClick={() => handleRemoveSlot(slot.id)}
                       disabled={isProcessing}
-                      title="Hapus slot ini dari antrean"
+                      title={t("Hapus slot ini dari antrean")}
                     >
                       ✕
                     </button>
@@ -380,16 +368,16 @@ export const AutoCoder: React.FC<AutoCoderProps> = ({ apiKey, uploadedAssetPath 
         <div className="autocoder-settings-column">
           <div className="queue-card-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '18px' }}>⚙️</span>
-              <h3 className="queue-header-title">Pengaturan Batch Pipeline</h3>
+              <span style={{ fontSize: '18px' }}><StudioIcon /></span>
+              <h3 className="queue-header-title">{t("Pengaturan Batch Pipeline")}</h3>
             </div>
-            <span className="autocoder-pro-badge">AUTO PIPELINE</span>
+            <span className="autocoder-pro-badge">{t("AUTO PIPELINE")}</span>
           </div>
 
           {/* Loop Count & Format Row */}
           <div className="autocoder-form-row">
             <div className="template-form-group flex-1">
-              <label className="template-form-label">Jumlah Video (Loop Slot)</label>
+              <label className="template-form-label">{t("Jumlah Video (Loop Slot)")}</label>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <input
                   type="number"
@@ -405,16 +393,14 @@ export const AutoCoder: React.FC<AutoCoderProps> = ({ apiKey, uploadedAssetPath 
                   className="btn-queue-action"
                   onClick={handleGenerateSlotsFromCount}
                   disabled={isProcessing}
-                  title="Generate slot otomatis sesuai jumlah"
+                  title={t("Generate slot otomatis sesuai jumlah")}
                   style={{ whiteSpace: 'nowrap' }}
-                >
-                  ⚡ Buat Slot
-                </button>
+                > {t("⚡ Buat Slot")} </button>
               </div>
             </div>
 
             <div className="template-form-group flex-1">
-              <label className="template-form-label">Format Export Render</label>
+              <label className="template-form-label">{t("Format Export Render")}</label>
               <div className="template-select-wrap">
                 <select
                   className="template-select"
@@ -422,8 +408,8 @@ export const AutoCoder: React.FC<AutoCoderProps> = ({ apiKey, uploadedAssetPath 
                   onChange={(e) => setBatchFormat(e.target.value as 'mp4' | 'mov')}
                   disabled={isProcessing}
                 >
-                  <option value="mp4">MP4 Video (H.264)</option>
-                  <option value="mov">MOV (ProRes Alpha Transparan)</option>
+                  <option value="mp4">{t("MP4 Video (H.264)")}</option>
+                  <option value="mov">{t("MOV (ProRes Alpha Transparan)")}</option>
                 </select>
                 <span className="select-arrow">▼</span>
               </div>
@@ -432,21 +418,20 @@ export const AutoCoder: React.FC<AutoCoderProps> = ({ apiKey, uploadedAssetPath 
 
           {/* Custom Base Instructions */}
           <div className="template-form-group">
-            <label className="template-form-label">Instruksi / Konsep Master Batch</label>
+            <label className="template-form-label">{t("Instruksi / Konsep Master Batch")}</label>
             <textarea
               className="template-output-textarea"
               rows={4}
               value={baseInstruction}
               onChange={(e) => setBaseInstruction(e.target.value)}
-              placeholder="Berikan pedoman tema untuk seluruh video yang akan digenerate secara massal..."
+              placeholder={t("Berikan pedoman tema untuk seluruh video yang akan digenerate secara massal...")}
               disabled={isProcessing}
             />
           </div>
 
           {/* Multi-Reference Image Dropzone */}
           <div className="template-form-group">
-            <label className="template-form-label">
-              Gambar Referensi Massal <span className="label-optional">({batchRefImages.length} gambar)</span>
+            <label className="template-form-label"> {t("Gambar Referensi Massal")} <span className="label-optional">({batchRefImages.length} {t("gambar)")}</span>
             </label>
             <input
               ref={fileInputRef}
@@ -466,11 +451,11 @@ export const AutoCoder: React.FC<AutoCoderProps> = ({ apiKey, uploadedAssetPath 
                 if (e.key === 'Enter' || e.key === ' ') fileInputRef.current?.click()
               }}
             >
-              <span style={{ fontSize: '24px' }}>🖼️</span>
+              <span style={{ fontSize: '24px' }}><StudioIcon /></span>
               <div className="ref-dropzone-text">
-                <strong>Pilih atau Tarik Multi-Gambar</strong>
+                <strong>{t("Pilih atau Tarik Multi-Gambar")}</strong>
               </div>
-              <span className="ref-dropzone-hint">(Gambar akan dibagikan ke setiap slot antrean)</span>
+              <span className="ref-dropzone-hint">{t("(Gambar akan dibagikan ke setiap slot antrean)")}</span>
             </div>
 
             {/* Uploaded Image Thumbnails Grid */}
@@ -487,7 +472,7 @@ export const AutoCoder: React.FC<AutoCoderProps> = ({ apiKey, uploadedAssetPath 
                         e.stopPropagation()
                         handleRemoveBatchImage(img.id)
                       }}
-                      title="Hapus gambar"
+                      title={t("Hapus gambar")}
                     >
                       ✕
                     </button>
@@ -500,7 +485,7 @@ export const AutoCoder: React.FC<AutoCoderProps> = ({ apiKey, uploadedAssetPath 
           {/* Status Message Banner */}
           {statusMessage && (
             <div className="autocoder-status-banner">
-              <span>{statusMessage}</span>
+              <span>{message(statusMessage)}</span>
             </div>
           )}
 
@@ -511,10 +496,10 @@ export const AutoCoder: React.FC<AutoCoderProps> = ({ apiKey, uploadedAssetPath 
                 type="button"
                 className="btn-batch-cancel"
                 onClick={handleCancelBatch}
-                title="Hentikan eksekusi antrean massal"
+                title={t("Hentikan eksekusi antrean massal")}
               >
-                <span>⏹️</span>
-                <span>Hentikan Proses Batch</span>
+                <span><StudioIcon /></span>
+                <span>{t("Hentikan Proses Batch")}</span>
               </button>
             ) : (
               <button
@@ -522,10 +507,10 @@ export const AutoCoder: React.FC<AutoCoderProps> = ({ apiKey, uploadedAssetPath 
                 className="btn-batch-start-primary"
                 onClick={handleStartBatchProcessing}
                 disabled={slots.length === 0}
-                title="Mulai eksekusi sekuensial seluruh antrean video"
+                title={t("Mulai eksekusi sekuensial seluruh antrean video")}
               >
-                <span>🚀</span>
-                <span>Mulai Auto Generate Massal ({slots.length} Video)</span>
+                <span><StudioIcon /></span>
+                <span>{t("Mulai Auto Generate Massal (")}{slots.length} {t("Video)")}</span>
               </button>
             )}
           </div>

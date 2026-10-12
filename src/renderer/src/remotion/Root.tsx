@@ -1,14 +1,73 @@
 import React from 'react'
 import { registerRoot, Composition } from 'remotion'
 import { MotionTemplate, MotionTemplateProps } from './MotionTemplate'
-import { DynamicMotion, DynamicMotionProps } from './DynamicMotion'
+import * as DynamicMotionModule from './DynamicMotion'
+import { DynamicMotionProps } from './DynamicMotion'
+
+const FallbackComponent: React.FC = () => null
+
+// Smart Fallback Komponen (v1.0.7)
+const ResolvedDynamicMotion: React.ComponentType<any> =
+  (DynamicMotionModule as any).DynamicMotion ||
+  (DynamicMotionModule as any).VibeGraphic ||
+  (DynamicMotionModule as any).default ||
+  (Object.values(DynamicMotionModule).find((exp: any) => typeof exp === 'function') as React.ComponentType<any>) ||
+  FallbackComponent
+
+const DynamicMotionWrapper: React.FC<any> = (props) => {
+  const isAlpha = Boolean(props?.isTransparent)
+  const wrapperRef = React.useRef<HTMLDivElement>(null)
+
+  React.useLayoutEffect(() => {
+    if (!isAlpha || !wrapperRef.current) return
+    const container = wrapperRef.current
+    const directRoot = container.firstElementChild as HTMLElement | null
+    if (directRoot && directRoot.style) {
+      directRoot.style.setProperty('background', 'transparent', 'important')
+      directRoot.style.setProperty('background-color', 'transparent', 'important')
+      directRoot.style.setProperty('background-image', 'none', 'important')
+    }
+  }, [isAlpha])
+
+  return (
+    <div
+      ref={wrapperRef}
+      className={`remotion-canvas-root-wrapper ${isAlpha ? 'remotion-alpha-active' : ''}`}
+      style={{
+        width: '100%',
+        height: '100%',
+        position: 'relative',
+        background: 'transparent',
+        backgroundColor: 'transparent'
+      }}
+    >
+      {isAlpha && (
+        <style>
+          {`
+            .remotion-alpha-active > div:first-child,
+            .remotion-alpha-active > [style*="position: absolute"]:first-of-type {
+              background: transparent !important;
+              background-color: transparent !important;
+              background-image: none !important;
+            }
+          `}
+        </style>
+      )}
+      <ResolvedDynamicMotion
+        {...props}
+        isTransparent={isAlpha}
+        backgroundColor={isAlpha ? 'transparent' : props?.backgroundColor}
+      />
+    </div>
+  )
+}
 
 export const RemotionRoot: React.FC = () => {
   return (
     <>
       <Composition
         id="DynamicMotion"
-        component={DynamicMotion}
+        component={DynamicMotionWrapper}
         durationInFrames={150}
         fps={30}
         width={1920}

@@ -1,184 +1,132 @@
-================================================================================
-             MOTION SUITE PRO — SPESIFIKASI, ARSITEKTUR & PANDUAN SISTEM
-================================================================================
-Versi     : 1.0.5 (Official Cross-Platform Production Release)
-Produk    : Motion Suite Pro
-Pengembang: Motion Suite Pro Team
-Platform  : Windows 10 & 11 (64-bit) & Apple macOS 11+ (Apple Silicon & Intel)
-Dukungan  : ahmadmuslihfarhany46@gmail.com | Telegram: @ahmadmuslihfarhany
-Repository: https://github.com/Ahmad123417/motion-suite-pro
-Lisensi   : Flexible Tiered Licensing (Harian, Mingguan, Bulanan, s/d Lifetime)
-================================================================================
+Motion Suite Pro v1.0.7 — Panduan & Spesifikasi / Guide & Specifications
 
-Terima kasih telah menggunakan Motion Suite Pro! Motion Suite Pro adalah workstation 
-kreatif desktop modern berbasis "Creative Coding & AI Motion Graphics" yang memadukan 
-kekuatan Dynamic Code-to-Video Engine (React 19 + TypeScript) dan Google Gemini AI 
-untuk memproduksi video animasi berkecepatan tinggi dengan presisi matematis, 
-aset siaran resolusi 4K 60FPS, dan video transparan berkualitas studio broadcast.
+BAHASA INDONESIA
 
---------------------------------------------------------------------------------
-💡 POSISI PRODUK: MENGAPA BUKAN VIDEO AI DIFUSI BIASA?
---------------------------------------------------------------------------------
+Motion Suite Pro v1.0.7 — Panduan Pengguna
 
-Motion Suite Pro BUKAN generator video berbasis model difusi visual (generative AI 
-video seperti Runway, Kling, atau Sora) yang sering mengalami halusinasi visual, 
-teks buram/rusak tak terbaca, distorsi bentuk yang tidak terkendali, serta tidak bisa diedit ulang.
+Motion Suite Pro adalah aplikasi desktop untuk membuat motion graphics berbasis kode. Gunakan brief AI internal atau satu file TSX dari AI eksternal. Hasil dapat diedit, dipreview, dan diekspor. Kualitas visual dan penerimaan marketplace tetap perlu diperiksa oleh kreator; render berhasil bukan jaminan kualitas komersial.
 
-Sebaliknya, Motion Suite Pro adalah "Prompt-to-Code Motion Graphics Workstation":
-1. Presisi Piksel & Tipografi Tajam: Seluruh tipografi dan elemen grafis dirender 
-   secara programatis (vektor SVG murni dan CSS teroptimasi), menghasilkan teks yang 100% 
-   tajam pada resolusi apa pun tanpa artefak kompresi atau teks acak palsu.
-2. Animasi Matematis Murni: Pergerakan didasarkan pada rumus interpolasi dinamis dan 
-   spring physics, menjamin gerakan ultra-mulus pada 30 hingga 60 FPS tanpa jeda patah-patah.
-3. Kontrol Parametrik Penuh: Seluruh warna, teks, posisi, skala, dan kecepatan 
-   dapat disesuaikan secara instan lewat Visual Tweaker 4-Kategori tanpa perlu memanggil ulang AI.
-4. Transparansi Murni (True Alpha Channel): Menghasilkan video berlatar transparan 
-   murni (tanpa latar belakang hitam pekat) yang siap langsung ditumpuk (compositing) 
-   di software editing video profesional apa pun.
+PERSYARATAN DAN INSTALLER
+Windows 10/11 x64: Motion-Suite-Pro.Setup.1.0.7.exe.
+macOS 13+: pilih Motion Suite Pro-1.0.7-mac-x64.dmg untuk Intel, atau Motion Suite Pro-1.0.7-mac-arm64.dmg untuk Apple Silicon. Electron 44.2.0 memerlukan macOS 13+. Installer kedua arsitektur harus diperiksa sebelum distribusi; keberhasilan Windows tidak membuktikan kompatibilitas Mac.
+Performa tergantung CPU, GPU/WebGL, memori, resolusi, dan kerumitan animasi. Dukungan 4K/60 FPS bukan janji preview real-time. Pastikan ruang penyimpanan cukup untuk paket, aset, dan render.
+Status signing/notarization mengikuti laporan artefak rilis. Jika Windows atau macOS menampilkan peringatan, verifikasi sumber dan checksum installer; jangan menganggap semua error sebagai Gatekeeper. Hubungi dukungan jika paket rusak atau arsitektur tidak cocok.
 
---------------------------------------------------------------------------------
-1. PANDUAN PEMILIHAN INSTALLER (WINDOWS & macOS)
---------------------------------------------------------------------------------
+MEMULAI
+1. Buka aplikasi, lalu aktifkan lisensi resmi melalui pengaturan lisensi. Machine ID tetap terikat pada perangkat; pembaruan tidak membutuhkan bypass aktivasi.
+2. Pilih Indonesia atau English melalui pilihan Bahasa. Pergantian bahasa tidak mengubah brief, kode, konfigurasi, maupun lisensi.
+3. Atur rasio 16:9 atau 9:16, resolusi, durasi 5/10/15/20 detik, dan FPS 24/30/60. Total frame = durasi × FPS.
+4. Pilih Jenis Animasi: Otomatis, 2D, 2.5D, atau 3D. Pilihan ini mengarahkan teknik, bukan memaksakan tema, warna, atau gaya.
 
-Untuk memastikan performa optimal dan kompatibilitas hardware penuh, pilih file installer 
-yang sesuai dengan sistem operasi dan arsitektur prosesor komputer Anda:
+STUDIO DAN BAHASA
+Indonesia adalah bahasa awal instalasi baru. Preferensi bahasa yang sudah tersimpan tetap digunakan. Panel Konsep Animasi berisi brief, Jenis Animasi, Mode Pembuatan, lalu Buat Animasi. Buka Pengaturan tambahan untuk referensi, garis SVG presisi, penggunaan palet, dan penggunaan teks sebelumnya. Pengaturan lisensi dan API key tetap tersedia di sidebar. Studio Preview menampilkan hasil dan timeline; Code Inspector menyediakan editor serta Salin Master Prompt. Bahasa dapat diganti tanpa menghapus pekerjaan.
 
-A. PENGGUNA WINDOWS:
-   * Pilih berkas: "Motion Suite Pro.Setup.1.0.5.exe" (atau format .exe lainnya)
-   * Kompatibilitas: Windows 10 & Windows 11 (64-bit)
+AI INTERNAL
+Gunakan Gemini API key pribadi dari Google AI Studio. Ketersediaan model, kuota, dan biaya mengikuti ketentuan Google; aplikasi tidak menyediakan kuota tanpa batas atau menjamin layanan selalu tersedia.
+Cepat memakai satu tahap pembuatan kode. Kualitas Tinggi (Beta) memakai perencanaan blueprint kemudian pembuatan kode. Retry/fallback dan recovery yang diizinkan dapat menambah penggunaan API. Batas permintaan Quality: Planning 60 detik, Building maksimal 150 detik dalam sisa total 180 detik. Pemeriksaan lokal memiliki batas tersendiri. Tidak ada janji durasi selesai atau kualitas sempurna.
+Tuliskan subjek, gerakan, warna, sudut pandang, timing, dan batasan seperti tanpa teks/shadow. Referensi gambar/GIF/video pendek bersifat opsional. Model yang berhasil ditampilkan sesuai hasil aktual.
+Garis SVG Presisi (Beta) default OFF. Aktifkan untuk outline atau ikon yang membutuhkan stroke drawing; bukan template wajib.
+Gunakan palet saat ini OFF: pada Generate yang berhasil, nilai warna default literal pada props accentColor, secondaryColor, dan backgroundColor dalam kode baru diterapkan sebelum preview dan ekspor. Nilai yang tidak didefinisikan mempertahankan pengaturan saat ini. ON: palet yang Anda pilih di aplikasi dipertahankan sebagai pilihan sengaja. Anda tetap dapat mengubah warna secara manual setelahnya. Saat Transparan aktif, latar preview/ekspor tetap transparan; MP4 tidak menyimpan alpha.
+Gunakan judul/subjudul/label saat ini hanya jika ingin mempertahankan teks tersebut pada Generate baru. Jika OFF, animasi baru memakai teksnya sendiri tanpa mewarisi teks lama yang tidak terkait.
+Hentikan tersedia pada proses yang mendukung cancellation. Auto-Fix dan Edit dengan AI adalah tindakan manual dan dapat memakai API. Tidak ada repair startup diam-diam.
 
-B. PENGGUNA MAC APPLE SILICON (CHIP M1, M2, M3, M4):
-   * Pilih berkas: "Motion Suite Pro-1.0.5-mac-arm64.dmg"
-   * Kompatibilitas: MacBook Air, MacBook Pro, Mac mini, Mac Studio, iMac dengan chip Apple Silicon M-Series
-   * Arsitektur: Native ARM64 (Performa rendering maksimal, hemat daya, tanpa emulasi Rosetta)
+AI EKSTERNAL DAN PEMERIKSA KODE
+Salin Master Prompt setelah pengaturan video dan jenis animasi dipilih. Prompt memuat konfigurasi aktif saat diklik. Diskusikan konsep, lalu katakan LANJUT atau BUAT KODE untuk mendapatkan satu file TSX. AI eksternal belum tentu mengikuti setiap instruksi; periksa hasil.
+Pertahankan header // @title: dan kontrak ekspor DynamicMotion/VibeGraphic/default sesuai Master Prompt. Gunakan hanya import/API yang didukung; 3D memakai wrapper resmi aplikasi. Jangan tempel API key atau lisensi ke layanan AI eksternal.
+Tempel TSX, lalu pilih Terapkan & Lihat Hasil. Sintaks, import, dan kompatibilitas diperiksa sebelum penulisan. Kode ditolak tidak mengganti animasi aktif. Salin diagnostik yang aman kepada AI untuk revisi; jangan mengirim informasi rahasia.
 
-C. PENGGUNA MAC INTEL:
-   * Pilih berkas: "Motion Suite Pro-1.0.5-mac-x64.dmg"
-   * Kompatibilitas: Seluruh lini komputer Mac berbasis prosesor Intel 64-bit
+PREVIEW DAN PENGATURAN VISUAL
+Gunakan playback dan scrub untuk memeriksa frame awal, transisi, akhir, clipping, dan kesinambungan objek. Pengaturan Visual menyediakan teks, warna, posisi, skala, glow, kecepatan, Undo, dan pengembalian nilai awal. Dampaknya tergantung kontrak props yang digunakan kode. Efek bukan kewajiban dan tidak otomatis memperbaiki kualitas desain.
+Untuk 3D, diperlukan WebGL yang sesuai. Jika preview gagal, baca pesan diagnostik dan periksa dukungan GPU; jangan mengubah pengaturan GPU secara acak.
 
---------------------------------------------------------------------------------
-2. SPESIFIKASI SISTEM MINIMUM & REKOMENDASI
---------------------------------------------------------------------------------
+PEMERIKSAAN ASET MICROSTOCK
+Periksa keterbacaan subjek, warna yang diminta, konstruksi bentuk, kesinambungan objek, timing, clipping, flicker, dan frame akhir sebelum mengirim aset ke marketplace. Hindari merek, watermark, dan teks yang tidak diminta. Hasil AI tetap membutuhkan penilaian kreator; mode Kualitas Tinggi dan render 4K tidak menjamin penerimaan marketplace.
 
-[ SPESIFIKASI MINIMUM ]
-- Sistem Operasi : 
-  * Windows: Windows 10 / Windows 11 (64-bit, Build 1909+)
-  * macOS  : macOS 11 (Big Sur) atau versi lebih baru (Monterey, Ventura, Sonoma, Sequoia)
-- Processor (CPU):
-  * Mac    : Chip Apple Silicon M1 (atau Intel Core i5 Dual-Core 64-bit ke atas)
-  * Windows: Multi-core x64 Processor (Minimal 4 Core / 8 Thread, e.g. Intel Core i5 Gen 8+ / AMD Ryzen 3+)
-- Memori (RAM)   : 8 GB RAM (Unified Memory pada Mac / DDR4 pada PC)
-- Kartu Grafis   : 
-  * Mac    : Integrated Apple GPU / Intel Iris Plus Graphics
-  * Windows: Intel UHD Graphics 620 / AMD Radeon Vega terintegrasi (Mendukung OpenGL & DirectX 11)
-- Ruang Penyimpanan: 5 GB ruang kosong (SSD disarankan)
-- Resolusi Layar : 1280 x 720 (Mendukung Retina Display Mac & display scaling Windows)
+EKSPOR
+MP4 H.264 untuk video dengan latar solid. MP4 tidak mendukung alpha.
+MOV ProRes 4444 untuk alpha ketika Transparan dipilih. Periksa alpha di editor yang mendukung; pemutar biasa dapat menampilkan transparansi sebagai hitam.
+Pilih folder ekspor, format, dan mode render yang sesuai. Memori dan waktu render meningkat pada 4K/60 FPS serta adegan 3D kompleks. Jangan menutup aplikasi saat proses masih berjalan tanpa membatalkan secara normal.
 
-[ SPESIFIKASI REKOMENDASI (PERFORMA 4K 60FPS MAKSIMAL) ]
-- Sistem Operasi :
-  * Windows: Windows 11 64-bit (Update Terbaru)
-  * macOS  : macOS 13 (Ventura) / macOS 14 (Sonoma) / macOS 15 (Sequoia)
-- Processor (CPU):
-  * Mac    : Apple Silicon M1 Pro/Max, M2 Pro/Max, M3 Pro/Max, M4 Pro/Max (atau M-Series standar)
-  * Windows: 6 Core / 12 Thread atau lebih tinggi (Intel Core i7/i9 Gen 10+, AMD Ryzen 5/7/9 3000 Series+)
-- Memori (RAM)   : 16 GB - 32 GB RAM (Unified Memory pada Mac / DDR4/DDR5 pada PC)
-- Kartu Grafis (GPU):
-  * Mac    : 10-Core GPU Apple Silicon atau lebih tinggi
-  * Windows: Dedicated GPU NVIDIA GeForce GTX 1650 / RTX 2060 / 3060 / 4000 series atau AMD Radeon RX 6000+
-- Ruang Penyimpanan: NVMe SSD dengan sisa ruang 20 GB+
-- Resolusi Layar : 1920 x 1080 (Full HD), 2K, atau 4K Ultra HD
+ERROR DAN PEMBARUAN
+429: layanan membatasi permintaan atau kuota tercapai. Periksa informasi kuota; quota exhaustion tidak selalu pulih setelah menunggu singkat. Jangan mengganti key/proyek untuk menghindari kebijakan provider.
+500/502/503/504: permintaan menerima error layanan Gemini, bukan bukti seluruh server Google mati. Coba lagi nanti.
+401/403: periksa API key dan izin. Deadline aplikasi: request tidak selesai dalam batas waktu; bukan bukti outage. Error koneksi: periksa koneksi. TSX/blueprint invalid: pemeriksaan teknis gagal; animasi sebelumnya dilindungi sebelum penerapan.
+Windows memakai notifikasi, download, dan Pasang & Restart melalui updater. macOS memakai DMG manual dari tautan Google Drive resmi, tanpa notifikasi update dalam aplikasi v1.0.7.
+Setelah upgrade, periksa proyek, aset, konfigurasi, lisensi, API key, preview, dan ekspor. Status pengujian upgrade dicatat dalam laporan rilis; satu perangkat bukan jaminan semua konfigurasi pelanggan.
 
---------------------------------------------------------------------------------
-3. INFORMASI FITUR UTAMA & OUTPUT RENDER
---------------------------------------------------------------------------------
+AKTIVASI DAN DUKUNGAN
+Salin Machine ID, lalu gunakan formulir aktivasi resmi: https://motionsuite-act.duckdns.org/form/c1dc1a25-386b-4780-9e60-454b6201969e
+Masukkan email, transaksi/invoice, Machine ID, paket lisensi, dan bukti pembelian sesuai formulir. Salin seluruh kunci lisensi dari email dan pilih Validasi. Paket mengikuti pembelian resmi; v1.0.7 tidak mengubah ketentuan durasi atau Lifetime.
+Jika jam perangkat tidak sesuai, gunakan sinkronisasi waktu yang tersedia atau pengaturan tanggal/waktu OS. Jika masa berlaku habis, perpanjang melalui penjual resmi.
+Dukungan: ahmadmuslihfarhany46@gmail.com · Telegram: @ahmadmuslihfarhany
 
-A. DUAL FORMAT OUTPUT RENDER:
-   1. MP4 Video (H.264 / CRF 18):
-      - Format standar internasional dengan rasio kompresi tinggi dan kompatibilitas universal.
-      - Sangat cocok untuk upload langsung ke YouTube, Instagram Reels, TikTok, LinkedIn, dan website.
-      - Render cepat dengan pemanfaatan hardware acceleration (NVENC pada Windows & VideoToolbox pada Mac).
-   
-   2. Apple ProRes 4444 (.MOV) dengan Alpha Channel (yuva444p10le):
-      - Format standar broadcast video profesional yang mempertahankan latar belakang transparan (True Alpha).
-      - Menghasilkan aset motion graphics transparan tanpa background hitam, siap langsung ditumpuk 
-        (drag & drop compositing) di Adobe Premiere Pro, After Effects, DaVinci Resolve, Final Cut Pro, CapCut.
-      - Bernilai komersial tinggi untuk penjualan aset stok grafis di marketplace (Envato, Motion Array, Pond5).
+ENGLISH
 
-B. 4-CATEGORY VISUAL TWEAKER LIVE HOT-SYNC:
-   - Panel kontrol parametrik instan tanpa perlu memanggil ulang AI:
-     * Teks Konten : Judul (titleText), Subjudul (subtitleText), Badge (badgeText)
-     * Warna       : Warna Utama (accentColor), Warna Sekunder, Background Color, Transparent Toggle
-     * Transformasi: Offset X, Offset Y, Scale Slider (50% hingga 200%), Reset Position
-     * Efek & Ritme: Neon Glow Intensity, Speed Multiplier
-   - Live Hot-Sync: Mengubah slider langsung memperbarui kanvas preview dan terhubung ke render pipeline.
+Motion Suite Pro v1.0.7 — User Guide
 
-C. UNIVERSAL DYNAMIC TIMELINE & NEVER-FREEZE ENGINE:
-   - Pilihan durasi fleksibel: 5 Detik, 10 Detik, 15 Detik, dan 20 Detik (600f/1200f).
-   - Seluruh animasi dihitung secara proporsional (% dari total durasi frame), bebas freeze di detik berapa pun.
-   - Micro-motion kontinu: Floating loop, breathing glow, camera zoom drift, dan dynamic indicators.
+Motion Suite Pro is a desktop application for code-based motion graphics. Use the internal AI brief or a single TSX file from an external AI. Preview, edit, and export the result. Creators must review visual quality and marketplace suitability; a successful render does not guarantee commercial quality or marketplace acceptance.
 
-D. AUTOMATED ERROR CAPTURE & SELF-HEALING RECOVERY:
-   - Menangkap galat kompilasi atau runtime visual secara otomatis tanpa copy-paste manual.
-   - Tombol "Auto-Fix Bug" satu-klik menginstruksikan AI untuk memperbaiki galat dalam hitungan detik.
+SYSTEMS AND INSTALLERS
+Windows 10/11 x64: Motion-Suite-Pro.Setup.1.0.7.exe.
+macOS 13+: use Motion Suite Pro-1.0.7-mac-x64.dmg for Intel or Motion Suite Pro-1.0.7-mac-arm64.dmg for Apple Silicon. Electron 44.2.0 requires macOS 13 or later. Each architecture must pass release checks; Windows success does not establish Mac compatibility.
+Performance depends on CPU, GPU/WebGL, memory, resolution, and scene complexity. 4K/60 FPS support does not promise real-time preview. Allow sufficient disk space for the application, assets, and exports.
+Signing/notarization status is recorded in the artifact report. If Windows or macOS shows a warning, verify the source and checksum. Do not assume every error is Gatekeeper-related; contact support for damaged or incompatible packages.
 
-E. CROSS-PLATFORM RSA-SHA256 LICENSING & ANTI-CLOCK ROLLBACK GUARD:
-   - Hardware-Locked Machine ID: Mengikat lisensi ke Hardware ID fisik perangkat 
-     (IOPlatformUUID pada macOS & Hardware GUID pada Windows) yang tersimpan aman di direktori 
-     userData ('~/Library/Application Support/Motion Suite Pro' di macOS dan '%APPDATA%' di Windows).
-   - Sistem Lisensi Bersih: 100% TIDAK menggunakan Windows Registry (Bebas reg.exe / HKCU), menjamin 
-     stabilitas lintas platform dan bebas crash pada macOS.
-   - Proteksi Anti-Clock Rollback: Enkripsi AES-256-CBC stempel waktu lokal untuk mencegah pemunduran jam.
-   - Pemulihan Waktu Internet 1-Klik: Sinkronisasi waktu instan via query HTTP HEAD ke Google / Cloudflare.
-   - Multi-Tier Duration: Mendukung masa aktif fleksibel (1 Hari Trial, 3 Hari, 7 Hari, 30 Hari, hingga Lifetime).
+GETTING STARTED
+1. Activate a legitimate license in the license settings. Machine ID binding remains intact; updates do not require an activation bypass.
+2. Select Indonesia or English using Language. Switching languages preserves your brief, code, configuration, and license.
+3. Select 16:9 or 9:16, resolution, 5/10/15/20 seconds, and 24/30/60 FPS. Total frames = seconds × FPS.
+4. Select Automatic, 2D, 2.5D, or 3D Animation. This guides technique without prescribing a theme, palette, or visual style.
 
-F. IN-APP AUTO-UPDATE SYSTEM:
-   - Pembaruan aplikasi modern dengan deteksi rilis GitHub dan unduhan di latar belakang.
+STUDIO AND LANGUAGE
+Indonesian is the default for new installations. An existing saved language preference is retained. The Animation Concept panel contains the brief, Animation Type, Generation Mode, and Generate Animation action. Expand Additional Settings for references, precision strokes, palette reuse, and text reuse. License and API key settings remain accessible in the sidebar. Studio Preview contains the result and timeline; Code Inspector provides the editor and Copy Master Prompt. Switching languages preserves your work.
 
---------------------------------------------------------------------------------
-4. PANDUAN RINGKAS MEMULAI (QUICK START)
---------------------------------------------------------------------------------
+INTERNAL AI
+Use your own Google AI Studio Gemini API key. Availability, quotas, and charges are governed by Google; the application does not provide unlimited usage or guaranteed service availability.
+Fast uses one code-generation stage. High Quality (Beta) plans a blueprint and then builds the code. Permitted retries, fallback, and recovery may increase API usage. Quality request deadlines are 60 seconds for Planning, up to 150 seconds for Building within a shared 180-second total. Local validation has a separate bounded deadline. Completion time and visual quality are not guaranteed.
+Specify subjects, actions, colors, viewpoint, timing, and constraints such as no text or shadows. References are optional. Successful model information reflects the actual result.
+Precision SVG Strokes (Beta) defaults OFF. Enable it for suitable outlines or icons requiring stroke drawing; it does not force a template.
+Use current palette OFF: after successful generation, literal color defaults on the new code's accentColor, secondaryColor, and backgroundColor props are applied before preview and export. Undefined values retain current settings. ON: the palette you chose in the application is deliberately retained. You can still edit colors manually afterward. Transparent mode retains a transparent preview/export background; MP4 cannot store alpha.
+Reuse current text only when you want existing title, subtitle, and badge values in a new generation. Otherwise, the new animation supplies its own text without unrelated historic text.
+Stop is available where cancellation is supported. Auto-Fix and Edit with AI are manual actions that may use the API. No silent startup repair runs.
 
-Langkah 1: PASANG APLIKASI
-- Windows: Jalankan installer .exe. Jika muncul SmartScreen, klik "More info" -> "Run anyway".
-- macOS  : Buka file .dmg, seret "Motion Suite Pro" ke folder Applications. 
-           Jika terhalang Gatekeeper, klik kanan file aplikasi di Applications -> pilih "Open", 
-           atau izinkan lewat System Settings > Privacy & Security, atau jalankan perintah Terminal:
-           xattr -cr "/Applications/Motion Suite Pro.app"
+EXTERNAL AI AND CODE INSPECTOR
+Copy Master Prompt after choosing video settings and animation type. It includes active settings at the time of copying. Discuss the concept, then explicitly say CONTINUE or GENERATE CODE for one complete TSX file. External AI compliance is not guaranteed.
+Keep // @title: and the DynamicMotion/VibeGraphic/default export contract. Use only supported imports/APIs; 3D uses the application wrapper. Never paste API keys or license credentials into an external AI.
+Paste TSX and select Apply & View Result. Syntax, imports, and compatibility are checked before writing. Rejected code does not replace the active animation. Send safe diagnostics back for revision without sensitive information.
 
-Langkah 2: SALIN MACHINE ID
-- Buka aplikasi Motion Suite Pro.
-- Pada panel kiri atas atau dialog aktivasi, salin 16-karakter Machine ID unik perangkat Anda.
+PREVIEW AND VISUAL CONTROLS
+Play and scrub to inspect opening frames, transitions, ending, clipping, and continuity. Visual Controls retain text, colors, position, scale, glow, speed, Undo, and original-value restoration. Effects depend on the generated component's prop contract. They are optional and do not certify design quality.
+3D requires suitable WebGL support. Review diagnostics when preview fails; do not arbitrarily change GPU settings.
 
-Langkah 3: KLAIM KUNCI LISENSI RESMI
-- Buka browser dan akses formulir aktivasi resmi:
-  https://motionsuite-act.duckdns.org/form/c1dc1a25-386b-4780-9e60-454b6201969e
-- Isi data pembelian Anda (Email, Nomor Invoice Lynk.id, Machine ID, dan Bukti Transaksi).
-- Kunci lisensi resmi RSA-SHA256 akan otomatis terkirim ke email Anda.
+MICROSTOCK ASSET REVIEW
+Review subject readability, requested colors, geometry, object continuity, timing, clipping, flicker, and the final frame before submitting an asset. Avoid unrequested branding, watermarks, and text. AI output still requires creator review; High Quality mode and a 4K render do not guarantee marketplace acceptance.
 
-Langkah 4: AKTIVASI DI APLIKASI
-- Salin seluruh teks Kunci Lisensi dari email, tempelkan ke kolom Lisensi di aplikasi, lalu klik "Validasi".
-- Status lisensi berubah menjadi aktif hijau.
+EXPORT
+MP4 H.264 is for solid-background video and does not support alpha.
+MOV ProRes 4444 supports alpha when Transparent is selected. Verify transparency in a compatible editor; ordinary players may display alpha as black.
+Select an export folder, format, and render mode. 4K/60 FPS and complex 3D increase memory use and render time. Cancel normally before closing during an active render.
 
-Langkah 5: HUBUNGKAN GOOGLE GEMINI API KEY (GRATIS)
-- Buka https://aistudio.google.com -> klik "Get API key" -> "Create API key in new project".
-- Salin token (diawali AIzaSy...) dan tempelkan ke kolom Gemini API Key di aplikasi -> klik "Simpan".
+ERRORS AND UPDATES
+429 means rate limiting or quota exhaustion. Check quota evidence; exhausted quota may not recover after a short wait. Do not rotate keys/projects to evade provider limits.
+500/502/503/504 are Gemini service errors affecting the request, not proof that all Google servers are down. Try later.
+401/403: check credentials and permissions. Application deadlines are local time limits, not confirmed outages. Connection failures require checking connectivity. Invalid TSX/blueprint is rejected before applying a new animation.
+Windows retains notification, download, and Install & Restart. macOS updates are manual DMGs from official Google Drive links; v1.0.7 does not display in-app update notifications.
+After upgrading, verify projects, assets, settings, license, API key, preview, and export. Release reports record actual upgrade acceptance; one device does not prove all customer configurations.
 
-Langkah 6: SELESAI & MULAI MERANCANG MOTION GRAPHIC
-- Masukkan ide animasi pada prompt AI atau sesuaikan langsung via Visual Tweaker.
-- Tonton preview langsung di Studio Canvas, lalu klik "🚀 Ekspor / Render Video".
+ACTIVATION AND SUPPORT
+Copy Machine ID and use the official activation form: https://motionsuite-act.duckdns.org/form/c1dc1a25-386b-4780-9e60-454b6201969e
+Provide the email, invoice/transaction, Machine ID, purchased license tier, and proof of purchase requested by the form. Copy the complete emailed key and select Validate. License duration and Lifetime terms are unchanged.
+For clock issues, use the existing time synchronization or OS time settings. Renew expired licenses through the official seller.
+Support: ahmadmuslihfarhany46@gmail.com · Telegram: @ahmadmuslihfarhany
 
---------------------------------------------------------------------------------
-5. LOKASI FOLDER EKSPOR DEFAULT
---------------------------------------------------------------------------------
-- Windows: C:\Users\<NamaUser>\Downloads\Motion Studio Exports
-- macOS  : /Users/<NamaUser>/Downloads/Motion Studio Exports
-(Lokasi folder dapat diubah kapan saja melalui dialog pemilih folder sebelum proses render).
+RUNTIME / RUNTIME VERSIONS
+electron: 44.2.0
+typescript: 5.9.3
+react: 19.2.8
+remotion: 4.0.520
+three: 0.178.0
+@react-three/fiber: 9.2.0
+@remotion/three: 4.0.520
 
-================================================================================
-LAYANAN BANTUAN & KONTAK DUKUNGAN TEKNIS:
-- Panduan Visual & Cetak A4: Buka file "user-guide.html" di folder aplikasi.
-- Email Dukungan   : ahmadmuslihfarhany46@gmail.com
-- Telegram Resmi   : @ahmadmuslihfarhany
-================================================================================
-           Selamat Berkarya dengan Motion Suite Pro — Studio in a Box!
-================================================================================
+Windows x64. macOS Intel x64 / Apple Silicon arm64: pengujian paket dan perangkat Mac terpisah diperlukan / separate package and Mac hardware acceptance is required.

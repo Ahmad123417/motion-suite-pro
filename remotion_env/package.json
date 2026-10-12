@@ -3,13 +3,17 @@
   "version": "1.0.1",
   "private": true,
   "dependencies": {
+    "@react-three/fiber": "9.2.0",
     "@remotion/cli": "^4.0.520",
     "@remotion/google-fonts": "^4.0.520",
     "@remotion/noise": "^4.0.520",
     "@remotion/paths": "^4.0.520",
     "@remotion/shapes": "^4.0.520",
+    "@remotion/three": "4.0.520",
+    "@types/three": "0.178.1",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
-    "remotion": "^4.0.520"
+    "remotion": "^4.0.520",
+    "three": "0.178.0"
   }
 }

@@ -1,15 +1,43 @@
-import { spawn, ChildProcess, execSync } from 'child_process'
+import { spawn, ChildProcess } from 'child_process'
 import { existsSync, mkdirSync } from 'fs'
 import fsPromises from 'fs/promises'
 import { resolve, join, delimiter } from 'path'
 import http from 'http'
+import net from 'net'
 import { app, ipcMain, BrowserWindow } from 'electron'
-import { sanitizeInterpolateCode, preFixRemotionCode } from './geminiCoder'
+import {
+  sanitizeInterpolateCode,
+  preFixRemotionCode,
+  sanitizeUnterminatedStrings,
+  sanitizeJsxBacktickAttributes,
+  cleanGeneratedCode
+} from './geminiCoder'
 
 let studioProcess: ChildProcess | null = null
 let currentPort = 10871
 let isServerReady = false
 let isStarting = false // Debounce guard to prevent multiple concurrent spawns
+
+const hasRunningStudioProcess = (): boolean =>
+  studioProcess !== null &&
+  studioProcess.exitCode === null &&
+  studioProcess.signalCode === null &&
+  !studioProcess.killed
+
+// Check availability without terminating or adopting another application's listener.
+const checkPortAvailable = (port: number): Promise<void> =>
+  new Promise((resolveResult, reject) => {
+    const server = net.createServer()
+    server.unref()
+    server.once('error', (err: NodeJS.ErrnoException) => {
+      reject(new Error(err.code === 'EADDRINUSE'
+        ? `Port ${port} is already in use. Close the conflicting application and try again.`
+        : `Cannot check port ${port}: ${err.message}`))
+    })
+    server.listen({ port, exclusive: true }, () => {
+      server.close((err) => err ? reject(err) : resolveResult())
+    })
+  })
 
 export interface StudioStatus {
   isRunning: boolean
@@ -146,46 +174,15 @@ export async function startRemotionStudio(
     }
   }
 
-  currentPort = port
-
-  // 1. If already responding, return active immediately
-  const alreadyResponding = await probeServer(port)
-  if (alreadyResponding) {
-    isServerReady = true
-    return {
-      success: true,
-      port,
-      url: `http://localhost:${port}`
-    }
-  }
-
   isStarting = true
 
   try {
-    // 2. Kill any stale process reference and clean port 10871 on Windows
-    if (studioProcess) {
-      await stopRemotionStudio()
+    if (hasRunningStudioProcess() && currentPort === port && isServerReady) {
+      return { success: true, port, url: `http://localhost:${port}` }
     }
-
-    if (process.platform === 'win32') {
-      try {
-        execSync(
-          'cmd /c "for /f \\"tokens=5\\" %a in (\'netstat -aon ^| findstr :10871\') do taskkill /f /pid %a" 2>nul',
-          { stdio: 'ignore' }
-        )
-        console.log('[RemotionStudio] Pre-start port 10871 clean check completed.')
-      } catch {
-        // Abaikan jika port sudah bersih
-      }
-      // Toleransi delay 600ms setelah pembersihan port zombie
-      await new Promise((r) => setTimeout(r, 600))
-    } else {
-      try {
-        execSync('lsof -ti :10871 | xargs kill -9 2>/dev/null || true', { shell: '/bin/sh', stdio: 'ignore' })
-      } catch {
-        // Abaikan jika port sudah bersih
-      }
-    }
+    if (studioProcess) await stopRemotionStudio()
+    currentPort = port
+    await checkPortAvailable(port)
 
     const remotionEnvPath = getRemotionEnvDir()
     const publicDir = join(remotionEnvPath, 'public')
@@ -323,7 +320,7 @@ export async function startRemotionStudio(
 }
 
 /**
- * Stop Remotion Studio and kill all child processes
+ * Stop the Remotion Studio child process owned by this application
  */
 export async function stopRemotionStudio(): Promise<{ success: boolean }> {
   if (!studioProcess && !isServerReady) {
@@ -331,17 +328,8 @@ export async function stopRemotionStudio(): Promise<{ success: boolean }> {
   }
 
   try {
-    if (studioProcess?.pid) {
-      if (process.platform === 'win32') {
-        // Kill whole process tree on Windows
-        try {
-          execSync(`taskkill /pid ${studioProcess.pid} /T /F`, { stdio: 'ignore' })
-        } catch {
-          // ignore if already exited
-        }
-      } else {
-        studioProcess.kill('SIGTERM')
-      }
+    if (hasRunningStudioProcess()) {
+      studioProcess?.kill('SIGTERM')
     }
   } catch (err) {
     console.warn('[RemotionStudio] Error stopping process:', err)
@@ -354,29 +342,12 @@ export async function stopRemotionStudio(): Promise<{ success: boolean }> {
 }
 
 /**
- * Clean up studio zombie processes synchronously on app quit
+ * Clean up the owned Studio child process synchronously on app quit
  */
 export function cleanupStudioOnQuit(): void {
   try {
-    if (process.platform === 'win32') {
-      try {
-        execSync(
-          'cmd /c "for /f \\"tokens=5\\" %a in (\'netstat -aon ^| findstr :10871\') do taskkill /f /pid %a" 2>nul',
-          { stdio: 'ignore' }
-        )
-      } catch (_) {}
-      if (studioProcess?.pid) {
-        try {
-          execSync(`taskkill /pid ${studioProcess.pid} /f /t`, { stdio: 'ignore' })
-        } catch (_) {}
-      }
-    } else {
-      try {
-        execSync('lsof -ti :10871 | xargs kill -9 2>/dev/null || true', { shell: '/bin/sh', stdio: 'ignore' })
-      } catch (_) {}
-      if (studioProcess) {
-        studioProcess.kill('SIGKILL')
-      }
+    if (hasRunningStudioProcess()) {
+      studioProcess?.kill(process.platform === 'win32' ? 'SIGTERM' : 'SIGKILL')
     }
   } catch (_) {
   } finally {
@@ -389,10 +360,23 @@ export function cleanupStudioOnQuit(): void {
  * Write component TSX string directly to remotion_env/src/VibeGraphic.tsx
  */
 export async function writeComponentCode(
-  newCode: string
+  newCode: string,
+  beforeWrite?: () => void,
+  alreadyValidated = false
 ): Promise<{ success: boolean; filePath?: string; error?: string }> {
+  let checkingWrite = false
   try {
     const targetPath = getVibeGraphicPath()
+
+    // Quality Generate validates this exact candidate. Do not run heuristic sanitizers
+    // again after validation: they can change template assignments into invalid TSX.
+    if (alreadyValidated) {
+      checkingWrite = true
+      beforeWrite?.()
+      checkingWrite = false
+      await fsPromises.writeFile(targetPath, newCode, 'utf-8')
+      return { success: true, filePath: targetPath }
+    }
 
     let code = newCode.trim()
     // Robust regex strip for markdown code fences (e.g. ```tsx ... ```)
@@ -405,11 +389,26 @@ export async function writeComponentCode(
       code = code.trim()
     }
 
+    // Preserve // @title: metadata if present before import
+    const titleIndex = code.indexOf('// @title:')
     const importIndex = code.indexOf('import ')
-    if (importIndex > 0) {
+    if (titleIndex >= 0 && (importIndex === -1 || titleIndex < importIndex)) {
+      code = code.slice(titleIndex).trim()
+    } else if (importIndex > 0) {
       code = code.slice(importIndex).trim()
     }
     code = code.replace(/```+\s*$/g, '').trim()
+
+    // Auto-Sanitize Unterminated String Constants (v1.0.7):
+    code = sanitizeUnterminatedStrings(code)
+
+    // Auto-Sanitize JSX Backtick Attributes (v1.0.8 Zero-Panic Self-Healing):
+    code = sanitizeJsxBacktickAttributes(code)
+
+    // Auto-Sanitizer Easing Halusinasi (v1.0.7):
+    code = code.replace(/Easing\.backIn\((.*?)\)/g, 'Easing.in(Easing.back($1))')
+    code = code.replace(/Easing\.backOut\((.*?)\)/g, 'Easing.out(Easing.back($1))')
+    code = code.replace(/Easing\.backInOut\((.*?)\)/g, 'Easing.inOut(Easing.back($1))')
 
     // Pre-fix Remotion code for props, hook, and fallback safety
     code = preFixRemotionCode(code)
@@ -417,10 +416,15 @@ export async function writeComponentCode(
     // Sanitize interpolate input and output ranges to prevent Remotion crash
     code = sanitizeInterpolateCode(code)
 
+    // The optional Generate guard may reject before touching the active animation.
+    checkingWrite = true
+    beforeWrite?.()
+    checkingWrite = false
     await fsPromises.writeFile(targetPath, code, 'utf-8')
     console.log(`[RemotionStudio] Successfully wrote code to ${targetPath}`)
     return { success: true, filePath: targetPath }
   } catch (err) {
+    if (checkingWrite) throw err
     console.error('[RemotionStudio] writeComponentCode failed:', err)
     return {
       success: false,
@@ -429,12 +433,28 @@ export async function writeComponentCode(
   }
 }
 
+/** Validate the final sanitized external candidate before either Apply endpoint writes. */
+export async function writeExternalComponentCode(
+  rawCode: string
+): Promise<{ success: boolean; code?: string; filePath?: string; error?: string }> {
+  try {
+    const code = cleanGeneratedCode(rawCode)
+    // Load lazily: Gemini orchestration and the existing writer already reference each other.
+    const { validateExternalCode } = await import('./geminiService')
+    const validation = validateExternalCode(code)
+    if (!validation.valid) return { success: false, error: validation.error }
+    const result = await writeComponentCode(code, undefined, true)
+    return result.success ? { ...result, code } : result
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Gagal memeriksa kode TSX. File fisik tidak diubah.' }
+  }
+}
+
 /**
  * Get current server status
  */
 export async function getStudioServerStatus(): Promise<StudioStatus> {
-  const responding = await probeServer(currentPort)
-  const isRunning = responding || (studioProcess !== null && isServerReady)
+  const isRunning = hasRunningStudioProcess() && (isServerReady || await probeServer(currentPort))
   return {
     isRunning,
     port: currentPort,
@@ -473,7 +493,7 @@ export function registerRemotionStudioIPC(): void {
   })
 
   ipcMain.handle('remotion:write-code', async (_, code: string) => {
-    return await writeComponentCode(code)
+    return await writeExternalComponentCode(code)
   })
 
   ipcMain.handle('remotion:get-status', async () => {

@@ -1,3 +1,4 @@
+import { useUiLanguage, StudioIcon } from '../i18n'
 import React, { useState } from 'react'
 import './ParametricControlPanel.css'
 
@@ -77,6 +78,7 @@ export const ParametricControlPanel: React.FC<ParametricControlPanelProps> = ({
   onChangeSpeedMultiplier,
   disabled = false
 }) => {
+  const { t, message } = useUiLanguage()
   const [activeTab, setActiveTab] = useState<TabType>('all')
 
   if (!isOpen) return null
@@ -87,15 +89,15 @@ export const ParametricControlPanel: React.FC<ParametricControlPanelProps> = ({
     <aside
       className="param-tweaker-drawer"
       role="dialog"
-      aria-label="Visual Tweaker Inspector"
+      aria-label={t("Visual Tweaker Inspector")}
     >
       {/* Header Bar */}
       <div className="param-drawer-header">
         <div className="param-drawer-title-box">
-          <span className="param-drawer-icon">🎛️</span>
+          <span className="param-drawer-icon"><StudioIcon /></span>
           <div className="param-drawer-title-stack">
-            <h4 className="param-drawer-title">Visual Tweaker</h4>
-            <span className="param-drawer-live-badge">Live Hot-Sync</span>
+            <h4 className="param-drawer-title">{t("Visual Tweaker")}</h4>
+            <span className="param-drawer-live-badge">{t("Live Hot-Sync")}</span>
           </div>
         </div>
 
@@ -106,10 +108,8 @@ export const ParametricControlPanel: React.FC<ParametricControlPanelProps> = ({
               className="btn-param-header-action btn-param-undo"
               onClick={onUndo}
               disabled={disabled || !canUndo}
-              title="Batalkan pergeseran/perubahan terakhir (Undo ↶)"
-            >
-              ↶ Undo
-            </button>
+              title={t("Batalkan pergeseran/perubahan terakhir (Undo ↶)")}
+            > {t("↶ Undo")} </button>
           )}
 
           {onRevert && (
@@ -118,18 +118,16 @@ export const ParametricControlPanel: React.FC<ParametricControlPanelProps> = ({
               className="btn-param-header-action btn-param-revert"
               onClick={onRevert}
               disabled={disabled}
-              title="Kembalikan semua parameter ke nilai asli template (↺ Revert)"
-            >
-              ↺ Kembalikan ke Asli
-            </button>
+              title={t("Kembalikan semua parameter ke nilai asli template (↺ Revert)")}
+            > {t("↺ Kembalikan ke Asli")} </button>
           )}
 
           <button
             type="button"
             className="btn-param-drawer-close"
             onClick={onClose}
-            title="Tutup Inspector (✕)"
-            aria-label="Tutup panel"
+            title={t("Tutup Inspector (✕)")}
+            aria-label={t("Tutup panel")}
           >
             ✕
           </button>
@@ -142,37 +140,27 @@ export const ParametricControlPanel: React.FC<ParametricControlPanelProps> = ({
           type="button"
           className={`param-tab-btn ${activeTab === 'all' ? 'active' : ''}`}
           onClick={() => setActiveTab('all')}
-        >
-          Semua
-        </button>
+        > {t("Semua")} </button>
         <button
           type="button"
           className={`param-tab-btn ${activeTab === 'text' ? 'active' : ''}`}
           onClick={() => setActiveTab('text')}
-        >
-          Teks
-        </button>
+        > {t("Teks")} </button>
         <button
           type="button"
           className={`param-tab-btn ${activeTab === 'color' ? 'active' : ''}`}
           onClick={() => setActiveTab('color')}
-        >
-          Warna
-        </button>
+        > {t("Warna")} </button>
         <button
           type="button"
           className={`param-tab-btn ${activeTab === 'transform' ? 'active' : ''}`}
           onClick={() => setActiveTab('transform')}
-        >
-          Transform
-        </button>
+        > {t("Transform")} </button>
         <button
           type="button"
           className={`param-tab-btn ${activeTab === 'fx' ? 'active' : ''}`}
           onClick={() => setActiveTab('fx')}
-        >
-          Efek
-        </button>
+        > {t("Efek")} </button>
       </div>
 
       {/* Scrollable Groups Body */}
@@ -181,15 +169,15 @@ export const ParametricControlPanel: React.FC<ParametricControlPanelProps> = ({
         {(activeTab === 'all' || activeTab === 'text') && (
           <div className="param-group-card">
             <div className="param-group-header">
-              <span className="param-group-icon">✍️</span>
-              <h5 className="param-group-heading">Konten Teks</h5>
+              <span className="param-group-icon"><StudioIcon /></span>
+              <h5 className="param-group-heading">{t("Konten Teks")}</h5>
             </div>
 
             {/* Title Text Input */}
             <div className="param-field">
               <div className="param-field-label">
-                <span>Judul Utama (titleText)</span>
-                <span className="param-field-val">{titleText.length} char</span>
+                <span>{t("Judul Utama (titleText)")}</span>
+                <span className="param-field-val">{titleText.length} {t("char")}</span>
               </div>
               <input
                 type="text"
@@ -197,7 +185,7 @@ export const ParametricControlPanel: React.FC<ParametricControlPanelProps> = ({
                 value={titleText}
                 onFocus={onSnapshotBeforeChange}
                 onChange={(e) => onChangeTitleText(e.target.value)}
-                placeholder="Masukkan judul utama..."
+                placeholder={t("Masukkan judul utama...")}
                 disabled={disabled}
               />
             </div>
@@ -205,8 +193,8 @@ export const ParametricControlPanel: React.FC<ParametricControlPanelProps> = ({
             {/* Subtitle Text Input */}
             <div className="param-field">
               <div className="param-field-label">
-                <span>Sub-judul / Informasi Sekunder (subtitleText)</span>
-                <span className="param-field-val">{subtitleText.length} char</span>
+                <span>{t("Sub-judul / Informasi Sekunder (subtitleText)")}</span>
+                <span className="param-field-val">{subtitleText.length} {t("char")}</span>
               </div>
               <input
                 type="text"
@@ -214,7 +202,7 @@ export const ParametricControlPanel: React.FC<ParametricControlPanelProps> = ({
                 value={subtitleText}
                 onFocus={onSnapshotBeforeChange}
                 onChange={(e) => onChangeSubtitleText(e.target.value)}
-                placeholder="Masukkan sub-judul atau info sekunder..."
+                placeholder={t("Masukkan sub-judul atau info sekunder...")}
                 disabled={disabled}
               />
             </div>
@@ -222,8 +210,8 @@ export const ParametricControlPanel: React.FC<ParametricControlPanelProps> = ({
             {/* Badge Text Input */}
             <div className="param-field">
               <div className="param-field-label">
-                <span>Label Atas / Kategori (badgeText)</span>
-                <span className="param-field-val">{badgeText.length} char</span>
+                <span>{t("Label Atas / Kategori (badgeText)")}</span>
+                <span className="param-field-val">{badgeText.length} {t("char")}</span>
               </div>
               <input
                 type="text"
@@ -231,7 +219,7 @@ export const ParametricControlPanel: React.FC<ParametricControlPanelProps> = ({
                 value={badgeText}
                 onFocus={onSnapshotBeforeChange}
                 onChange={(e) => onChangeBadgeText(e.target.value)}
-                placeholder="Masukkan label atas / badge..."
+                placeholder={t("Masukkan label atas / badge...")}
                 disabled={disabled}
               />
             </div>
@@ -242,15 +230,15 @@ export const ParametricControlPanel: React.FC<ParametricControlPanelProps> = ({
         {(activeTab === 'all' || activeTab === 'color') && (
           <div className="param-group-card">
             <div className="param-group-header">
-              <span className="param-group-icon">🎨</span>
-              <h5 className="param-group-heading">Warna & Latar Belakang</h5>
+              <span className="param-group-icon"><StudioIcon /></span>
+              <h5 className="param-group-heading">{t("Warna & Latar Belakang")}</h5>
             </div>
 
             {/* Accent Color & Secondary Color */}
             <div className="param-colors-grid">
               <div className="param-field">
                 <div className="param-field-label">
-                  <span>Warna Aksen</span>
+                  <span>{t("Warna Aksen")}</span>
                 </div>
                 <div className="param-color-picker-box">
                   <input
@@ -260,7 +248,7 @@ export const ParametricControlPanel: React.FC<ParametricControlPanelProps> = ({
                     onPointerDown={onSnapshotBeforeChange}
                     onChange={(e) => onChangeAccentColor(e.target.value)}
                     disabled={disabled}
-                    title="Pilih warna aksen utama"
+                    title={t("Pilih warna aksen utama")}
                   />
                   <span className="param-color-hex-text">{accentColor}</span>
                 </div>
@@ -268,7 +256,7 @@ export const ParametricControlPanel: React.FC<ParametricControlPanelProps> = ({
 
               <div className="param-field">
                 <div className="param-field-label">
-                  <span>Warna Sekunder</span>
+                  <span>{t("Warna Sekunder")}</span>
                 </div>
                 <div className="param-color-picker-box">
                   <input
@@ -278,7 +266,7 @@ export const ParametricControlPanel: React.FC<ParametricControlPanelProps> = ({
                     onPointerDown={onSnapshotBeforeChange}
                     onChange={(e) => onChangeSecondaryColor(e.target.value)}
                     disabled={disabled}
-                    title="Pilih warna aksen sekunder"
+                    title={t("Pilih warna aksen sekunder")}
                   />
                   <span className="param-color-hex-text">{secondaryColor}</span>
                 </div>
@@ -288,9 +276,9 @@ export const ParametricControlPanel: React.FC<ParametricControlPanelProps> = ({
             {/* Transparency Alpha / Solid Switch */}
             <div className="param-field">
               <div className="param-field-label">
-                <span>Mode Latar Belakang</span>
+                <span>{t("Mode Latar Belakang")}</span>
                 <span className={`param-field-val ${isTransparent ? 'badge-alpha' : ''}`}>
-                  {isTransparent ? 'Alpha Channel' : 'Solid Background'}
+                  {isTransparent ? t("Alpha Channel") : t("Solid Background")}
                 </span>
               </div>
               <div className="param-transparency-toggle">
@@ -302,9 +290,7 @@ export const ParametricControlPanel: React.FC<ParametricControlPanelProps> = ({
                     onChangeIsTransparent(false)
                   }}
                   disabled={disabled}
-                >
-                  ⬛ Solid
-                </button>
+                > {t("⬛ Solid")} </button>
                 <button
                   type="button"
                   className={`param-toggle-btn alpha ${isTransparent ? 'active alpha' : ''}`}
@@ -313,17 +299,15 @@ export const ParametricControlPanel: React.FC<ParametricControlPanelProps> = ({
                     onChangeIsTransparent(true)
                   }}
                   disabled={disabled}
-                >
-                  🏁 Alpha (Transparan)
-                </button>
+                > {t("🏁 Alpha (Transparan)")} </button>
               </div>
             </div>
 
             {/* Background Color Picker (active if Solid) */}
             <div className="param-field">
               <div className="param-field-label">
-                <span>Warna Latar (Solid)</span>
-                {isTransparent && <span className="param-hint-text">(Diabaikan di mode Alpha)</span>}
+                <span>{t("Warna Latar (Solid)")}</span>
+                {isTransparent && <span className="param-hint-text">{t("(Diabaikan di mode Alpha)")}</span>}
               </div>
               <div className={`param-color-picker-box ${isTransparent ? 'disabled' : ''}`}>
                 <input
@@ -333,10 +317,10 @@ export const ParametricControlPanel: React.FC<ParametricControlPanelProps> = ({
                   onPointerDown={onSnapshotBeforeChange}
                   onChange={(e) => onChangeBackgroundColor(e.target.value)}
                   disabled={disabled || isTransparent}
-                  title={isTransparent ? 'Latar saat ini transparan' : 'Pilih warna latar belakang'}
+                  title={isTransparent ? t("Latar saat ini transparan") : t("Pilih warna latar belakang")}
                 />
                 <span className="param-color-hex-text">
-                  {isTransparent ? 'Transparent' : backgroundColor}
+                  {isTransparent ? t("Transparent") : backgroundColor}
                 </span>
               </div>
             </div>
@@ -347,17 +331,16 @@ export const ParametricControlPanel: React.FC<ParametricControlPanelProps> = ({
         {(activeTab === 'all' || activeTab === 'transform') && (
           <div className="param-group-card">
             <div className="param-group-header">
-              <span className="param-group-icon">📐</span>
-              <h5 className="param-group-heading">Transformasi Dinamis</h5>
+              <span className="param-group-icon"><StudioIcon /></span>
+              <h5 className="param-group-heading">{t("Transformasi Dinamis")}</h5>
             </div>
 
             {/* Horizontal Position X Slider */}
             <div className="param-field">
               <div className="param-field-label">
-                <span>Posisi Sumbu X</span>
+                <span>{t("Posisi Sumbu X")}</span>
                 <span className="param-field-val">
-                  {textOffsetX > 0 ? `+${textOffsetX}` : textOffsetX} px
-                </span>
+                  {textOffsetX > 0 ? t("+{p0}", {p0: textOffsetX}) : textOffsetX} {t("px")} </span>
               </div>
               <div className="param-slider-wrap">
                 <input
@@ -372,9 +355,9 @@ export const ParametricControlPanel: React.FC<ParametricControlPanelProps> = ({
                   disabled={disabled}
                 />
                 <div className="param-slider-ticks">
-                  <span>-500px</span>
-                  <span>0 (Tengah)</span>
-                  <span>+500px</span>
+                  <span>{t("-500px")}</span>
+                  <span>{t("0 (Tengah)")}</span>
+                  <span>{t("+500px")}</span>
                 </div>
               </div>
             </div>
@@ -382,10 +365,9 @@ export const ParametricControlPanel: React.FC<ParametricControlPanelProps> = ({
             {/* Vertical Position Y Slider */}
             <div className="param-field">
               <div className="param-field-label">
-                <span>Posisi Sumbu Y</span>
+                <span>{t("Posisi Sumbu Y")}</span>
                 <span className="param-field-val">
-                  {textOffsetY > 0 ? `+${textOffsetY}` : textOffsetY} px
-                </span>
+                  {textOffsetY > 0 ? t("+{p0}", {p0: textOffsetY}) : textOffsetY} {t("px")} </span>
               </div>
               <div className="param-slider-wrap">
                 <input
@@ -400,9 +382,9 @@ export const ParametricControlPanel: React.FC<ParametricControlPanelProps> = ({
                   disabled={disabled}
                 />
                 <div className="param-slider-ticks">
-                  <span>-500px</span>
-                  <span>0 (Tengah)</span>
-                  <span>+500px</span>
+                  <span>{t("-500px")}</span>
+                  <span>{t("0 (Tengah)")}</span>
+                  <span>{t("+500px")}</span>
                 </div>
               </div>
             </div>
@@ -410,7 +392,7 @@ export const ParametricControlPanel: React.FC<ParametricControlPanelProps> = ({
             {/* Scale Slider (50% - 200%) */}
             <div className="param-field">
               <div className="param-field-label">
-                <span>Skala Tampilan (Scale)</span>
+                <span>{t("Skala Tampilan (Scale)")}</span>
                 <span className="param-field-val">
                   {Math.round(scale * 100)}%
                 </span>
@@ -429,7 +411,7 @@ export const ParametricControlPanel: React.FC<ParametricControlPanelProps> = ({
                 />
                 <div className="param-slider-ticks">
                   <span>50%</span>
-                  <span>100% (Normal)</span>
+                  <span>{t("100% (Normal)")}</span>
                   <span>200%</span>
                 </div>
               </div>
@@ -442,10 +424,8 @@ export const ParametricControlPanel: React.FC<ParametricControlPanelProps> = ({
                 className="btn-reset-transform"
                 onClick={onResetTransform}
                 disabled={disabled || !isTransformModified}
-                title="Kembalikan posisi X, Y ke 0px dan skala ke 100%"
-              >
-                ↺ Reset Transform
-              </button>
+                title={t("Kembalikan posisi X, Y ke 0px dan skala ke 100%")}
+              > {t("↺ Reset Transform")} </button>
             </div>
           </div>
         )}
@@ -454,15 +434,15 @@ export const ParametricControlPanel: React.FC<ParametricControlPanelProps> = ({
         {(activeTab === 'all' || activeTab === 'fx') && (
           <div className="param-group-card">
             <div className="param-group-header">
-              <span className="param-group-icon">✨</span>
-              <h5 className="param-group-heading">FX & Efek Visual</h5>
+              <span className="param-group-icon"><StudioIcon /></span>
+              <h5 className="param-group-heading">{t("FX & Efek Visual")}</h5>
             </div>
 
             {/* Neon Glow Intensity Slider (0 - 40px) */}
             <div className="param-field">
               <div className="param-field-label">
-                <span>Intensitas Neon Glow</span>
-                <span className="param-field-val">{glowIntensity} px</span>
+                <span>{t("Intensitas Neon Glow")}</span>
+                <span className="param-field-val">{glowIntensity} {t("px")}</span>
               </div>
               <div className="param-slider-wrap">
                 <input
@@ -477,9 +457,9 @@ export const ParametricControlPanel: React.FC<ParametricControlPanelProps> = ({
                   disabled={disabled}
                 />
                 <div className="param-slider-ticks">
-                  <span>0px (Off)</span>
-                  <span>15px (Default)</span>
-                  <span>40px</span>
+                  <span>{t("0px (Off)")}</span>
+                  <span>{t("15px (Default)")}</span>
+                  <span>{t("40px")}</span>
                 </div>
               </div>
             </div>
@@ -487,7 +467,7 @@ export const ParametricControlPanel: React.FC<ParametricControlPanelProps> = ({
             {/* Speed Multiplier Slider (0.5x - 2.0x) */}
             <div className="param-field">
               <div className="param-field-label">
-                <span>Kecepatan Animasi (Speed)</span>
+                <span>{t("Kecepatan Animasi (Speed)")}</span>
                 <span className="param-field-val">{speedMultiplier.toFixed(1)}x</span>
               </div>
               <div className="param-slider-wrap">
@@ -503,9 +483,9 @@ export const ParametricControlPanel: React.FC<ParametricControlPanelProps> = ({
                   disabled={disabled}
                 />
                 <div className="param-slider-ticks">
-                  <span>0.5x (Lambat)</span>
-                  <span>1.0x (Normal)</span>
-                  <span>2.0x (Cepat)</span>
+                  <span>{t("0.5x (Lambat)")}</span>
+                  <span>{t("1.0x (Normal)")}</span>
+                  <span>{t("2.0x (Cepat)")}</span>
                 </div>
               </div>
             </div>
@@ -515,10 +495,8 @@ export const ParametricControlPanel: React.FC<ParametricControlPanelProps> = ({
 
       {/* Drawer Footer Note */}
       <div className="param-drawer-footer">
-        <span className="param-footer-sync-icon">⚡</span>
-        <span className="param-footer-text">
-          Nilai slider otomatis hot-sync ke kanvas dan render engine.
-        </span>
+        <span className="param-footer-sync-icon"><StudioIcon /></span>
+        <span className="param-footer-text"> {t("Nilai slider otomatis hot-sync ke kanvas dan render engine.")} </span>
       </div>
     </aside>
   )

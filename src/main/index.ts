@@ -1,5 +1,5 @@
-import { execSync } from 'child_process'
-import { app, shell, BrowserWindow, ipcMain, dialog, session, Notification } from 'electron'
+import { uiText, setUiLanguage } from './uiLanguage'
+import { app, shell, BrowserWindow, ipcMain, dialog, session, Notification, screen } from 'electron'
 import { join, resolve, dirname, extname } from 'path'
 import { existsSync, statSync, mkdirSync, writeFileSync, readFileSync } from 'fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
@@ -15,6 +15,7 @@ import {
 import { registerRemotionStudioIPC, cleanupStudioOnQuit, startRemotionStudio } from './remotionStudio'
 import { registerGeminiIPC } from './geminiService'
 import { registerRenderIPC, getRemotionEnvDir } from './renderService'
+import { usesThreeSource } from '../shared/animationTechnique'
 import { registerAssetIPC } from './assetService'
 import { registerLicenseIPC, getLicenseStatus } from './licenseService'
 
@@ -24,36 +25,38 @@ autoUpdater.autoInstallOnAppQuit = false // Kontrol instalasi eksplisit via IPC
 autoUpdater.logger = null                // Silent — jangan spam console
 
 function setupAutoUpdater(win: BrowserWindow): void {
-  // Event: Update terdeteksi
-  autoUpdater.on('update-available', (info) => {
-    if (!win.isDestroyed()) {
-      win.webContents.send('update-available', info)
-    }
-  })
+  if (process.platform !== 'darwin') {
+    // Event: Update terdeteksi
+    autoUpdater.on('update-available', (info) => {
+      if (!win.isDestroyed()) {
+        win.webContents.send('update-available', info)
+      }
+    })
 
-  // Progress unduhan
-  autoUpdater.on('download-progress', (progress) => {
-    if (!win.isDestroyed()) {
-      const percent = Math.round(progress.percent)
-      win.webContents.send('update:progress', { percent })
-      win.webContents.send('download-progress', { percent })
-    }
-  })
+    // Progress unduhan
+    autoUpdater.on('download-progress', (progress) => {
+      if (!win.isDestroyed()) {
+        const percent = Math.round(progress.percent)
+        win.webContents.send('update:progress', { percent })
+        win.webContents.send('download-progress', { percent })
+      }
+    })
 
-  // Event: Update selesai diunduh & siap diinstal
-  autoUpdater.on('update-downloaded', (info) => {
-    if (!win.isDestroyed()) {
-      win.webContents.send('update-downloaded', { version: info.version })
-    }
-  })
+    // Event: Update selesai diunduh & siap diinstal
+    autoUpdater.on('update-downloaded', (info) => {
+      if (!win.isDestroyed()) {
+        win.webContents.send('update-downloaded', { version: info.version })
+      }
+    })
 
-  // Silent fail — jangan ganggu user jika offline / tidak ada update
-  autoUpdater.on('error', (err) => {
-    console.warn('[AutoUpdater] Silent error:', err?.message ?? err)
-    if (!win.isDestroyed()) {
-      win.webContents.send('update:error', { message: err?.message ?? String(err) })
-    }
-  })
+    // Silent fail — jangan ganggu user jika offline / tidak ada update
+    autoUpdater.on('error', (err) => {
+      console.warn('[AutoUpdater] Silent error:', err?.message ?? err)
+      if (!win.isDestroyed()) {
+        win.webContents.send('update:error', { message: err?.message ?? String(err) })
+      }
+    })
+  }
 
   // IPC: Mulai unduh manual jika diperlukan
   try {
@@ -62,7 +65,7 @@ function setupAutoUpdater(win: BrowserWindow): void {
   ipcMain.handle('updater:start-download', async () => {
     if (process.platform === 'darwin') {
       console.log('[AutoUpdater] macOS detected: downloadUpdate blocked (manual download via Google Drive)')
-      return { success: false, error: 'macOS updates are distributed via official Google Drive installer' }
+      return { success: false, error: uiText("macOS updates are distributed via official Google Drive installer") }
     }
     try {
       await autoUpdater.downloadUpdate()
@@ -79,7 +82,7 @@ function setupAutoUpdater(win: BrowserWindow): void {
   ipcMain.handle('start-download-update', async () => {
     if (process.platform === 'darwin') {
       console.log('[AutoUpdater] macOS detected: downloadUpdate blocked (manual download via Google Drive)')
-      return { success: false, error: 'macOS updates are distributed via official Google Drive installer' }
+      return { success: false, error: uiText("macOS updates are distributed via official Google Drive installer") }
     }
     try {
       await autoUpdater.downloadUpdate()
@@ -112,6 +115,9 @@ function setupAutoUpdater(win: BrowserWindow): void {
     }
     autoUpdater.quitAndInstall()
   })
+
+  // macOS uses manual DMG updates; keep only the blocked download/install IPC handlers.
+  if (process.platform === 'darwin') return
 
   // Pengecekan otomatis beberapa detik setelah aplikasi siap (hanya dalam packaged build)
   setTimeout(() => {
@@ -179,7 +185,11 @@ const getOrBundleRemotion = async (onProgress: (progress: number) => void): Prom
       const rootMtime = existsSync(entryPoint) ? statSync(entryPoint).mtimeMs : 0
       const templateMtime = existsSync(templatePath) ? statSync(templatePath).mtimeMs : 0
       const dynamicMtime = existsSync(dynamicMotionPath) ? statSync(dynamicMotionPath).mtimeMs : 0
-      const latestSourceMtime = Math.max(rootMtime, templateMtime, dynamicMtime)
+      const activeSource = join(getRemotionEnvDir(), 'src', 'VibeGraphic.tsx')
+      const threeWrapper = join(getRemotionEnvDir(), 'src', 'primitives', 'ThreeScene.tsx')
+      const activeMtime = existsSync(activeSource) ? statSync(activeSource).mtimeMs : 0
+      const wrapperMtime = existsSync(threeWrapper) ? statSync(threeWrapper).mtimeMs : 0
+      const latestSourceMtime = Math.max(rootMtime, templateMtime, dynamicMtime, activeMtime, wrapperMtime)
 
       if (latestSourceMtime <= cachedBundleTimestamp) {
         isCacheValid = true
@@ -207,17 +217,18 @@ const getOrBundleRemotion = async (onProgress: (progress: number) => void): Prom
 }
 
 function createWindow(): void {
+  const workArea = screen.getPrimaryDisplay().workAreaSize
   const appIconPath = app.isPackaged && existsSync(join(process.resourcesPath, 'icon.png'))
     ? join(process.resourcesPath, 'icon.png')
     : join(__dirname, '../../resources/icon.png')
 
   // Create the browser window.
   const mainWindow = new BrowserWindow({
-    title: 'Motion Suite Pro',
-    width: 1280,
-    height: 820,
-    minWidth: 1024,
-    minHeight: 650,
+    title: uiText("Motion Suite Pro"),
+    width: Math.min(1280, workArea.width),
+    height: Math.min(820, workArea.height),
+    minWidth: Math.min(960, workArea.width),
+    minHeight: Math.min(560, workArea.height),
     show: false,
     autoHideMenuBar: true,
     icon: appIconPath,
@@ -315,19 +326,7 @@ function createWindow(): void {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
-  // Clean up any stale port 10871 zombie process from prior runs
-  if (process.platform === 'win32') {
-    try {
-      execSync('cmd /c "for /f \\"tokens=5\\" %a in (\'netstat -aon ^| findstr :10871\') do taskkill /f /pid %a" 2>nul', {
-        stdio: 'ignore'
-      })
-    } catch (_) {}
-  } else {
-    try {
-      execSync('lsof -ti :10871 | xargs kill -9 2>/dev/null || true', { shell: '/bin/sh', stdio: 'ignore' })
-    } catch (_) {}
-  }
-
+  ipcMain.handle('ui:set-language', (_event, language: unknown) => setUiLanguage(language))
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.motionsuitepro.app')
 
@@ -369,7 +368,7 @@ app.whenReady().then(() => {
         await shell.openExternal(url)
         return { success: true }
       }
-      return { success: false, error: 'Invalid or unsafe URL' }
+      return { success: false, error: uiText("Invalid or unsafe URL") }
     } catch (err) {
       return { success: false, error: String(err) }
     }
@@ -478,13 +477,24 @@ app.whenReady().then(() => {
 
         resolvedFilePath = fullPath
       } else {
-        const cleanTitle = (titleText || 'motion_video')
-          .toLowerCase()
-          .replace(/[^a-z0-9_-]/g, '_')
-          .replace(/_+/g, '_')
-          .replace(/^_|_$/g, '') || 'motion_video'
+        const rawTitle = customFileName
+          ? customFileName.replace(/\.(mp4|mov)$/i, '')
+          : (titleText || 'motion_project')
 
-        const defaultFilename = customFileName || `${cleanTitle}.${extension}`
+        let cleanTitle = rawTitle
+          .replace(/\s*&\s*/g, '_and_')
+          .replace(/[\\/:*?"<>|]/g, '')
+          .replace(/[\s\t\n\r-]+/g, '_')
+          .replace(/[^a-zA-Z0-9_]/g, '')
+          .replace(/_+/g, '_')
+          .replace(/^_|_$/g, '')
+          .toLowerCase()
+
+        if (!cleanTitle) cleanTitle = 'motion_project'
+
+        const defaultFilename = customFileName && customFileName.toLowerCase().endsWith(`.${extension}`)
+          ? customFileName
+          : `${cleanTitle}.${extension}`
 
         const saveOptions = {
           title: isMov ? 'Export Remotion Video (Apple ProRes MOV)' : 'Export Remotion Video (MP4)',
@@ -528,10 +538,14 @@ app.whenReady().then(() => {
         }
 
         // Step 2: Select composition (prefer DynamicMotion, fallback to MotionTemplate)
+        const activeSource = join(getRemotionEnvDir(), 'src', 'VibeGraphic.tsx')
+        const chromiumOptions = existsSync(activeSource) && usesThreeSource(readFileSync(activeSource, 'utf-8'))
+          ? { gl: 'angle' as const } : undefined
         let composition
         try {
           composition = await selectComposition({
             serveUrl: bundleLocation,
+            chromiumOptions,
             id: 'DynamicMotion',
             inputProps: {
               ...inputProps,
@@ -541,7 +555,8 @@ app.whenReady().then(() => {
               fps: parsedFps
             }
           })
-        } catch {
+        } catch (error) {
+          if (chromiumOptions) throw error // Do not hide a failed 3D render behind a 2D fallback.
           composition = await selectComposition({
             serveUrl: bundleLocation,
             id: 'MotionTemplate',
@@ -572,6 +587,7 @@ app.whenReady().then(() => {
 
         // Step 3: Render Media to local video file (allocating 25% - 100% overall progress)
         await renderMedia({
+          chromiumOptions,
           composition: finalComposition,
           serveUrl: bundleLocation,
           outputLocation: resolvedFilePath,
@@ -605,8 +621,8 @@ app.whenReady().then(() => {
         event.sender.send('render-progress', 100)
         if (Notification.isSupported()) {
           new Notification({
-            title: 'Motion Suite Pro — Render Selesai! 🎉',
-            body: 'Video Anda telah selesai diekspor dan siap digunakan.'
+            title: uiText("Motion Suite Pro — Render Selesai! 🎉"),
+            body: uiText("Video Anda telah selesai diekspor dan siap digunakan.")
           }).show()
         }
         event.sender.send('render-finished-sound')
@@ -630,11 +646,11 @@ app.whenReady().then(() => {
     const parentWindow = BrowserWindow.fromWebContents(event.sender)
     const result = parentWindow
       ? await dialog.showOpenDialog(parentWindow, {
-          title: 'Pilih Folder Tujuan Batch Export',
+          title: uiText("Pilih Folder Tujuan Batch Export"),
           properties: ['openDirectory', 'createDirectory']
         })
       : await dialog.showOpenDialog({
-          title: 'Pilih Folder Tujuan Batch Export',
+          title: uiText("Pilih Folder Tujuan Batch Export"),
           properties: ['openDirectory', 'createDirectory']
         })
 
@@ -701,7 +717,7 @@ app.whenReady().then(() => {
       shell.showItemInFolder(filePath)
       return { success: true }
     }
-    return { success: false, error: 'File path not found' }
+    return { success: false, error: uiText("File path not found") }
   })
 
   // Bring-Your-Own-Code: Apply manual TSX code directly to disk
@@ -809,11 +825,11 @@ app.whenReady().then(() => {
     const parentWindow = BrowserWindow.fromWebContents(event.sender)
     const result = parentWindow
       ? await dialog.showOpenDialog(parentWindow, {
-          title: 'Pilih Folder Penyimpanan Video',
+          title: uiText("Pilih Folder Penyimpanan Video"),
           properties: ['openDirectory', 'createDirectory']
         })
       : await dialog.showOpenDialog({
-          title: 'Pilih Folder Penyimpanan Video',
+          title: uiText("Pilih Folder Penyimpanan Video"),
           properties: ['openDirectory', 'createDirectory']
         })
 
@@ -833,7 +849,9 @@ app.whenReady().then(() => {
   createWindow()
 
   // Silent auto-start Motion Engine background child process
-  startRemotionStudio(10871).catch((err) => {
+  startRemotionStudio(10871).then((result) => {
+    if (!result.success) console.warn('[Main] Motion Engine startup blocked:', result.error)
+  }).catch((err) => {
     console.warn('[Main] Silent engine boot note:', err)
   })
 

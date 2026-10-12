@@ -1,14 +1,17 @@
+import { uiText } from './uiLanguage'
 import { spawn, ChildProcess, execSync } from 'child_process'
 import { dialog, BrowserWindow, ipcMain, app, Notification } from 'electron'
 import { resolve, join, delimiter } from 'path'
 import { existsSync, mkdirSync, writeFileSync, unlinkSync, readFileSync } from 'fs'
 import { getLicenseStatus } from './licenseService'
+import { usesThreeSource } from '../shared/animationTechnique'
 
 export interface StartRenderPayload {
   format: 'mp4' | 'mov' | 'prores422' | 'prores4444'
   isTransparent?: boolean
   proresProfile?: 'standard' | '4444'
   title?: string
+  customFileName?: string
   resolutionLabel?: string
   renderMode?: 'auto' | 'gpu' | 'cpu'
   customOutputFolder?: string
@@ -43,6 +46,7 @@ export interface RenderProgressData {
 
 let activeRenderProcess: ChildProcess | null = null
 let isRenderCanceled = false
+let activeVibeGraphicBackup: { path: string; content: string } | null = null
 
 /**
  * Get remotion_env working directory path across dev and packaged environments
@@ -130,6 +134,164 @@ export const getDefaultExportDir = (): string => {
 }
 
 /**
+ * Auto-hide the first full-screen background layer (e.g. style with inset: 0 and background/gradient)
+ * by injecting display: 'none' into its style attribute for transparent video export.
+ */
+export function hidePureBackgroundDiv(code: string): string {
+  let result = code
+  const allDivRegex = /<div\b([\s\S]*?)>/gi
+  let match: RegExpExecArray | null
+
+  while ((match = allDivRegex.exec(result)) !== null) {
+    const fullDivTag = match[0]
+    const tagContent = match[1]
+
+    const styleMatch = tagContent.match(/style=\{\{([\s\S]*?)\}\}/)
+    if (!styleMatch) continue
+
+    const styleContent = styleMatch[1]
+
+    const hasInsetZero = /\binset\s*:\s*(?:0|'0(?:px)?'|"0(?:px)?")/i.test(styleContent)
+    const hasPositionAbsolute = /\bposition\s*:\s*['"]absolute['"]/i.test(styleContent)
+    const hasTopLeftFull =
+      /\btop\s*:\s*(?:0|'0(?:px)?'|"0(?:px)?")/i.test(styleContent) &&
+      /\bleft\s*:\s*(?:0|'0(?:px)?'|"0(?:px)?")/i.test(styleContent) &&
+      (/\bwidth\s*:\s*['"]100%['"]/i.test(styleContent) || /\bright\s*:\s*(?:0|'0(?:px)?'|"0(?:px)?")/i.test(styleContent))
+
+    const isFullScreenCoverage = hasInsetZero || (hasPositionAbsolute && hasTopLeftFull)
+    const hasBackground =
+      /(?<!\w)background\s*:/i.test(styleContent) || /backgroundColor\s*:/i.test(styleContent)
+    const alreadyHidden = /display\s*:\s*['"]none['"]/i.test(styleContent)
+
+    if (isFullScreenCoverage && hasBackground && !alreadyHidden) {
+      const updatedStyle = `style={{ display: 'none', ${styleContent} }}`
+      const newDivTag = fullDivTag.replace(styleMatch[0], updatedStyle)
+      const matchIndex = match.index
+      result = result.slice(0, matchIndex) + newDivTag + result.slice(matchIndex + fullDivTag.length)
+      break
+    }
+  }
+
+  return result
+}
+
+/**
+ * Auto-strip background color on the outermost <AbsoluteFill ...> for transparent export
+ * and hide pure background <div> layers (e.g. inset: 0 with background/backgroundColor)
+ */
+export function stripOutermostAbsoluteFillBackground(code: string): string {
+  let result = code
+  const fillTag = '<AbsoluteFill'
+  const startIndex = result.indexOf(fillTag)
+  if (startIndex === -1) {
+    result = stripOutermostDivBackground(result)
+  } else {
+    let braceDepth = 0
+    let parenDepth = 0
+    let inString: string | null = null
+    let endIndex = -1
+
+    for (let i = startIndex + fillTag.length; i < result.length; i++) {
+      const char = result[i]
+      const prevChar = i > 0 ? result[i - 1] : ''
+
+      if (inString) {
+        if (char === inString && prevChar !== '\\') {
+          inString = null
+        }
+        continue
+      }
+
+      if (char === '"' || char === "'" || char === '`') {
+        inString = char
+        continue
+      }
+
+      if (char === '{') {
+        braceDepth++
+      } else if (char === '}') {
+        braceDepth--
+      } else if (char === '(') {
+        parenDepth++
+      } else if (char === ')') {
+        parenDepth--
+      } else if (char === '>' && braceDepth === 0 && parenDepth === 0) {
+        endIndex = i
+        break
+      }
+    }
+
+    if (endIndex !== -1) {
+      const openingTag = result.slice(startIndex, endIndex + 1)
+      let newTag = openingTag
+
+      if (/style=\{\{/.test(openingTag)) {
+        let replacedAny = false
+        if (/backgroundColor\s*:\s*/.test(newTag)) {
+          newTag = newTag.replace(
+            /backgroundColor\s*:\s*(?:'[^']*'|"[^"]*"|`[^`]*`|[^,}\n]+)/,
+            "backgroundColor: 'transparent'"
+          )
+          replacedAny = true
+        }
+        if (/(?<!\w)background\s*:\s*/.test(newTag)) {
+          newTag = newTag.replace(
+            /(?<!\w)background\s*:\s*(?:'[^']*'|"[^"]*"|`[^`]*`|[^,}\n]+)/,
+            "background: 'transparent'"
+          )
+          replacedAny = true
+        }
+        if (!replacedAny) {
+          newTag = newTag.replace(/style=\{\{/, "style={{\n        backgroundColor: 'transparent',")
+        }
+      } else if (/style=\{/.test(openingTag)) {
+        newTag = openingTag.replace(/style=\{([a-zA-Z0-9_$.]+)\}/, "style={{ backgroundColor: 'transparent', ...$1 }}")
+      } else {
+        newTag = openingTag.replace(/<AbsoluteFill/, "<AbsoluteFill style={{ backgroundColor: 'transparent' }}")
+      }
+
+      result = result.slice(0, startIndex) + newTag + result.slice(endIndex + 1)
+    }
+  }
+
+  // Also hide any pure full-screen background <div> layer
+  return hidePureBackgroundDiv(result)
+}
+
+function stripOutermostDivBackground(code: string): string {
+  const returnMatch = code.match(/return\s*\(\s*(<div\b[^>]*>)/)
+  if (!returnMatch || !returnMatch[1]) {
+    return hidePureBackgroundDiv(code)
+  }
+  const oldDiv = returnMatch[1]
+  let newDiv = oldDiv
+  if (/style=\{\{/.test(oldDiv)) {
+    let replacedAny = false
+    if (/backgroundColor\s*:\s*/.test(newDiv)) {
+      newDiv = newDiv.replace(
+        /backgroundColor\s*:\s*(?:'[^']*'|"[^"]*"|`[^`]*`|[^,}\n]+)/,
+        "backgroundColor: 'transparent'"
+      )
+      replacedAny = true
+    }
+    if (/(?<!\w)background\s*:\s*/.test(newDiv)) {
+      newDiv = newDiv.replace(
+        /(?<!\w)background\s*:\s*(?:'[^']*'|"[^"]*"|`[^`]*`|[^,}\n]+)/,
+        "background: 'transparent'"
+      )
+      replacedAny = true
+    }
+    if (!replacedAny) {
+      newDiv = newDiv.replace(/style=\{\{/, "style={{ backgroundColor: 'transparent', ")
+    }
+  } else {
+    newDiv = oldDiv.replace(/<div/, "<div style={{ backgroundColor: 'transparent' }}")
+  }
+  const stripped = code.replace(oldDiv, newDiv)
+  return hidePureBackgroundDiv(stripped)
+}
+
+/**
  * Cancel ongoing Remotion render process
  */
 export async function cancelRender(): Promise<boolean> {
@@ -139,6 +301,17 @@ export async function cancelRender(): Promise<boolean> {
 
   console.log('[RenderService] Canceling active render process...')
   isRenderCanceled = true
+
+  // Restore VibeGraphic.tsx if it was backed up for transparent export
+  if (activeVibeGraphicBackup && existsSync(activeVibeGraphicBackup.path)) {
+    try {
+      writeFileSync(activeVibeGraphicBackup.path, activeVibeGraphicBackup.content, 'utf-8')
+      console.log('[RenderService] Restored original VibeGraphic.tsx on cancelRender')
+    } catch (restoreErr) {
+      console.warn('[RenderService] Error restoring VibeGraphic.tsx on cancel:', restoreErr)
+    }
+    activeVibeGraphicBackup = null
+  }
 
   try {
     if (activeRenderProcess.pid) {
@@ -191,14 +364,30 @@ export async function startRender(
   const isTransparent = isMov ? Boolean(payload.isTransparent) : false
   const extension = isMov ? 'mov' : 'mp4'
 
-  // Sanitize title for clean Windows filename (slug without timestamps or resolution suffix)
-  const sanitizedTitle = (payload.title || 'motion_video')
-    .toLowerCase()
-    .replace(/[^a-z0-9_-]/g, '_')
-    .replace(/_+/g, '_')
-    .replace(/^_|_$/g, '') || 'motion_video'
+  // Windows-safe filename sanitizer:
+  // - Ambil statusBarTitle / payload.customFileName / payload.title (fallback: "motion_project")
+  // - Bersihkan karakter khusus yang dilarang Windows (\ / : * ? " < > |)
+  // - Ubah spasi menjadi underscore atau strip dan jadikan huruf kecil: "Live Vital & Heart Rate Monitor" -> "live_vital_and_heart_rate_monitor.mp4"
+  const rawTitle = payload.customFileName
+    ? payload.customFileName.replace(/\.(mp4|mov)$/i, '')
+    : (payload.title || 'motion_project')
 
-  const outputFileName = `${sanitizedTitle}.${extension}`
+  let sanitizedTitle = rawTitle
+    .replace(/\s*&\s*/g, '_and_')
+    .replace(/[\\/:*?"<>|]/g, '')
+    .replace(/[\s\t\n\r-]+/g, '_')
+    .replace(/[^a-zA-Z0-9_]/g, '')
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '')
+    .toLowerCase()
+
+  if (!sanitizedTitle) {
+    sanitizedTitle = 'motion_project'
+  }
+
+  const outputFileName = payload.customFileName && payload.customFileName.toLowerCase().endsWith(`.${extension}`)
+    ? payload.customFileName
+    : `${sanitizedTitle}.${extension}`
   const targetDir = (payload.customOutputFolder && existsSync(payload.customOutputFolder))
     ? payload.customOutputFolder
     : getDefaultExportDir()
@@ -226,6 +415,22 @@ export async function startRender(
   const resolvedOutputPath = filePath
   const remotionEnvDir = getRemotionEnvDir()
   const propsFilePath = join(remotionEnvDir, 'render_props.json')
+  const vibeGraphicPath = join(remotionEnvDir, 'src', 'VibeGraphic.tsx')
+
+  // Auto-strip background on outermost <AbsoluteFill ...> if exporting transparent MOV ProRes 4444
+  if (isTransparent && existsSync(vibeGraphicPath)) {
+    try {
+      const currentCode = readFileSync(vibeGraphicPath, 'utf-8')
+      const strippedCode = stripOutermostAbsoluteFillBackground(currentCode)
+      if (strippedCode !== currentCode) {
+        activeVibeGraphicBackup = { path: vibeGraphicPath, content: currentCode }
+        writeFileSync(vibeGraphicPath, strippedCode, 'utf-8')
+        console.log('[RenderService] Auto-stripped outermost background on VibeGraphic.tsx for transparent export')
+      }
+    } catch (stripErr) {
+      console.warn('[RenderService] Failed to auto-strip background on VibeGraphic.tsx:', stripErr)
+    }
+  }
 
   // Write temporary render_props.json to avoid Windows shell quote stripping
   let finalDurationInFrames = 150
@@ -259,7 +464,9 @@ export async function startRender(
       ...(payload.badgeText !== undefined ? { badgeText: payload.badgeText } : {}),
       ...(payload.accentColor !== undefined ? { accentColor: payload.accentColor } : {}),
       ...(payload.secondaryColor !== undefined ? { secondaryColor: payload.secondaryColor } : {}),
-      ...(payload.backgroundColor !== undefined ? { backgroundColor: payload.backgroundColor } : {}),
+      backgroundColor: isTransparent
+        ? 'transparent'
+        : (payload.backgroundColor || baseProps.backgroundColor || '#0a0d14'),
       ...(payload.scale !== undefined ? { scale: payload.scale } : {}),
       ...(payload.offsetX !== undefined
         ? { offsetX: payload.offsetX, textOffsetX: payload.offsetX }
@@ -279,7 +486,7 @@ export async function startRender(
     console.error('[RenderService] Error writing render_props.json:', err)
   }
 
-  const cleanUpPropsFile = (): void => {
+  const cleanUpRenderFiles = (): void => {
     try {
       if (existsSync(propsFilePath)) {
         unlinkSync(propsFilePath)
@@ -287,14 +494,25 @@ export async function startRender(
     } catch {
       // ignore cleanup errors
     }
+
+    if (activeVibeGraphicBackup && existsSync(activeVibeGraphicBackup.path)) {
+      try {
+        writeFileSync(activeVibeGraphicBackup.path, activeVibeGraphicBackup.content, 'utf-8')
+        console.log('[RenderService] Restored original VibeGraphic.tsx background after render')
+      } catch (restoreErr) {
+        console.warn('[RenderService] Failed to restore original VibeGraphic.tsx:', restoreErr)
+      }
+      activeVibeGraphicBackup = null
+    }
   }
 
   // Hardware acceleration / render mode flags
   const glFlags: string[] = []
-  if (payload.renderMode === 'gpu') {
+  const isThreeComposition = existsSync(vibeGraphicPath) && usesThreeSource(readFileSync(vibeGraphicPath, 'utf-8'))
+  if (payload.renderMode === 'gpu' || (payload.renderMode !== 'cpu' && isThreeComposition)) {
     glFlags.push('--gl=angle')
   } else if (payload.renderMode === 'cpu') {
-    glFlags.push('--gl=swiftshader')
+    glFlags.push(isThreeComposition ? '--gl=swangle' : '--gl=swiftshader')
   }
 
   // ProRes codec & pixel / image format flags configuration
@@ -452,7 +670,7 @@ export async function startRender(
 
       child.on('exit', (code, signal) => {
         activeRenderProcess = null
-        cleanUpPropsFile()
+        cleanUpRenderFiles()
 
         if (isRenderCanceled) {
           console.log('[RenderService] Render canceled by user.')
@@ -470,8 +688,8 @@ export async function startRender(
           console.log(`[RenderService] Render completed: ${resolvedOutputPath}`)
           if (Notification.isSupported()) {
             new Notification({
-              title: 'Motion Suite Pro — Render Selesai! 🎉',
-              body: 'Video Anda telah selesai diekspor dan siap digunakan.'
+              title: uiText("Motion Suite Pro — Render Selesai! 🎉"),
+              body: uiText("Video Anda telah selesai diekspor dan siap digunakan.")
             }).show()
           }
 
@@ -497,7 +715,7 @@ export async function startRender(
 
       child.on('error', (err) => {
         activeRenderProcess = null
-        cleanUpPropsFile()
+        cleanUpRenderFiles()
         console.error('[RenderService] Spawn error:', err)
         resolveResult({
           success: false,
@@ -506,7 +724,7 @@ export async function startRender(
       })
     } catch (err) {
       activeRenderProcess = null
-      cleanUpPropsFile()
+      cleanUpRenderFiles()
       console.error('[RenderService] Error starting render:', err)
       resolveResult({
         success: false,

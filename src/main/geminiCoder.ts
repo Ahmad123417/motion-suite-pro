@@ -1,7 +1,7 @@
 import { existsSync } from 'fs'
 import fsPromises from 'node:fs/promises'
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import { getVibeGraphicPath } from './remotionStudio'
+import { getVibeGraphicPath, writeExternalComponentCode } from './remotionStudio'
 
 export const REMOTION_CODER_SYSTEM_PROMPT = `You are an expert Remotion animation and Creative Coding engineer for Motion Suite Pro.
 
@@ -86,27 +86,41 @@ RULE 9 — CRITICAL INTERPOLATE RULE:
   FORBIDDEN: [405, 405], [0, 0], or any descending sequence.
   ALWAYS ensure: end > start (e.g., [start, Math.max(start + 1, end)]).
 
-RULE 10 — UNIVERSAL DYNAMIC TIMELINE (ANTI-HARDCODED FRAMES - ALL DURATIONS: 5s, 10s, 15s, 20s):
-  DILARANG KERAS MENGGUNAKAN ANGKA FRAME STATIS / HARDCODED (seperti [0, 60] atau [0, 150]).
-  SEMUA perhitungan timeline dan fase gerak WAJIB menggunakan persentase dinamis dari 'durationInFrames' (useVideoConfig()):
-  - Awal Fase / Intro Reveal: [0, Math.floor(durationInFrames * 0.2)]
-  - Puncak Aksi / Main Action & Growth: [Math.floor(durationInFrames * 0.2), Math.floor(durationInFrames * 0.8)]
-  - Penutup / Outro & Settling: [Math.floor(durationInFrames * 0.8), durationInFrames]
+RULE 10 — UNIVERSAL DYNAMIC TIMELINE & REVISI DISTRIBUSI DURASI (5s, 10s, 15s, 20s):
+  DILARANG KERAS MENGGUNAKAN ANGKA FRAME STATIS / HARDCODED (seperti [0, 60] atau [0, 180]).
+  Pembagian fase timeline WAJIB mengisi secara proporsional hingga frame akhir:
+  - Fase Masuk (Intro/Reveal): [0, Math.floor(durationInFrames * 0.15)]
+  - Fase Aksi Utama (Progression/Main Action): [Math.floor(durationInFrames * 0.15), Math.floor(durationInFrames * 0.85)]
+  - Fase Puncak & Ambient Loop: [Math.floor(durationInFrames * 0.85), durationInFrames]
+  DILARANG menghentikan kalkulasi interpolasi di bawah 80% durasi kecuali diikuti transisi atau variasi adegan berikutnya.
   Dengan rumus ini, video durasi 5s, 10s, 15s, maupun 20s otomatis membagi fase gerakannya secara presisi tanpa membeku di tengah jalan.
 
-RULE 11 — NEVER-FREEZE ENGINE (CONTINUOUS MICRO-MOTION DARI FRAME 0 S.D. AKHIR):
-  Elemen visual TIDAK BOLEH berhenti bergerak total di detik mana pun sepanjang video.
-  Wajib sertakan gerakan berkelanjutan berbasis fungsi matematis 'frame':
-  - Floating / Hover: Math.sin(frame / 15) * amplitude pada translateY/rotasi.
-  - Breathing Glow: Intensitas cahaya latar berosilasi halus: 0.4 + Math.sin(frame / 20) * 0.2.
-  - Live Ticker / Desimal Bergerak: Pada data angka (chart/HUD), buat 2 digit desimal terakhir atau status pulse terus berkedip/berubah halus seperti live streaming.
-  - Slow Camera Zoom (Ambient Drift): interpolate(frame, [0, durationInFrames], [1, 1.04]).
+RULE 11 — NEVER-FREEZE ENGINE & CONTINUOUS LOOPING (DARI FRAME 0 S.D. AKHIR):
+  Elemen visual TIDAK BOLEH berhenti bergerak total di detik mana pun sepanjang video, terutama pada durasi panjang (15s - 20s / 1200 frame).
+  Wajib patuhi 4 aturan anti-freeze berikut:
+  1. LIVING COUNTER & DYNAMIC METRICS (ANTI-FREEZE ANGKA):
+     Jika animasi memuat angka counter (seperti BPM, persentase baterai/SpO2, saldo uang, kalori, kecepatan HUD):
+     - DILARANG mengunci angka mati di tengah video.
+     - Jika target angka sudah tercapai di tengah durasi, angka WAJIB tetap bernapas secara organik (organic micro-fluctuation menggunakan Math.sin(frame * ...)) atau naik-turun halus hingga frame terakhir.
+  2. CONTINUOUS LOOPING GRAFIS & WAVE:
+     Elemen yang berulang (garis detak jantung EKG, gelombang audio, pemindaian radar/laser HUD, kursor terminal hacker, ban kendaraan berputar):
+     - WAJIB menggunakan modulasi kontinu/modulo (frame % N atau translasi looping) sehingga grafis terus mengalir dinamis tanpa henti dari frame 0 hingga durationInFrames.
+  3. EFEK KETIK TEKS (TYPING EFFECT):
+     Jika terdapat teks yang diketik bertahap (terminal/chat), kecepatan munculnya karakter WAJIB dihitung proporsional terhadap durasi aktif teks tersebut, bukan frame mati statis. Kursor ketik wajib berkedip looping sampai akhir video.
+  4. AMBIENT DRIFT & CAMERA MOTION:
+     - Slow Camera Zoom: interpolate(frame, [0, durationInFrames], [1, 1.04]).
+     - Floating / Hover: Math.sin(frame / 15) * amplitude pada translateY/rotasi.
+     - Breathing Glow: Intensitas cahaya latar berosilasi halus: 0.4 + Math.sin(frame / 20) * 0.2.
 
 RULE 12 — AUTO-EXPAND PROMPT PENDEK (SMART INTERPRETATION):
   Jika prompt pengguna singkat (misal: "grafik naik", "radar sci-fi", "badge diskon", "crypto pump"):
   - DILARANG membuat grafik statis atau garis lurus instan.
   - Susun visual bertingkat dengan fluktuasi dinamis dan bagikan pertumbuhan merata sepanjang durationInFrames.
   - Jaga visual tetap hidup, berdenyut, dan bergerak sampai frame terakhir.
+
+RULE 13 — ATURAN LATAR BELAKANG & KEBEBASAN VISUAL (BACKGROUND & SCENERY):
+  Anda TETAP BEBAS merancang latar belakang visual yang artistik dan atmosferik (warna solid, gradien halus, pemandangan langit malam, bintang, dsb.). JANGAN paksa kode menjadi kosong atau transparan.
+  Disarankan meletakkan background utama langsung di atribut style pada tag <AbsoluteFill> (misal: background atau backgroundColor) atau sebagai layer pemandangan. Sistem Motion Suite Pro secara otomatis dan cerdas akan menangani transparansi saat pengguna mengaktifkan mode ekspor transparan tanpa merusak mode solid.
 
 ==================================================
 BLUEPRINT CODE REFERENCE (MUST FOLLOW THIS ARCHITECTURE)
@@ -152,8 +166,8 @@ export const VibeGraphic: React.FC<VibeGraphicProps> = ({
   const baseScale = Math.min(width, height) / 1080
 
   // Universal Dynamic Timeline (All Durations 5s, 10s, 15s, 20s)
-  const introEnd = Math.floor(durationInFrames * 0.2)
-  const actionEnd = Math.floor(durationInFrames * 0.8)
+  const introEnd = Math.floor(durationInFrames * 0.15)
+  const actionEnd = Math.floor(durationInFrames * 0.85)
 
   // Anti-Freeze Continuous Micro-Motions (Frame 0 to End)
   const cameraZoom = interpolate(frame, [0, durationInFrames], [1, 1.04], {
@@ -292,6 +306,16 @@ export function preFixRemotionCode(code: string): string {
   fixed = fixed.replace(/\bprops\.scale(?!\s*\?\?)/g, '(props.scale ?? 1)')
   fixed = fixed.replace(/\bprops\.glowIntensity(?!\s*\?\?)/g, '(props.glowIntensity ?? 1)')
   fixed = fixed.replace(/\bprops\.speedMultiplier(?!\s*\?\?)/g, '(props.speedMultiplier ?? 1)')
+
+  // 4. Auto-Sanitizer Easing Halusinasi (v1.0.7):
+  // Ganti pemanggilan fungsi Easing fiktif yang sering dimuntahkan AI menjadi sintaks valid Remotion
+  fixed = fixed.replace(/Easing\.backIn\((.*?)\)/g, 'Easing.in(Easing.back($1))')
+  fixed = fixed.replace(/Easing\.backOut\((.*?)\)/g, 'Easing.out(Easing.back($1))')
+  fixed = fixed.replace(/Easing\.backInOut\((.*?)\)/g, 'Easing.inOut(Easing.back($1))')
+
+  // 5. Auto-Sanitize JSX Backtick Attributes (v1.0.8 Zero-Panic Self-Healing):
+  // Auto-wrap bare backtick JSX attributes: attr=`...` -> attr={`...`}
+  fixed = sanitizeJsxBacktickAttributes(fixed)
 
   return fixed
 }
@@ -437,20 +461,223 @@ export function sanitizeInterpolateCode(code: string): string {
   return result
 }
 
+/**
+ * Auto-Sanitize Unterminated Strings:
+ * Mendeteksi string biasa ("..." atau '...') yang terputus oleh newline tanpa escape (\).
+ * Otomatis mengubahnya menjadi template literal dengan backticks (`) atau menyambungkan kembali barisnya
+ * agar tidak menimbulkan Remotion SyntaxError: Unterminated string constant.
+ */
+export function sanitizeUnterminatedStrings(code: string): string {
+  let result = ''
+  let i = 0
+  const n = code.length
+
+  while (i < n) {
+    const ch = code[i]
+    const next = i + 1 < n ? code[i + 1] : ''
+
+    // 1. Single-line comment: // ...
+    if (ch === '/' && next === '/') {
+      const lineEnd = code.indexOf('\n', i)
+      if (lineEnd === -1) {
+        result += code.slice(i)
+        break
+      } else {
+        result += code.slice(i, lineEnd + 1)
+        i = lineEnd + 1
+        continue
+      }
+    }
+
+    // 2. Multi-line comment: /* ... */
+    if (ch === '/' && next === '*') {
+      const commentEnd = code.indexOf('*/', i + 2)
+      if (commentEnd === -1) {
+        result += code.slice(i)
+        break
+      } else {
+        result += code.slice(i, commentEnd + 2)
+        i = commentEnd + 2
+        continue
+      }
+    }
+
+    // 3. Template literal: `...`
+    if (ch === '`') {
+      let tplContent = '`'
+      i++
+      while (i < n) {
+        if (code[i] === '\\') {
+          tplContent += code[i] + (i + 1 < n ? code[i + 1] : '')
+          i += 2
+        } else if (code[i] === '$' && i + 1 < n && code[i + 1] === '{') {
+          tplContent += '${'
+          i += 2
+          let braceDepth = 1
+          while (i < n && braceDepth > 0) {
+            if (code[i] === '{') braceDepth++
+            else if (code[i] === '}') braceDepth--
+            tplContent += code[i]
+            i++
+          }
+        } else if (code[i] === '`') {
+          tplContent += '`'
+          i++
+          break
+        } else {
+          tplContent += code[i]
+          i++
+        }
+      }
+      result += tplContent
+      continue
+    }
+
+    // 4. Regular string literals: "..." or '...'
+    if (ch === '"' || ch === "'") {
+      const quote = ch
+      i++ // Skip opening quote
+
+      let strContent = ''
+      let hasUnescapedNewline = false
+      let foundClosingQuote = false
+
+      while (i < n) {
+        const c = code[i]
+
+        // Escaped character (including escaped newline '\ \n')
+        if (c === '\\') {
+          if (i + 1 < n && (code[i + 1] === '\n' || code[i + 1] === '\r')) {
+            if (code[i + 1] === '\r' && i + 2 < n && code[i + 2] === '\n') {
+              strContent += '\\\r\n'
+              i += 3
+            } else {
+              strContent += '\\' + code[i + 1]
+              i += 2
+            }
+          } else {
+            strContent += '\\' + (i + 1 < n ? code[i + 1] : '')
+            i += 2
+          }
+          continue
+        }
+
+        // Matching closing quote
+        if (c === quote) {
+          foundClosingQuote = true
+          i++
+          break
+        }
+
+        // Unescaped newline
+        if (c === '\n' || c === '\r') {
+          hasUnescapedNewline = true
+
+          // Check lookahead: is this string abandoned because the next line starts a new statement / property?
+          const nextNL = c === '\r' && i + 1 < n && code[i + 1] === '\n' ? i + 2 : i + 1
+          const restAfterNL = code.slice(nextNL)
+          const nextLineTrimmed = restAfterNL.split('\n')[0].trim()
+
+          const isNextStatementBoundary =
+            /^(?:const\s|let\s|var\s|function\s|export\s|import\s|return\s|[a-zA-Z_$][a-zA-Z0-9_$]*\s*:|<\/|[}\])])/.test(
+              nextLineTrimmed
+            )
+
+          // Count unescaped occurrences of quote in nextLineTrimmed
+          const cleanNextLine = nextLineTrimmed.replace(new RegExp('\\\\' + quote, 'g'), '')
+          const quoteCount = cleanNextLine.split(quote).length - 1
+
+          // If next line starts a new statement / property and has balanced (even) quotes,
+          // the current line was an abandoned unclosed string literal: close it here.
+          if (isNextStatementBoundary && quoteCount % 2 === 0) {
+            foundClosingQuote = true
+            break
+          }
+
+          strContent += c
+          i++
+          continue
+        }
+
+        strContent += c
+        i++
+      }
+
+      if (hasUnescapedNewline) {
+        // If the string was closed before the newline (abandoned on previous line),
+        // keep original quote delimiter and close it cleanly
+        if (strContent.indexOf('\n') === -1 && strContent.indexOf('\r') === -1) {
+          result += quote + strContent + quote
+        } else {
+          // Ubah string terputus menjadi template literal dengan backticks (`)
+          // Escape backtick di dalam string agar valid
+          const escapedContent = strContent.replace(/\\?`/g, '\\`')
+          result += '`' + escapedContent + '`'
+        }
+      } else {
+        result += quote + strContent + (foundClosingQuote ? quote : quote)
+      }
+      continue
+    }
+
+    // 5. Normal characters
+    result += ch
+    i++
+  }
+
+  return result
+}
+
+/**
+ * Auto-Sanitize JSX Backtick Attributes (Zero-Panic Self-Healing):
+ * Mendeteksi atribut JSX/SVG yang menggunakan template literal backtick tanpa kurung kurawal,
+ * misalnya: <path d=`...` />, points=`...`, style=`...`, transform=`...`.
+ * Remotion compiler / esbuild akan mengalami fatal SyntaxError jika atribut JSX menggunakan backtick tanpa kurung kurawal {`...`}.
+ * Sanitizer ini secara otomatis mengubah attr=`...` menjadi attr={`...`},
+ * termasuk menangani string multiline pada atribut SVG/JSX (d=, points=, style=, dll).
+ */
+export function sanitizeJsxBacktickAttributes(code: string): string {
+  // Regex fixer: detects JSX attributes using template literals without curly braces:
+  // Pola: /(\b[a-zA-Z0-9_-]+)=\`([\s\S]*?)\`/g -> $1={`$2`}
+  // Guarded against JS variable declarations (const/let/var/return/case) and property access (obj.prop)
+  const regex = /(?<!\b(?:const|let|var|return|case)\s+)(?<![.\w])(\b[a-zA-Z0-9_-]+)\s*=\s*`((?:\\`|[^`])*)`/g
+  return code.replace(regex, '$1={`$2`}')
+}
+
 // Clean any markdown backticks or preamble conversational text from user pasted code
 export const cleanGeneratedCode = (rawCode: string): string => {
   let code = rawCode.trim()
-  // Remove markdown tags if code includes them
-  code = code
-    .replace(/^```(?:tsx|typescript|jsx|javascript)?\s*/i, '')
-    .replace(/\s*```$/i, '')
-    .trim()
-
-  // Ensure it starts from import React or import
-  const importIndex = code.indexOf('import ')
-  if (importIndex > 0) {
-    code = code.slice(importIndex)
+  // A. Pembersih Markdown: Hapus pembungkus markdown secara otomatis
+  const fenceMatch = code.match(/```(?:tsx|typescript|jsx|javascript)?\s*([\s\S]*?)```/i)
+  if (fenceMatch && fenceMatch[1]) {
+    code = fenceMatch[1].trim()
+  } else {
+    code = code
+      .replace(/^```(?:tsx|typescript|jsx|javascript)?\s*/i, '')
+      .replace(/\s*```+\s*$/i, '')
+      .trim()
   }
+
+  // Preserve // @title: metadata if present before import
+  const titleIndex = code.indexOf('// @title:')
+  const importIndex = code.indexOf('import ')
+  if (titleIndex >= 0 && (importIndex === -1 || titleIndex < importIndex)) {
+    code = code.slice(titleIndex).trim()
+  } else if (importIndex > 0) {
+    code = code.slice(importIndex).trim()
+  }
+  code = code.replace(/```+\s*$/g, '').trim()
+
+  // Auto-Sanitize Unterminated String Constants (v1.0.7):
+  code = sanitizeUnterminatedStrings(code)
+
+  // Auto-Sanitize JSX Backtick Attributes (v1.0.8 Zero-Panic Self-Healing):
+  code = sanitizeJsxBacktickAttributes(code)
+
+  // B. Auto-Sanitizer Easing Halusinasi (v1.0.7):
+  code = code.replace(/Easing\.backIn\((.*?)\)/g, 'Easing.in(Easing.back($1))')
+  code = code.replace(/Easing\.backOut\((.*?)\)/g, 'Easing.out(Easing.back($1))')
+  code = code.replace(/Easing\.backInOut\((.*?)\)/g, 'Easing.inOut(Easing.back($1))')
 
   // Pre-fix Remotion code for props, hook, and fallback safety
   code = preFixRemotionCode(code)
@@ -522,7 +749,8 @@ export const generateProceduralFallback = (prompt: string = 'DYNAMIC MOTION'): s
     detectedSubtitle = 'Futuristic HUD Interface'
   }
 
-  return `import React from 'react'
+  return `// @title: ${detectedTitle}
+import React from 'react'
 import { useCurrentFrame, interpolate, spring, useVideoConfig } from 'remotion'
 
 export interface VibeGraphicProps {
@@ -747,34 +975,7 @@ export type DynamicMotionProps = VibeGraphicProps
  * and writes to disk asynchronously using node:fs/promises without blocking the Main Thread.
  */
 export async function applyManualCode(rawCode: string): Promise<ApplyManualCodeResult> {
-  const targetFilePath = getDynamicMotionFilePath()
-  const cleanedCode = cleanGeneratedCode(rawCode)
-
-  if (!cleanedCode) {
-    return {
-      success: false,
-      error: 'Kode TSX kosong. Silakan masukkan kode Remotion yang valid.'
-    }
-  }
-
-  try {
-    // Pure async file write
-    await fsPromises.writeFile(targetFilePath, cleanedCode, 'utf-8')
-    console.log(
-      `[applyManualCode] Berhasil menulis DynamicMotion.tsx secara async ke: ${targetFilePath}`
-    )
-    return {
-      success: true,
-      code: cleanedCode,
-      filePath: targetFilePath
-    }
-  } catch (writeErr) {
-    console.error('[applyManualCode] Gagal menulis DynamicMotion.tsx:', writeErr)
-    return {
-      success: false,
-      error: writeErr instanceof Error ? writeErr.message : 'Gagal menulis file ke disk'
-    }
-  }
+  return await writeExternalComponentCode(rawCode)
 }
 
 /**

@@ -1,0 +1,38 @@
+Motion Suite Pro v1.0.7 — FAQ & Ketentuan / FAQ & Terms
+
+BAHASA INDONESIA
+1. KETENTUAN LISENSI PERANGKAT
+- Setiap lisensi terikat secara permanen pada Machine ID perangkat Anda (1 Lisensi = 1 Komputer).
+- Keaslian lisensi diperiksa menggunakan tanda tangan RSA-2048 dan tidak dapat dipindahkan ke perangkat lain secara bebas.
+- Seluruh transaksi bersifat FINAL dan TIDAK DAPAT DIKEMBALIKAN (NO REFUND) dengan alasan apa pun.
+
+
+2. ERROR AI
+HTTP 503 adalah error sementara pada permintaan Gemini, bukan bukti gangguan global. HTTP 429 dapat berarti rate limit atau kuota habis; periksa Google AI Studio. Deadline aplikasi berbeda dari error layanan. Animasi lama tidak ditimpa ketika validasi gagal.
+
+3. API KEY PRIBADI
+Kuota dan biaya mengikuti akun serta kebijakan Google. Billing tidak menjamin tanpa antrean atau tanpa batas. Jangan membagikan API key.
+
+4. HASIL DAN KOMPATIBILITAS
+Kualitas Tinggi (Beta) menambahkan perencanaan, bukan jaminan hasil premium. AI eksternal tetap harus mengikuti Master Prompt dan menghasilkan satu TSX yang lolos Code Inspector. Jenis Animasi tidak membatasi gaya kreatif. Periksa warna dan pilih apakah ingin menggunakan palet/teks sebelumnya. Lisensi software tidak otomatis memberi hak atas aset pihak ketiga atau menjamin penerimaan marketplace.
+
+5. UPDATE DAN EKSPOR
+Windows menggunakan updater aplikasi; macOS 13+ menggunakan DMG manual. Jangan uninstall atau hapus data sebagai langkah update. Periksa kembali pekerjaan dan aktivasi setelah update. MP4 tidak mendukung transparansi; gunakan MOV ProRes 4444 dan periksa alpha pada editor yang mendukung. Performa 3D/4K/60 FPS bergantung perangkat dan kompleksitas.
+
+ENGLISH
+1. LICENSE TERMS
+Each license is permanently bound to your device Machine ID (one license = one computer). License authenticity is checked using the existing RSA-2048 signature and cannot be freely transferred. All transactions are FINAL and NON-REFUNDABLE for any reason. These business terms are unchanged.
+
+2. AI ERRORS
+HTTP 503 is a temporary error affecting a Gemini request, not proof of a global outage. HTTP 429 may be a rate limit or exhausted quota. Check Google AI Studio. Application deadlines are distinct from service errors. Validation failure does not overwrite the previous animation.
+
+3. YOUR API KEY
+Quotas and charges follow your Google account and provider policies. Billing does not guarantee unlimited or queue-free access. Keep API keys private.
+
+4. OUTPUT AND COMPATIBILITY
+High Quality (Beta) adds planning, not a premium-quality guarantee. External AI must follow the Master Prompt and produce one TSX file accepted by Code Inspector. Animation Type does not restrict creative style. Review colors and choose whether to reuse palette/text. A software license does not grant third-party asset rights or guarantee marketplace acceptance.
+
+5. UPDATES AND EXPORT
+Windows uses the application updater; macOS 13+ uses manual DMGs. Do not uninstall or delete data as an update step. Recheck work and activation after updating. MP4 has no alpha; use MOV ProRes 4444 and verify alpha in a compatible editor. 3D/4K/60 FPS performance depends on hardware and complexity.
+
+Support: ahmadmuslihfarhany46@gmail.com · Telegram: @ahmadmuslihfarhany

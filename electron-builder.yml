@@ -10,6 +10,13 @@ files:
   - resources/icon.png
 
 extraResources:
+  - from: node_modules/typescript
+    to: typescript
+    filter:
+      - 'lib/*.d.ts'
+      - 'package.json'
+      - 'LICENSE.txt'
+      - 'ThirdPartyNoticeText.txt'
   - from: remotion_env
     to: remotion_env
     filter:
@@ -24,10 +31,6 @@ extraResources:
       - '**/*'
       - '!.cache/**/*'
       - '!.remotion/**/*'
-  - from: resources/bin
-    to: bin
-    filter:
-      - 'node*'
   - from: resources
     to: .
     filter:
@@ -40,8 +43,16 @@ extraResources:
     to: PETUNJUK_AKTIVASI.txt
   - from: user-guide.html
     to: user-guide.html
+  - from: README.md
+    to: README.md
+  - from: 00_BACA_DULU_FAQ_DAN_KETENTUAN.txt
+    to: 00_BACA_DULU_FAQ_DAN_KETENTUAN.txt
 
 extraFiles:
+  - from: README.md
+    to: README.md
+  - from: 00_BACA_DULU_FAQ_DAN_KETENTUAN.txt
+    to: 00_BACA_DULU_FAQ_DAN_KETENTUAN.txt
   - from: README_DAN_SPESIFIKASI.txt
     to: README_DAN_SPESIFIKASI.txt
   - from: PETUNJUK_AKTIVASI.txt
@@ -50,13 +61,16 @@ extraFiles:
     to: user-guide.html
 
 win:
+  extraResources:
+    - from: resources/bin/node.exe
+      to: bin/node.exe
   executableName: Motion Suite Pro
   icon: resources/icon.ico
   target:
     - target: nsis
       arch:
         - x64
-  artifactName: "${productName}.Setup.${version}.${ext}"
+  artifactName: "Motion-Suite-Pro.Setup.${version}.${ext}"
 
 nsis:
   oneClick: false
@@ -72,6 +86,9 @@ nsis:
   installerHeaderIcon: resources/icon.ico
 
 mac:
+  extraResources:
+    - from: resources/bin/node
+      to: bin/node
   executableName: Motion Suite Pro
   category: public.app-category.video
   icon: build/icon.icns
@@ -80,15 +97,11 @@ mac:
       arch:
         - arm64
         - x64
-    - target: zip
-      arch:
-        - arm64
-        - x64
   artifactName: "${productName}-${version}-mac-${arch}.${ext}"
   identity: null
   hardenedRuntime: false
   gatekeeperAssess: false
-  minimumSystemVersion: "11.0"
+  minimumSystemVersion: "13.0"
 
 dmg:
   sign: false

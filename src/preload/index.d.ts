@@ -1,3 +1,5 @@
+import type { GenerationOutcome, GenerationProgress } from '../shared/generationFeedback'
+import type { AnimationType } from '../shared/animationTechnique'
 import { ElectronAPI } from '@electron-toolkit/preload'
 
 export interface RenderVideoConfig {
@@ -54,6 +56,7 @@ export interface ApplyManualCodeResult {
 }
 
 export interface CustomElectronAPI {
+  setUiLanguage: (language: 'id' | 'en') => Promise<'id' | 'en'>
   renderVideo: (config: RenderVideoConfig) => Promise<RenderResult>
   selectDirectory: () => Promise<{ canceled: boolean; folderPath?: string }>
   openPath: (path: string) => Promise<{ success: boolean; error?: string }>
@@ -69,6 +72,7 @@ export interface CustomElectronAPI {
     format: 'mp4' | 'mov' | 'prores422' | 'prores4444'
     isTransparent?: boolean
     title?: string
+    customFileName?: string
     resolutionLabel?: string
     renderMode?: 'auto' | 'gpu' | 'cpu'
     customOutputFolder?: string
@@ -101,12 +105,32 @@ export interface CustomElectronAPI {
     timeoutMs?: number
   }) => Promise<{ isValid: boolean; errorMessage?: string }>
   generateVideo: (payload: {
+    animationType?: AnimationType
+    mode?: 'fast' | 'quality'
+    requestId?: string
+    qualityText?: { titleText?: string; subtitleText?: string; badgeText?: string }
+    precisionSvgStrokes?: boolean
+    precisionPalette?: { accentColor: string; secondaryColor: string; backgroundColor: string }
     prompt: string
     imageBase64?: string
     mimeType?: string
     apiKey: string
     assetPath?: string
-  }) => Promise<{ success: boolean; code?: string; filePath?: string; error?: string }>
+    generationContext?: {
+      width: number
+      height: number
+      fps: number
+      durationInFrames: number
+      isTransparent: boolean
+      scale: number
+      offsetX: number
+      offsetY: number
+      speedMultiplier: number
+      glowIntensity: number
+    }
+  }) => Promise<{ success: boolean; code?: string; filePath?: string; error?: string; textMode?: 'none' | 'requested' | 'minimal' } & GenerationOutcome>
+  cancelGeneration: (requestId: string) => Promise<boolean>
+  onGenerationProgress: (callback: (progress: GenerationProgress) => void) => () => void
   refineVideo: (payload: {
     instruction: string
     apiKey: string

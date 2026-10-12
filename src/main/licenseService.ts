@@ -1,3 +1,4 @@
+import { uiText, uiLocale } from './uiLanguage'
 import { createHash, createVerify } from 'crypto'
 import { app, ipcMain } from 'electron'
 import { join, dirname } from 'path'
@@ -232,7 +233,7 @@ export function getLicenseStatus(): LicenseStatusResult {
             activatedAt: data.activatedAt,
             isClockDesynced: false,
             statusCode: 'EXPIRED',
-            statusMessage: `Lisensi Bulanan Legacy telah kadaluarsa pada ${new Date(expiryTime).toLocaleDateString('id-ID')}.`
+            statusMessage: `Lisensi Bulanan Legacy telah kadaluarsa pada ${new Date(expiryTime).toLocaleDateString(uiLocale())}.`
           }
         }
         return {
@@ -373,7 +374,7 @@ export function getLicenseStatus(): LicenseStatusResult {
           activatedAt: data.activatedAt,
           isClockDesynced: false,
           statusCode: 'EXPIRED',
-          statusMessage: `Masa aktif lisensi Anda telah berakhir pada ${new Date(expiry).toLocaleDateString('id-ID')}. Perpanjang lisensi Anda untuk melanjutkan.`
+          statusMessage: `Masa aktif lisensi Anda telah berakhir pada ${new Date(expiry).toLocaleDateString(uiLocale())}. Perpanjang lisensi Anda untuk melanjutkan.`
         }
       }
     }
@@ -423,7 +424,7 @@ export async function validateLicense(key: string): Promise<{
   if (!cleanedKey) {
     return {
       success: false,
-      message: 'Kunci lisensi tidak boleh kosong.'
+      message: uiText("Kunci lisensi tidak boleh kosong.")
     }
   }
 
@@ -432,7 +433,7 @@ export async function validateLicense(key: string): Promise<{
   if (clockStatus.isClockDesynced) {
     return {
       success: false,
-      message: 'Gagal aktivasi: Jam sistem terdeteksi dimundurkan. Sinkronkan waktu internet terlebih dahulu.'
+      message: uiText("Gagal aktivasi: Jam sistem terdeteksi dimundurkan. Sinkronkan waktu internet terlebih dahulu.")
     }
   }
 
@@ -445,7 +446,7 @@ export async function validateLicense(key: string): Promise<{
     if (!isLegacySigValid) {
       return {
         success: false,
-        message: 'Kunci lisensi legacy tidak valid atau tanda tangan digital salah.'
+        message: uiText("Kunci lisensi legacy tidak valid atau tanda tangan digital salah.")
       }
     }
 
@@ -469,12 +470,12 @@ export async function validateLicense(key: string): Promise<{
         }
         writeFileSync(filePath, JSON.stringify(legacyLicense, null, 2), 'utf-8')
       } catch (err) {
-        return { success: false, message: 'Gagal menyimpan lisensi legacy ke sistem lokal.' }
+        return { success: false, message: uiText("Gagal menyimpan lisensi legacy ke sistem lokal.") }
       }
 
       return {
         success: true,
-        message: 'Aktivasi Berhasil! Lisensi Lifetime Legacy resmi aktif permanen.',
+        message: uiText("Aktivasi Berhasil! Lisensi Lifetime Legacy resmi aktif permanen."),
         data: legacyLicense
       }
     } else if (LEGACY_MONTHLY_MAP[currentMachineId]) {
@@ -483,7 +484,7 @@ export async function validateLicense(key: string): Promise<{
       if (Date.now() > expiryTime) {
         return {
           success: false,
-          message: `Lisensi Bulanan Legacy telah berakhir pada ${new Date(fixedExpiry).toLocaleDateString('id-ID')}.`
+          message: uiText("Lisensi Bulanan Legacy telah berakhir pada {p0}.", { p0: new Date(fixedExpiry).toLocaleDateString(uiLocale()) })
         }
       }
 
@@ -506,18 +507,18 @@ export async function validateLicense(key: string): Promise<{
         }
         writeFileSync(filePath, JSON.stringify(legacyLicense, null, 2), 'utf-8')
       } catch (err) {
-        return { success: false, message: 'Gagal menyimpan lisensi legacy ke sistem lokal.' }
+        return { success: false, message: uiText("Gagal menyimpan lisensi legacy ke sistem lokal.") }
       }
 
       return {
         success: true,
-        message: `Aktivasi Berhasil! Lisensi Bulanan Legacy aktif hingga ${new Date(fixedExpiry).toLocaleDateString('id-ID')}.`,
+        message: uiText("Aktivasi Berhasil! Lisensi Bulanan Legacy aktif hingga {p0}.", { p0: new Date(fixedExpiry).toLocaleDateString(uiLocale()) }),
         data: legacyLicense
       }
     } else {
       return {
         success: false,
-        message: 'Perangkat ini tidak terdaftar dalam whitelist pengguna lama resmi.'
+        message: uiText("Perangkat ini tidak terdaftar dalam whitelist pengguna lama resmi.")
       }
     }
   }
@@ -527,7 +528,7 @@ export async function validateLicense(key: string): Promise<{
   if (parts.length !== 2 || !parts[0] || !parts[1]) {
     return {
       success: false,
-      message: 'Format kunci lisensi tidak valid. Pastikan Anda menyalin seluruh teks kunci lisensi digital.'
+      message: uiText("Format kunci lisensi tidak valid. Pastikan Anda menyalin seluruh teks kunci lisensi digital.")
     }
   }
 
@@ -538,7 +539,7 @@ export async function validateLicense(key: string): Promise<{
   if (!isSignatureValid) {
     return {
       success: false,
-      message: 'Kunci lisensi digital tidak valid / palsu. Verifikasi tanda tangan kriptografi RSA-SHA256 gagal.'
+      message: uiText("Kunci lisensi digital tidak valid / palsu. Verifikasi tanda tangan kriptografi RSA-SHA256 gagal.")
     }
   }
 
@@ -550,7 +551,7 @@ export async function validateLicense(key: string): Promise<{
   } catch {
     return {
       success: false,
-      message: 'Format data payload di dalam lisensi rusak.'
+      message: uiText("Format data payload di dalam lisensi rusak.")
     }
   }
 
@@ -558,7 +559,7 @@ export async function validateLicense(key: string): Promise<{
   if (!payload.machineId || payload.machineId.toUpperCase() !== currentMachineId.toUpperCase()) {
     return {
       success: false,
-      message: `Lisensi ini terikat untuk perangkat lain (ID: ${payload.machineId}). Machine ID perangkat ini adalah: ${currentMachineId}`
+      message: uiText("Lisensi ini terikat untuk perangkat lain (ID: {p0}). Machine ID perangkat ini adalah: {p1}", { p0: payload.machineId, p1: currentMachineId })
     }
   }
 
@@ -569,7 +570,7 @@ export async function validateLicense(key: string): Promise<{
     if (isNaN(expiryTime) || Date.now() > expiryTime) {
       return {
         success: false,
-        message: `Kunci lisensi ini telah kadaluarsa pada ${new Date(effectiveExpiry).toLocaleDateString('id-ID')}.`
+        message: uiText("Kunci lisensi ini telah kadaluarsa pada {p0}.", { p0: new Date(effectiveExpiry).toLocaleDateString(uiLocale()) })
       }
     }
   }
@@ -599,7 +600,7 @@ export async function validateLicense(key: string): Promise<{
     console.error('[LicenseService] Error saving license file:', err)
     return {
       success: false,
-      message: 'Gagal menyimpan file lisensi ke sistem lokal.'
+      message: uiText("Gagal menyimpan file lisensi ke sistem lokal.")
     }
   }
 
@@ -607,8 +608,8 @@ export async function validateLicense(key: string): Promise<{
   return {
     success: true,
     message: isLifetime
-      ? 'Aktivasi Berhasil! Lisensi Lifetime Access aktif selamanya.'
-      : `Aktivasi Berhasil! Lisensi aktif hingga ${new Date(effectiveExpiry).toLocaleDateString('id-ID')}.`,
+      ? uiText("Aktivasi Berhasil! Lisensi Lifetime Access aktif selamanya.")
+      : uiText('Aktivasi Berhasil! Lisensi aktif hingga {p0}.', { p0: new Date(effectiveExpiry).toLocaleDateString(uiLocale()) }),
     data: newLicense
   }
 }

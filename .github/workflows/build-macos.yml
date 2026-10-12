@@ -1,85 +1,95 @@
-name: Build macOS (Apple Silicon & Intel)
+name: Build macOS v1.0.7 (Intel & Apple Silicon)
 
 on:
-  push:
-    tags:
-      - 'v*'
   workflow_dispatch:
+  workflow_call:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build-macos:
-    name: macOS ${{ matrix.arch }} (${{ matrix.arch == 'arm64' && 'Apple Silicon' || 'Intel' }})
-    runs-on: macos-latest
+    name: macOS ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
-        arch:
-          - arm64
-          - x64
-
+        include:
+          - arch: arm64
+            runner: macos-15
+          - arch: x64
+            runner: macos-15-intel
+    env:
+      TARGET_ARCH: ${{ matrix.arch }}
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js 20.x
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
-
-      - name: Install Application Dependencies
-        run: npm ci
-
-      - name: Install Remotion Environment Dependencies
-        run: npm --prefix remotion_env ci || npm --prefix remotion_env install
-
-      - name: Prepare Portable Node Binary for ${{ matrix.arch }}
-        env:
-          TARGET_ARCH: ${{ matrix.arch }}
-        run: node scripts/setup-node-bin.js --arch=${{ matrix.arch }}
-
-      - name: Verify Architecture and Execution Permissions
+          cache: npm
+      - name: Install locked dependencies on the matching native runner
         run: |
-          echo "=== Node binary details ==="
-          ls -la resources/bin/
-          file resources/bin/node || true
-
-      - name: Compile and Bundle Frontend & Main
-        run: npm run build
-
-      - name: Package macOS App (.dmg and .zip) - Unsigned Bypass
-        env:
-          CSC_IDENTITY_AUTO_DISCOVERY: false
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TARGET_ARCH: ${{ matrix.arch }}
-        run: npx electron-builder --mac --${{ matrix.arch }} -c.mac.identity=null
-
-      - name: Verify Built Packages
+          npm ci
+          npm --prefix remotion_env ci
+      - name: Prepare and verify portable Node
         run: |
-          echo "=== Generated Distribution Files ==="
-          ls -lh dist/
-
-      - name: Upload Artifacts to GitHub Actions
-        uses: actions/upload-artifact@v4
+          node scripts/setup-node-bin.js --arch=${{ matrix.arch }}
+          file resources/bin/node
+          test "$(resources/bin/node -p 'process.arch')" = "$TARGET_ARCH"
+          test "$(node -p 'process.arch')" = "$TARGET_ARCH"
+          test "$(node -p 'require("./node_modules/electron/package.json").version')" = '44.2.0'
+      - name: Typecheck and compile into isolated staging
+        run: |
+          npm run typecheck
+          node node_modules/typescript/bin/tsc --noEmit -p remotion_env/tsconfig.json
+          node node_modules/electron-vite/bin/electron-vite.js build --outDir "$RUNNER_TEMP/msp-release/bundles"
+      - name: Prepare clean resources and package without publication
+        run: |
+          node scripts/prepare-release.cjs --bundles "$RUNNER_TEMP/msp-release/bundles" --output "$RUNNER_TEMP/msp-release/package" --platform mac --arch "$TARGET_ARCH"
+          node node_modules/electron-builder/out/cli/cli.js --config "$RUNNER_TEMP/msp-release/package/release-config.json" --mac dmg --${{ matrix.arch }} --publish never
+      - name: Verify packaged architecture and minimum macOS version
+        run: |
+          APP=$(find "$RUNNER_TEMP/msp-release/package/artifacts" -maxdepth 2 -name 'Motion Suite Pro.app' -type d -print -quit)
+          test -n "$APP"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$APP/Contents/Info.plist")" = '13.0'
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Contents/Info.plist")" = '1.0.7'
+          EXPECTED=$TARGET_ARCH
+          if [ "$EXPECTED" = x64 ]; then EXPECTED=x86_64; fi
+          lipo -verify_arch "$EXPECTED" "$APP/Contents/MacOS/Motion Suite Pro"
+          lipo -verify_arch "$EXPECTED" "$APP/Contents/Resources/bin/node"
+          test "$("$APP/Contents/Resources/bin/node" -p 'process.arch')" = "$TARGET_ARCH"
+          test ! -e "$APP/Contents/Resources/bin/node.exe"
+          test -f "$APP/Contents/Resources/typescript/lib/lib.esnext.full.d.ts"
+          test -f "$APP/Contents/Resources/remotion_env/src/primitives/ThreeScene.tsx"
+          test -f "$APP/Contents/Resources/remotion_env/src/primitives/SvgStrokeReveal.tsx"
+          while IFS= read -r -d '' BINARY; do
+            case "$(file -b "$BINARY")" in
+              *Mach-O*) lipo -verify_arch "$EXPECTED" "$BINARY" ;;
+            esac
+          done < <(find "$APP/Contents" -type f -print0)
+          "$APP/Contents/Resources/bin/node" - "$APP/Contents/Resources" <<'NODE'
+          const fs = require('fs'), path = require('path'), assert = require('assert');
+          const resources = process.argv[2], runtime = path.join(resources, 'remotion_env');
+          for (const [name, version] of Object.entries({remotion: '4.0.520', '@remotion/cli': '4.0.520', '@remotion/three': '4.0.520', three: '0.178.0', '@react-three/fiber': '9.2.0'})) {
+            const pkg = JSON.parse(fs.readFileSync(path.join(runtime, 'node_modules', name, 'package.json')));
+            assert.strictEqual(pkg.version, version, 'Packaged dependency version: ' + name);
+            require.resolve(name, {paths: [runtime]});
+          }
+          const types = path.join(resources, 'typescript', 'lib');
+          assert(fs.existsSync(path.join(types, 'lib.esnext.full.d.ts')));
+          NODE
+          DMG="$RUNNER_TEMP/msp-release/package/artifacts/Motion Suite Pro-1.0.7-mac-$TARGET_ARCH.dmg"
+          test -f "$DMG"
+          test "$(find "$RUNNER_TEMP/msp-release/package/artifacts" -maxdepth 1 -name '*.dmg' -type f | wc -l | tr -d ' ')" = '1'
+          test -z "$(find "$RUNNER_TEMP/msp-release/package/artifacts" -maxdepth 1 -name '*.zip' -type f -print)"
+          shasum -a 256 "$DMG"
+          codesign -dv --verbose=2 "$APP" 2>&1 || true
+      - uses: actions/upload-artifact@v4
         with:
-          name: Motion-Suite-Pro-macOS-${{ matrix.arch }}
+          name: Motion-Suite-Pro-v1.0.7-macOS-${{ matrix.arch }}
           path: |
-            dist/*.dmg
-            dist/*.zip
-            dist/*.blockmap
+            ${{ runner.temp }}/msp-release/package/artifacts/*.dmg
           if-no-files-found: error
           retention-days: 30
-
-      - name: Attach Assets to GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            dist/*.dmg
-            dist/*.zip
-            dist/*.blockmap
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
